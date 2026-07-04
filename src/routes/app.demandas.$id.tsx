@@ -62,7 +62,11 @@ const ATTACH_ICON = {
 } as const;
 
 function DemandaDetail() {
-  const { demanda, related, adjacent } = Route.useLoaderData();
+  const { demanda, related, adjacent } = Route.useLoaderData() as {
+    demanda: Demanda;
+    related: Demanda[];
+    adjacent: { prev?: Demanda; next?: Demanda };
+  };
   const columnMeta = COLUMNS.find((c) => c.id === demanda.column)!;
   const temp = TEMP_STYLE[demanda.temperature];
 

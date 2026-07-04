@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/brand/Icon";
 
-export const Route = createFileRoute("/app/fornecedores")({
+export const Route = createFileRoute("/app/fornecedores/")({
   head: () => ({ meta: [{ title: "Fornecedores | Concierge OperaCondo" }] }),
   component: FornecedoresPage,
 });

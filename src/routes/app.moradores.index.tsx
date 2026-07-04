@@ -1,115 +1,21 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/brand/Icon";
+import {
+  CONDOMINIOS,
+  MORADORES,
+  STATUS_CLS,
+  formatEndereco,
+  initials,
+  whatsappUrl,
+  type Status,
+} from "@/data/moradores";
 
-export const Route = createFileRoute("/app/moradores")({
+export const Route = createFileRoute("/app/moradores/")({
   head: () => ({ meta: [{ title: "Moradores | Concierge OperaCondo" }] }),
   component: MoradoresPage,
 });
-
-type Status = "Residente" | "Locatário" | "Vago" | "Proprietário";
-type CondoTipo = "vertical" | "horizontal";
-
-interface Condominio {
-  id: string;
-  nome: string;
-  tipo: CondoTipo;
-  cidade: string;
-  unidades: number;
-}
-
-interface EnderecoVertical {
-  tipo: "vertical";
-  bloco: string; // Torre / Bloco
-  andar: number;
-  apto: string;
-}
-
-interface EnderecoHorizontal {
-  tipo: "horizontal";
-  quadra: string;
-  casa: string;
-}
-
-type Endereco = EnderecoVertical | EnderecoHorizontal;
-
-interface Morador {
-  id: string;
-  nome: string;
-  condominioId: string;
-  endereco: Endereco;
-  status: Status;
-  vagas: number;
-  pets: number;
-  contato: string;
-  ultimo: string;
-}
-
-const STATUS_CLS: Record<Status, string> = {
-  Residente: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  Locatário: "bg-blue-50 text-blue-700 border-blue-200",
-  Vago: "bg-slate-100 text-slate-600 border-slate-200",
-  Proprietário: "bg-violet-50 text-violet-700 border-violet-200",
-};
-
-const CONDOMINIOS: Condominio[] = [
-  {
-    id: "aurora",
-    nome: "Edifício Aurora",
-    tipo: "vertical",
-    cidade: "São Paulo — SP",
-    unidades: 248,
-  },
-  {
-    id: "parqueverde",
-    nome: "Residencial Parque Verde",
-    tipo: "horizontal",
-    cidade: "Campinas — SP",
-    unidades: 96,
-  },
-  {
-    id: "montebello",
-    nome: "Edifício Monte Bello",
-    tipo: "vertical",
-    cidade: "São Paulo — SP",
-    unidades: 132,
-  },
-];
-
-const MORADORES: Morador[] = [
-  { id: "m1", nome: "Ana Carvalho", condominioId: "aurora", endereco: { tipo: "vertical", bloco: "Torre A", andar: 12, apto: "1204" }, status: "Residente", vagas: 2, pets: 1, contato: "+55 11 99988-1204", ultimo: "Hoje, 09:14" },
-  { id: "m2", nome: "Marcelo Reis", condominioId: "aurora", endereco: { tipo: "vertical", bloco: "Torre A", andar: 8, apto: "802" }, status: "Locatário", vagas: 1, pets: 0, contato: "+55 11 99812-0802", ultimo: "Ontem, 21:02" },
-  { id: "m3", nome: "Júlia Tavares", condominioId: "aurora", endereco: { tipo: "vertical", bloco: "Torre B", andar: 5, apto: "506" }, status: "Residente", vagas: 1, pets: 2, contato: "+55 11 98123-0506", ultimo: "Há 2d" },
-  { id: "m4", nome: "Bruno Lima", condominioId: "aurora", endereco: { tipo: "vertical", bloco: "Torre B", andar: 22, apto: "Cob. 02" }, status: "Proprietário", vagas: 3, pets: 0, contato: "+55 11 99777-0002", ultimo: "Há 4d" },
-  { id: "m5", nome: "Família Mendes", condominioId: "aurora", endereco: { tipo: "vertical", bloco: "Torre A", andar: 4, apto: "401" }, status: "Residente", vagas: 2, pets: 1, contato: "+55 11 98888-0401", ultimo: "Há 1 sem" },
-  { id: "m6", nome: "—", condominioId: "aurora", endereco: { tipo: "vertical", bloco: "Torre B", andar: 11, apto: "1101" }, status: "Vago", vagas: 0, pets: 0, contato: "—", ultimo: "—" },
-
-  { id: "m7", nome: "Camila Duarte", condominioId: "parqueverde", endereco: { tipo: "horizontal", quadra: "Q3", casa: "12" }, status: "Residente", vagas: 2, pets: 1, contato: "+55 19 99001-0303", ultimo: "Hoje, 14:22" },
-  { id: "m8", nome: "Eduardo Pires", condominioId: "parqueverde", endereco: { tipo: "horizontal", quadra: "Q1", casa: "05" }, status: "Locatário", vagas: 1, pets: 0, contato: "+55 19 98444-0907", ultimo: "Há 3d" },
-  { id: "m9", nome: "Renata Sales", condominioId: "parqueverde", endereco: { tipo: "horizontal", quadra: "Q5", casa: "27" }, status: "Proprietário", vagas: 2, pets: 2, contato: "+55 19 97555-2727", ultimo: "Ontem, 08:40" },
-  { id: "m10", nome: "Família Oliveira", condominioId: "parqueverde", endereco: { tipo: "horizontal", quadra: "Q2", casa: "18" }, status: "Residente", vagas: 3, pets: 1, contato: "+55 19 96222-1818", ultimo: "Há 6d" },
-
-  { id: "m11", nome: "Sandra Ribeiro", condominioId: "montebello", endereco: { tipo: "vertical", bloco: "Bloco 1", andar: 3, apto: "302" }, status: "Residente", vagas: 1, pets: 0, contato: "+55 11 95111-0302", ultimo: "Hoje, 07:55" },
-  { id: "m12", nome: "Pedro Nakamura", condominioId: "montebello", endereco: { tipo: "vertical", bloco: "Bloco 2", andar: 9, apto: "908" }, status: "Locatário", vagas: 1, pets: 1, contato: "+55 11 94222-0908", ultimo: "Há 2 sem" },
-];
-
-function formatEndereco(e: Endereco) {
-  if (e.tipo === "vertical") {
-    return { primary: `Apto ${e.apto}`, secondary: `${e.bloco} • ${e.andar}º andar` };
-  }
-  return { primary: `Casa ${e.casa}`, secondary: `Quadra ${e.quadra}` };
-}
-
-function initials(nome: string) {
-  if (nome === "—") return "—";
-  return nome
-    .split(" ")
-    .map((s) => s[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-}
 
 function MoradoresPage() {
   const [condoId, setCondoId] = useState<string>("all");
@@ -135,7 +41,8 @@ function MoradoresPage() {
   }, [condoId, statusFilter, query]);
 
   const stats = useMemo(() => {
-    const pool = condoId === "all" ? MORADORES : MORADORES.filter((m) => m.condominioId === condoId);
+    const pool =
+      condoId === "all" ? MORADORES : MORADORES.filter((m) => m.condominioId === condoId);
     const totalUnidades =
       condoId === "all"
         ? CONDOMINIOS.reduce((s, c) => s + c.unidades, 0)
@@ -272,18 +179,31 @@ function MoradoresPage() {
                 filtered.map((m) => {
                   const condo = CONDOMINIOS.find((c) => c.id === m.condominioId)!;
                   const end = formatEndereco(m.endereco);
+                  const isVago = m.status === "Vago";
                   return (
-                    <tr key={m.id} className="bg-white hover:bg-[var(--color-surface-low)]">
+                    <tr
+                      key={m.id}
+                      className="bg-white hover:bg-[var(--color-surface-low)]"
+                    >
                       <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-3">
+                        <Link
+                          to="/app/moradores/$id"
+                          params={{ id: m.id }}
+                          preload="intent"
+                          className="flex items-center gap-3 group"
+                        >
                           <div className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-[var(--color-navy)] to-[var(--color-brand)] text-xs font-bold text-white">
                             {initials(m.nome)}
                           </div>
                           <div>
-                            <p className="font-semibold text-[var(--color-navy)]">{m.nome}</p>
-                            <p className="text-xs text-[var(--color-on-surface-variant)]">{m.contato}</p>
+                            <p className="font-semibold text-[var(--color-navy)] group-hover:text-[var(--color-brand)]">
+                              {m.nome}
+                            </p>
+                            <p className="text-xs text-[var(--color-on-surface-variant)]">
+                              {m.contato}
+                            </p>
                           </div>
-                        </div>
+                        </Link>
                       </td>
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-2">
@@ -295,7 +215,9 @@ function MoradoresPage() {
                             }`}
                           >
                             <Icon
-                              name={condo.tipo === "vertical" ? "domain" : "holiday_village"}
+                              name={
+                                condo.tipo === "vertical" ? "domain" : "holiday_village"
+                              }
                               className="text-[16px]"
                             />
                           </div>
@@ -332,29 +254,46 @@ function MoradoresPage() {
                           {m.status}
                         </span>
                       </td>
-                      <td className="px-5 py-3.5 text-[var(--color-on-surface-variant)]">{m.vagas}</td>
-                      <td className="px-5 py-3.5 text-[var(--color-on-surface-variant)]">{m.pets}</td>
-                      <td className="px-5 py-3.5 text-xs text-[var(--color-on-surface-variant)]">{m.ultimo}</td>
+                      <td className="px-5 py-3.5 text-[var(--color-on-surface-variant)]">
+                        {m.vagas}
+                      </td>
+                      <td className="px-5 py-3.5 text-[var(--color-on-surface-variant)]">
+                        {m.pets}
+                      </td>
+                      <td className="px-5 py-3.5 text-xs text-[var(--color-on-surface-variant)]">
+                        {m.ultimo}
+                      </td>
                       <td className="px-5 py-3.5 text-right">
                         <div className="inline-flex items-center gap-1">
-                          <button
-                            title="WhatsApp"
-                            className="grid h-8 w-8 place-items-center rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                          >
-                            <Icon name="chat" className="text-[18px]" />
-                          </button>
-                          <button
-                            title="Detalhes"
-                            className="grid h-8 w-8 place-items-center rounded-lg text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-mid)]"
+                          {isVago ? null : (
+                            <a
+                              href={whatsappUrl(m.contato)}
+                              target="_blank"
+                              rel="noreferrer"
+                              title="Abrir no WhatsApp"
+                              className="grid h-8 w-8 place-items-center rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                            >
+                              <Icon name="chat" className="text-[18px]" />
+                            </a>
+                          )}
+                          <Link
+                            to="/app/moradores/$id"
+                            params={{ id: m.id }}
+                            preload="intent"
+                            title="Ver detalhes"
+                            className="grid h-8 w-8 place-items-center rounded-lg text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-mid)] hover:text-[var(--color-brand)]"
                           >
                             <Icon name="visibility" className="text-[18px]" />
-                          </button>
-                          <button
-                            title="Mais"
-                            className="grid h-8 w-8 place-items-center rounded-lg text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-mid)]"
-                          >
-                            <Icon name="more_horiz" className="text-[18px]" />
-                          </button>
+                          </Link>
+                          {isVago ? null : (
+                            <a
+                              href={`tel:${m.contato.replace(/\s/g, "")}`}
+                              title="Ligar"
+                              className="grid h-8 w-8 place-items-center rounded-lg text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-mid)]"
+                            >
+                              <Icon name="call" className="text-[18px]" />
+                            </a>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -368,26 +307,10 @@ function MoradoresPage() {
           <p>
             Mostrando {filtered.length}{" "}
             {filtered.length === 1 ? "morador" : "moradores"}
-            {condoSelecionado ? ` em ${condoSelecionado.nome}` : " (todos os condomínios)"}
+            {condoSelecionado
+              ? ` em ${condoSelecionado.nome}`
+              : " (todos os condomínios)"}
           </p>
-          <div className="flex items-center gap-1">
-            <button className="grid h-8 w-8 place-items-center rounded-md hover:bg-white">
-              <Icon name="chevron_left" className="text-[18px]" />
-            </button>
-            {[1, 2, 3, "…", 12].map((p, i) => (
-              <button
-                key={i}
-                className={`min-w-8 rounded-md px-2 py-1 font-semibold ${
-                  p === 1 ? "bg-[var(--color-navy)] text-white" : "hover:bg-white"
-                }`}
-              >
-                {p}
-              </button>
-            ))}
-            <button className="grid h-8 w-8 place-items-center rounded-md hover:bg-white">
-              <Icon name="chevron_right" className="text-[18px]" />
-            </button>
-          </div>
         </div>
       </div>
     </AppShell>
@@ -431,7 +354,9 @@ function CondoCard({
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold text-[var(--color-navy)]">{title}</p>
-        <p className="truncate text-[11px] text-[var(--color-on-surface-variant)]">{subtitle}</p>
+        <p className="truncate text-[11px] text-[var(--color-on-surface-variant)]">
+          {subtitle}
+        </p>
         <div className="mt-1 flex items-center gap-1.5">
           <span
             className={`rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider ${
@@ -443,7 +368,9 @@ function CondoCard({
             {badge}
           </span>
           {extra ? (
-            <span className="text-[10px] text-[var(--color-on-surface-variant)]">{extra}</span>
+            <span className="text-[10px] text-[var(--color-on-surface-variant)]">
+              {extra}
+            </span>
           ) : null}
         </div>
       </div>

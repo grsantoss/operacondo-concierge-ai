@@ -39,7 +39,11 @@ export const Route = createFileRoute("/app/moradores/$id")({
 type Tab = "chamados" | "historico" | "unidade";
 
 function MoradorDetail() {
-  const { morador, condo, chamados } = Route.useLoaderData();
+  const { morador, condo, chamados } = Route.useLoaderData() as {
+    morador: Morador;
+    condo: (typeof CONDOMINIOS)[number];
+    chamados: Demanda[];
+  };
   const [tab, setTab] = useState<Tab>("chamados");
   const end = formatEndereco(morador.endereco);
   const isVago = morador.status === "Vago";

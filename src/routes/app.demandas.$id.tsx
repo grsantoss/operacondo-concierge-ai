@@ -8,6 +8,7 @@ import {
   getAdjacent,
   getDemanda,
   getRelatedDemandas,
+  type Demanda,
   type Message,
   type TimelineEvent,
 } from "@/data/demandas";

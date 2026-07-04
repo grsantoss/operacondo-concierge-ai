@@ -9,7 +9,7 @@ import {
   type ColumnId,
 } from "@/data/demandas";
 
-export const Route = createFileRoute("/app/demandas")({
+export const Route = createFileRoute("/app/demandas/")({
   head: () => ({ meta: [{ title: "Demandas | Concierge OperaCondo" }] }),
   component: DemandasPage,
 });

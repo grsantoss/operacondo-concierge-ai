@@ -18,9 +18,11 @@ import { Route as AppFornecedoresRouteImport } from './routes/app.fornecedores'
 import { Route as AppDemandasRouteImport } from './routes/app.demandas'
 import { Route as AppBaseRouteImport } from './routes/app.base'
 import { Route as AppAgenteRouteImport } from './routes/app.agente'
+import { Route as AppMoradoresIndexRouteImport } from './routes/app.moradores.index'
 import { Route as AppFornecedoresIndexRouteImport } from './routes/app.fornecedores.index'
 import { Route as AppDemandasIndexRouteImport } from './routes/app.demandas.index'
 import { Route as AppBaseIndexRouteImport } from './routes/app.base.index'
+import { Route as AppMoradoresIdRouteImport } from './routes/app.moradores.$id'
 import { Route as AppFornecedoresNovoRouteImport } from './routes/app.fornecedores.novo'
 import { Route as AppDemandasIdRouteImport } from './routes/app.demandas.$id'
 import { Route as AppBaseEnviarRouteImport } from './routes/app.base.enviar'
@@ -70,6 +72,11 @@ const AppAgenteRoute = AppAgenteRouteImport.update({
   path: '/agente',
   getParentRoute: () => AppRoute,
 } as any)
+const AppMoradoresIndexRoute = AppMoradoresIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppMoradoresRoute,
+} as any)
 const AppFornecedoresIndexRoute = AppFornecedoresIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -84,6 +91,11 @@ const AppBaseIndexRoute = AppBaseIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppBaseRoute,
+} as any)
+const AppMoradoresIdRoute = AppMoradoresIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppMoradoresRoute,
 } as any)
 const AppFornecedoresNovoRoute = AppFornecedoresNovoRouteImport.update({
   id: '/novo',
@@ -109,27 +121,30 @@ export interface FileRoutesByFullPath {
   '/app/base': typeof AppBaseRouteWithChildren
   '/app/demandas': typeof AppDemandasRouteWithChildren
   '/app/fornecedores': typeof AppFornecedoresRouteWithChildren
-  '/app/moradores': typeof AppMoradoresRoute
+  '/app/moradores': typeof AppMoradoresRouteWithChildren
   '/app/': typeof AppIndexRoute
   '/app/base/enviar': typeof AppBaseEnviarRoute
   '/app/demandas/$id': typeof AppDemandasIdRoute
   '/app/fornecedores/novo': typeof AppFornecedoresNovoRoute
+  '/app/moradores/$id': typeof AppMoradoresIdRoute
   '/app/base/': typeof AppBaseIndexRoute
   '/app/demandas/': typeof AppDemandasIndexRoute
   '/app/fornecedores/': typeof AppFornecedoresIndexRoute
+  '/app/moradores/': typeof AppMoradoresIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/onboarding': typeof OnboardingRoute
   '/app/agente': typeof AppAgenteRoute
-  '/app/moradores': typeof AppMoradoresRoute
   '/app': typeof AppIndexRoute
   '/app/base/enviar': typeof AppBaseEnviarRoute
   '/app/demandas/$id': typeof AppDemandasIdRoute
   '/app/fornecedores/novo': typeof AppFornecedoresNovoRoute
+  '/app/moradores/$id': typeof AppMoradoresIdRoute
   '/app/base': typeof AppBaseIndexRoute
   '/app/demandas': typeof AppDemandasIndexRoute
   '/app/fornecedores': typeof AppFornecedoresIndexRoute
+  '/app/moradores': typeof AppMoradoresIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -140,14 +155,16 @@ export interface FileRoutesById {
   '/app/base': typeof AppBaseRouteWithChildren
   '/app/demandas': typeof AppDemandasRouteWithChildren
   '/app/fornecedores': typeof AppFornecedoresRouteWithChildren
-  '/app/moradores': typeof AppMoradoresRoute
+  '/app/moradores': typeof AppMoradoresRouteWithChildren
   '/app/': typeof AppIndexRoute
   '/app/base/enviar': typeof AppBaseEnviarRoute
   '/app/demandas/$id': typeof AppDemandasIdRoute
   '/app/fornecedores/novo': typeof AppFornecedoresNovoRoute
+  '/app/moradores/$id': typeof AppMoradoresIdRoute
   '/app/base/': typeof AppBaseIndexRoute
   '/app/demandas/': typeof AppDemandasIndexRoute
   '/app/fornecedores/': typeof AppFornecedoresIndexRoute
+  '/app/moradores/': typeof AppMoradoresIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -164,22 +181,25 @@ export interface FileRouteTypes {
     | '/app/base/enviar'
     | '/app/demandas/$id'
     | '/app/fornecedores/novo'
+    | '/app/moradores/$id'
     | '/app/base/'
     | '/app/demandas/'
     | '/app/fornecedores/'
+    | '/app/moradores/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/onboarding'
     | '/app/agente'
-    | '/app/moradores'
     | '/app'
     | '/app/base/enviar'
     | '/app/demandas/$id'
     | '/app/fornecedores/novo'
+    | '/app/moradores/$id'
     | '/app/base'
     | '/app/demandas'
     | '/app/fornecedores'
+    | '/app/moradores'
   id:
     | '__root__'
     | '/'
@@ -194,9 +214,11 @@ export interface FileRouteTypes {
     | '/app/base/enviar'
     | '/app/demandas/$id'
     | '/app/fornecedores/novo'
+    | '/app/moradores/$id'
     | '/app/base/'
     | '/app/demandas/'
     | '/app/fornecedores/'
+    | '/app/moradores/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -270,6 +292,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAgenteRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/moradores/': {
+      id: '/app/moradores/'
+      path: '/'
+      fullPath: '/app/moradores/'
+      preLoaderRoute: typeof AppMoradoresIndexRouteImport
+      parentRoute: typeof AppMoradoresRoute
+    }
     '/app/fornecedores/': {
       id: '/app/fornecedores/'
       path: '/'
@@ -290,6 +319,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/app/base/'
       preLoaderRoute: typeof AppBaseIndexRouteImport
       parentRoute: typeof AppBaseRoute
+    }
+    '/app/moradores/$id': {
+      id: '/app/moradores/$id'
+      path: '/$id'
+      fullPath: '/app/moradores/$id'
+      preLoaderRoute: typeof AppMoradoresIdRouteImport
+      parentRoute: typeof AppMoradoresRoute
     }
     '/app/fornecedores/novo': {
       id: '/app/fornecedores/novo'
@@ -356,12 +392,26 @@ const AppFornecedoresRouteWithChildren = AppFornecedoresRoute._addFileChildren(
   AppFornecedoresRouteChildren,
 )
 
+interface AppMoradoresRouteChildren {
+  AppMoradoresIdRoute: typeof AppMoradoresIdRoute
+  AppMoradoresIndexRoute: typeof AppMoradoresIndexRoute
+}
+
+const AppMoradoresRouteChildren: AppMoradoresRouteChildren = {
+  AppMoradoresIdRoute: AppMoradoresIdRoute,
+  AppMoradoresIndexRoute: AppMoradoresIndexRoute,
+}
+
+const AppMoradoresRouteWithChildren = AppMoradoresRoute._addFileChildren(
+  AppMoradoresRouteChildren,
+)
+
 interface AppRouteChildren {
   AppAgenteRoute: typeof AppAgenteRoute
   AppBaseRoute: typeof AppBaseRouteWithChildren
   AppDemandasRoute: typeof AppDemandasRouteWithChildren
   AppFornecedoresRoute: typeof AppFornecedoresRouteWithChildren
-  AppMoradoresRoute: typeof AppMoradoresRoute
+  AppMoradoresRoute: typeof AppMoradoresRouteWithChildren
   AppIndexRoute: typeof AppIndexRoute
 }
 
@@ -370,7 +420,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppBaseRoute: AppBaseRouteWithChildren,
   AppDemandasRoute: AppDemandasRouteWithChildren,
   AppFornecedoresRoute: AppFornecedoresRouteWithChildren,
-  AppMoradoresRoute: AppMoradoresRoute,
+  AppMoradoresRoute: AppMoradoresRouteWithChildren,
   AppIndexRoute: AppIndexRoute,
 }
 

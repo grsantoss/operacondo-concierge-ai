@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/brand/Icon";
 
-export const Route = createFileRoute("/app/base")({
+export const Route = createFileRoute("/app/base/")({
   head: () => ({
     meta: [{ title: "Base de Conhecimento | Concierge OperaCondo" }],
   }),

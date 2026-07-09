@@ -93,8 +93,38 @@ export function addMoradores(items: Morador[]) {
   emit();
 }
 
-export function useMoradores(): Morador[] {
-  return useSyncExternalStore(
+export function updateMorador(id: string, patch: Partial<Omit<Morador, "id">>) {
+  _moradores = _moradores.map((m) => (m.id === id ? { ...m, ...patch } : m));
+  emit();
+}
+
+export function deactivateMorador(id: string) {
+  const stamp = new Date().toLocaleDateString("pt-BR");
+  _moradores = _moradores.map((m) =>
+    m.id === id ? { ...m, status: "Inativo" as Status, desativadoEm: stamp } : m,
+  );
+  emit();
+}
+
+export function reactivateMorador(id: string, novoStatus: Status = "Residente") {
+  _moradores = _moradores.map((m) =>
+    m.id === id ? { ...m, status: novoStatus, desativadoEm: undefined } : m,
+  );
+  emit();
+}
+
+export function deleteMorador(id: string) {
+  _moradores = _moradores.filter((m) => m.id !== id);
+  emit();
+}
+
+export function deleteAllInactive() {
+  _moradores = _moradores.filter((m) => m.status !== "Inativo");
+  emit();
+}
+
+export function useMoradores(opts?: { includeInactive?: boolean }): Morador[] {
+  const all = useSyncExternalStore(
     (cb) => {
       listeners.add(cb);
       return () => listeners.delete(cb);
@@ -102,6 +132,8 @@ export function useMoradores(): Morador[] {
     () => _moradores,
     () => _moradores,
   );
+  if (opts?.includeInactive) return all;
+  return all.filter((m) => m.status !== "Inativo");
 }
 
 /* -------- Helpers -------- */

@@ -17,11 +17,19 @@ export interface Message {
   text: string;
 }
 
+export interface Attachment {
+  name: string;
+  size: string;
+  kind: "image" | "pdf" | "video";
+  url?: string;
+}
+
 export interface Demanda {
   id: string;
   title: string;
   description: string;
   morador: string;
+  moradorId?: string;
   unit: string;
   priority: Priority;
   category: Category;
@@ -29,10 +37,11 @@ export interface Demanda {
   createdAt: string;
   sla?: string;
   assigned?: string;
+  assumedBy?: string;
   column: ColumnId;
   location: string;
   contact: { phone: string; email: string };
-  attachments: { name: string; size: string; kind: "image" | "pdf" | "video" }[];
+  attachments: Attachment[];
   timeline: TimelineEvent[];
   messages: Message[];
   cost?: { estimated: number; approved?: number };

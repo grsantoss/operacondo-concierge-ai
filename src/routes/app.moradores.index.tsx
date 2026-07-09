@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/brand/Icon";
 import { ImportCsvModal } from "@/components/moradores/ImportCsvModal";
+import { NewMoradorModal } from "@/components/moradores/NewMoradorModal";
 import {
   CONDOMINIOS,
   STATUS_CLS,

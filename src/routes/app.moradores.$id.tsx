@@ -1,14 +1,19 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/brand/Icon";
+import { ConfirmDialog } from "@/components/moradores/ConfirmDialog";
+import { EditMoradorModal } from "@/components/moradores/EditMoradorModal";
 import {
   CONDOMINIOS,
   MORADORES,
   STATUS_CLS,
+  deactivateMorador,
   formatEndereco,
   getMorador,
   initials,
+  reactivateMorador,
+  useMoradores,
   whatsappUrl,
   type Morador,
 } from "@/data/moradores";

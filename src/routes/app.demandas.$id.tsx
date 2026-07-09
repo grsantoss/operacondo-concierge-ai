@@ -1,11 +1,14 @@
 import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/brand/Icon";
 import {
   CAT_ICON,
   COLUMNS,
   PRIO_CLASS,
+  addAnexos,
+  addMensagem,
+  assumirConversa,
   getAdjacent,
   getDemanda,
   getRelatedDemandas,
@@ -63,6 +66,13 @@ const ATTACH_ICON = {
   video: "movie",
 } as const;
 
+function buildWhatsappUrl(demanda: Demanda): string {
+  const digits = demanda.contact.phone.replace(/\D/g, "");
+  const withCountry = digits.startsWith("55") ? digits : `55${digits}`;
+  const msg = `Olá ${demanda.morador}, aqui é a administração do condomínio sobre o chamado ${demanda.id} — ${demanda.title}.`;
+  return `https://wa.me/${withCountry}?text=${encodeURIComponent(msg)}`;
+}
+
 function DemandaDetail() {
   const { demanda, related, adjacent } = Route.useLoaderData() as {
     demanda: Demanda;
@@ -71,16 +81,55 @@ function DemandaDetail() {
   };
   const router = useRouter();
   const [toast, setToast] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const columnMeta = COLUMNS.find((c) => c.id === demanda.column)!;
   const temp = TEMP_STYLE[demanda.temperature];
   const isResolved = demanda.column === "resolvidas";
+  const assumed = Boolean(demanda.assumedBy);
+
+  const whatsappUrl = buildWhatsappUrl(demanda);
+
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2400);
+  }
 
   function handleResolve() {
     if (isResolved) return;
     resolveDemanda(demanda.id);
-    setToast("Demanda marcada como resolvida");
+    showToast("Demanda marcada como resolvida");
     router.invalidate();
-    setTimeout(() => setToast(null), 2400);
+  }
+
+  function handleAssumir() {
+    if (assumed) return;
+    assumirConversa(demanda.id, "Você");
+    showToast("Você assumiu a conversa");
+    router.invalidate();
+  }
+
+  function handleSend() {
+    const text = draft.trim();
+    if (!text) return;
+    addMensagem(demanda.id, { from: "sindico", author: "Você", text });
+    setDraft("");
+    router.invalidate();
+    requestAnimationFrame(() => textareaRef.current?.focus());
+  }
+
+  function handlePickFiles() {
+    fileInputRef.current?.click();
+  }
+
+  function handleFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    if (files.length === 0) return;
+    addAnexos(demanda.id, files);
+    showToast(`${files.length} ${files.length === 1 ? "anexo adicionado" : "anexos adicionados"}`);
+    router.invalidate();
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   return (
@@ -227,8 +276,18 @@ function DemandaDetail() {
                   Canal: WhatsApp • Monitorado pelo Agente IA
                 </p>
               </div>
-              <button className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--color-navy)] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[var(--color-navy-soft)]">
-                <Icon name="support_agent" className="text-[14px]" /> Assumir conversa
+              <button
+                type="button"
+                onClick={handleAssumir}
+                disabled={assumed}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold ${
+                  assumed
+                    ? "cursor-not-allowed border border-emerald-200 bg-emerald-50 text-emerald-700"
+                    : "bg-[var(--color-navy)] text-white hover:bg-[var(--color-navy-soft)]"
+                }`}
+              >
+                <Icon name={assumed ? "check" : "support_agent"} className="text-[14px]" />
+                {assumed ? `Assumida por ${demanda.assumedBy}` : "Assumir conversa"}
               </button>
             </header>
 
@@ -242,15 +301,42 @@ function DemandaDetail() {
               )}
             </div>
 
-            <div className="mt-4 flex items-center gap-2 rounded-xl border border-[var(--color-outline-variant)] bg-[var(--color-surface-low)] p-2">
-              <button className="grid h-9 w-9 place-items-center rounded-lg text-[var(--color-on-surface-variant)] hover:bg-white">
+            <div className="mt-4 flex items-end gap-2 rounded-xl border border-[var(--color-outline-variant)] bg-[var(--color-surface-low)] p-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                hidden
+                onChange={handleFilesSelected}
+              />
+              <button
+                type="button"
+                onClick={handlePickFiles}
+                title="Anexar arquivo"
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-[var(--color-on-surface-variant)] hover:bg-white"
+              >
                 <Icon name="attach_file" className="text-[18px]" />
               </button>
-              <input
+              <textarea
+                ref={textareaRef}
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+                rows={1}
                 placeholder="Responder ao morador…"
-                className="flex-1 bg-transparent px-2 text-sm outline-none placeholder:text-[var(--color-on-surface-variant)]"
+                className="max-h-40 min-h-[36px] flex-1 resize-none bg-transparent px-2 py-2 text-sm outline-none placeholder:text-[var(--color-on-surface-variant)]"
               />
-              <button className="btn-press btn-press-active inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--color-brand)] px-3 text-xs font-semibold text-white hover:bg-[var(--color-brand-hover)]">
+              <button
+                type="button"
+                onClick={handleSend}
+                disabled={!draft.trim()}
+                className="btn-press btn-press-active inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-[var(--color-brand)] px-3 text-xs font-semibold text-white hover:bg-[var(--color-brand-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+              >
                 <Icon name="send" className="text-[14px]" /> Enviar
               </button>
             </div>
@@ -294,10 +380,12 @@ function DemandaDetail() {
             </div>
             <div className="mt-4 space-y-2 text-xs">
               <a
-                href={`tel:${demanda.contact.phone}`}
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="flex items-center gap-2 rounded-lg px-2 py-2 text-[var(--color-navy)] hover:bg-[var(--color-surface-mid)]"
               >
-                <Icon name="call" className="text-[16px]" />
+                <Icon name="chat" className="text-[16px]" />
                 {demanda.contact.phone}
               </a>
               <a
@@ -309,12 +397,33 @@ function DemandaDetail() {
               </a>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2">
-              <button className="flex items-center justify-center gap-1.5 rounded-lg bg-[var(--color-success)]/10 py-2 text-xs font-semibold text-[var(--color-success)] hover:bg-[var(--color-success)]/15">
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-1.5 rounded-lg bg-[var(--color-success)]/10 py-2 text-xs font-semibold text-[var(--color-success)] hover:bg-[var(--color-success)]/15"
+              >
                 <Icon name="chat" className="text-[14px]" /> WhatsApp
-              </button>
-              <button className="flex items-center justify-center gap-1.5 rounded-lg bg-[var(--color-surface-mid)] py-2 text-xs font-semibold text-[var(--color-navy)] hover:bg-[var(--color-surface-high)]">
-                <Icon name="badge" className="text-[14px]" /> Ficha
-              </button>
+              </a>
+              {demanda.moradorId ? (
+                <Link
+                  to="/app/moradores/$id"
+                  params={{ id: demanda.moradorId }}
+                  preload="intent"
+                  className="flex items-center justify-center gap-1.5 rounded-lg bg-[var(--color-surface-mid)] py-2 text-xs font-semibold text-[var(--color-navy)] hover:bg-[var(--color-surface-high)]"
+                >
+                  <Icon name="badge" className="text-[14px]" /> Ficha
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  title="Morador não vinculado"
+                  className="flex cursor-not-allowed items-center justify-center gap-1.5 rounded-lg bg-[var(--color-surface-mid)] py-2 text-xs font-semibold text-[var(--color-on-surface-variant)] opacity-60"
+                >
+                  <Icon name="badge" className="text-[14px]" /> Ficha
+                </button>
+              )}
             </div>
           </section>
 
@@ -323,7 +432,11 @@ function DemandaDetail() {
               <h3 className="text-sm font-bold text-[var(--color-navy)]">
                 Anexos
               </h3>
-              <button className="text-xs font-semibold text-[var(--color-brand)] hover:underline">
+              <button
+                type="button"
+                onClick={handlePickFiles}
+                className="text-xs font-semibold text-[var(--color-brand)] hover:underline"
+              >
                 + Adicionar
               </button>
             </div>
@@ -349,9 +462,17 @@ function DemandaDetail() {
                         {a.size}
                       </p>
                     </div>
-                    <button className="text-[var(--color-on-surface-variant)] hover:text-[var(--color-brand)]">
-                      <Icon name="download" className="text-[16px]" />
-                    </button>
+                    {a.url ? (
+                      <a
+                        href={a.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        download={a.name}
+                        className="text-[var(--color-on-surface-variant)] hover:text-[var(--color-brand)]"
+                      >
+                        <Icon name="download" className="text-[16px]" />
+                      </a>
+                    ) : null}
                   </li>
                 ))}
               </ul>

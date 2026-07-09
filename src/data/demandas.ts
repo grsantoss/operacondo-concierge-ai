@@ -17,11 +17,19 @@ export interface Message {
   text: string;
 }
 
+export interface Attachment {
+  name: string;
+  size: string;
+  kind: "image" | "pdf" | "video";
+  url?: string;
+}
+
 export interface Demanda {
   id: string;
   title: string;
   description: string;
   morador: string;
+  moradorId?: string;
   unit: string;
   priority: Priority;
   category: Category;
@@ -29,10 +37,11 @@ export interface Demanda {
   createdAt: string;
   sla?: string;
   assigned?: string;
+  assumedBy?: string;
   column: ColumnId;
   location: string;
   contact: { phone: string; email: string };
-  attachments: { name: string; size: string; kind: "image" | "pdf" | "video" }[];
+  attachments: Attachment[];
   timeline: TimelineEvent[];
   messages: Message[];
   cost?: { estimated: number; approved?: number };
@@ -74,6 +83,7 @@ export const DEMANDAS: Demanda[] = [
     sla: "SLA 2h",
     column: "novas",
     location: "Torre A • 12º andar • Apto 1204",
+    moradorId: "m1",
     contact: { phone: "+55 11 98421-1122", email: "ana.carvalho@exemplo.com" },
     attachments: [
       { name: "foto-vazamento-01.jpg", size: "1.2 MB", kind: "image" },
@@ -132,6 +142,7 @@ export const DEMANDAS: Demanda[] = [
     createdAt: "Hoje, 08:04",
     column: "novas",
     location: "Salão de festas • Térreo",
+    moradorId: "m2",
     contact: { phone: "+55 11 99911-2020", email: "marcelo.reis@exemplo.com" },
     attachments: [],
     temperature: "cold",
@@ -160,6 +171,7 @@ export const DEMANDAS: Demanda[] = [
     assigned: "Roberto S.",
     column: "triagem",
     location: "Torre A • Elevador social",
+    moradorId: "m3",
     contact: { phone: "+55 11 98800-4455", email: "julia.t@exemplo.com" },
     attachments: [{ name: "audio-elevador.mp4", size: "3.4 MB", kind: "video" }],
     temperature: "warm",
@@ -282,6 +294,7 @@ export const DEMANDAS: Demanda[] = [
     createdAt: "Ontem, 11:20",
     column: "resolvidas",
     location: "Financeiro",
+    moradorId: "m4",
     contact: { phone: "+55 11 98120-7788", email: "bruno.lima@exemplo.com" },
     attachments: [{ name: "comprovante-estorno.pdf", size: "56 KB", kind: "pdf" }],
     temperature: "cold",
@@ -391,5 +404,73 @@ export function createDemanda(input: {
     cost: input.cost,
   };
   DEMANDAS.unshift(d);
+  return d;
+}
+
+function nowHHMM(): string {
+  return new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+}
+
+export function assumirConversa(id: string, actor = "Síndico"): Demanda | undefined {
+  const d = DEMANDAS.find((x) => x.id === id);
+  if (!d) return undefined;
+  if (d.assumedBy) return d;
+  d.assumedBy = actor;
+  if (!d.assigned) d.assigned = actor;
+  d.timeline = [
+    ...d.timeline,
+    { at: nowHHMM(), actor, action: "Assumiu a conversa com o morador", channel: "Sistema" },
+  ];
+  return d;
+}
+
+export function addMensagem(
+  id: string,
+  input: { from: Message["from"]; author: string; text: string },
+): Demanda | undefined {
+  const d = DEMANDAS.find((x) => x.id === id);
+  if (!d) return undefined;
+  const at = nowHHMM();
+  d.messages = [...d.messages, { at, from: input.from, author: input.author, text: input.text }];
+  d.timeline = [
+    ...d.timeline,
+    { at, actor: input.author, action: "Enviou mensagem ao morador", channel: "WhatsApp" },
+  ];
+  return d;
+}
+
+function humanSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function inferKind(mime: string, name: string): Attachment["kind"] {
+  if (mime.startsWith("image/")) return "image";
+  if (mime.startsWith("video/")) return "video";
+  if (mime === "application/pdf" || name.toLowerCase().endsWith(".pdf")) return "pdf";
+  return "pdf";
+}
+
+export function addAnexos(id: string, files: File[], actor = "Síndico"): Demanda | undefined {
+  const d = DEMANDAS.find((x) => x.id === id);
+  if (!d || files.length === 0) return d;
+  // TODO: substituir por upload real quando integrar backend
+  const novos: Attachment[] = files.map((f) => ({
+    name: f.name,
+    size: humanSize(f.size),
+    kind: inferKind(f.type, f.name),
+    url: URL.createObjectURL(f),
+  }));
+  d.attachments = [...d.attachments, ...novos];
+  d.timeline = [
+    ...d.timeline,
+    {
+      at: nowHHMM(),
+      actor,
+      action: `Anexou ${novos.length} ${novos.length === 1 ? "arquivo" : "arquivos"}`,
+      channel: "Sistema",
+    },
+  ];
   return d;
 }

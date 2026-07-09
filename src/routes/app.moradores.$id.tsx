@@ -212,14 +212,6 @@ function MoradorDetail() {
                   <Icon name="chat" className="text-[14px]" /> WhatsApp
                 </a>
               )}
-              {!isVago && (
-                <a
-                  href={`tel:${morador.contato.replace(/\s/g, "")}`}
-                  className="flex items-center justify-center gap-1.5 rounded-lg border border-[var(--color-outline-variant)] py-2.5 text-xs font-semibold text-[var(--color-navy)] hover:bg-[var(--color-surface-mid)]"
-                >
-                  <Icon name="call" className="text-[14px]" /> Ligar
-                </a>
-              )}
               {morador.email && (
                 <a
                   href={`mailto:${morador.email}`}

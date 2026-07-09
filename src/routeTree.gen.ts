@@ -24,6 +24,7 @@ import { Route as AppDemandasIndexRouteImport } from './routes/app.demandas.inde
 import { Route as AppBaseIndexRouteImport } from './routes/app.base.index'
 import { Route as AppMoradoresIdRouteImport } from './routes/app.moradores.$id'
 import { Route as AppFornecedoresNovoRouteImport } from './routes/app.fornecedores.novo'
+import { Route as AppDemandasNovaRouteImport } from './routes/app.demandas.nova'
 import { Route as AppDemandasIdRouteImport } from './routes/app.demandas.$id'
 import { Route as AppBaseEnviarRouteImport } from './routes/app.base.enviar'
 
@@ -102,6 +103,11 @@ const AppFornecedoresNovoRoute = AppFornecedoresNovoRouteImport.update({
   path: '/novo',
   getParentRoute: () => AppFornecedoresRoute,
 } as any)
+const AppDemandasNovaRoute = AppDemandasNovaRouteImport.update({
+  id: '/nova',
+  path: '/nova',
+  getParentRoute: () => AppDemandasRoute,
+} as any)
 const AppDemandasIdRoute = AppDemandasIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -125,6 +131,7 @@ export interface FileRoutesByFullPath {
   '/app/': typeof AppIndexRoute
   '/app/base/enviar': typeof AppBaseEnviarRoute
   '/app/demandas/$id': typeof AppDemandasIdRoute
+  '/app/demandas/nova': typeof AppDemandasNovaRoute
   '/app/fornecedores/novo': typeof AppFornecedoresNovoRoute
   '/app/moradores/$id': typeof AppMoradoresIdRoute
   '/app/base/': typeof AppBaseIndexRoute
@@ -139,6 +146,7 @@ export interface FileRoutesByTo {
   '/app': typeof AppIndexRoute
   '/app/base/enviar': typeof AppBaseEnviarRoute
   '/app/demandas/$id': typeof AppDemandasIdRoute
+  '/app/demandas/nova': typeof AppDemandasNovaRoute
   '/app/fornecedores/novo': typeof AppFornecedoresNovoRoute
   '/app/moradores/$id': typeof AppMoradoresIdRoute
   '/app/base': typeof AppBaseIndexRoute
@@ -159,6 +167,7 @@ export interface FileRoutesById {
   '/app/': typeof AppIndexRoute
   '/app/base/enviar': typeof AppBaseEnviarRoute
   '/app/demandas/$id': typeof AppDemandasIdRoute
+  '/app/demandas/nova': typeof AppDemandasNovaRoute
   '/app/fornecedores/novo': typeof AppFornecedoresNovoRoute
   '/app/moradores/$id': typeof AppMoradoresIdRoute
   '/app/base/': typeof AppBaseIndexRoute
@@ -180,6 +189,7 @@ export interface FileRouteTypes {
     | '/app/'
     | '/app/base/enviar'
     | '/app/demandas/$id'
+    | '/app/demandas/nova'
     | '/app/fornecedores/novo'
     | '/app/moradores/$id'
     | '/app/base/'
@@ -194,6 +204,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/app/base/enviar'
     | '/app/demandas/$id'
+    | '/app/demandas/nova'
     | '/app/fornecedores/novo'
     | '/app/moradores/$id'
     | '/app/base'
@@ -213,6 +224,7 @@ export interface FileRouteTypes {
     | '/app/'
     | '/app/base/enviar'
     | '/app/demandas/$id'
+    | '/app/demandas/nova'
     | '/app/fornecedores/novo'
     | '/app/moradores/$id'
     | '/app/base/'
@@ -334,6 +346,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppFornecedoresNovoRouteImport
       parentRoute: typeof AppFornecedoresRoute
     }
+    '/app/demandas/nova': {
+      id: '/app/demandas/nova'
+      path: '/nova'
+      fullPath: '/app/demandas/nova'
+      preLoaderRoute: typeof AppDemandasNovaRouteImport
+      parentRoute: typeof AppDemandasRoute
+    }
     '/app/demandas/$id': {
       id: '/app/demandas/$id'
       path: '/$id'
@@ -366,11 +385,13 @@ const AppBaseRouteWithChildren =
 
 interface AppDemandasRouteChildren {
   AppDemandasIdRoute: typeof AppDemandasIdRoute
+  AppDemandasNovaRoute: typeof AppDemandasNovaRoute
   AppDemandasIndexRoute: typeof AppDemandasIndexRoute
 }
 
 const AppDemandasRouteChildren: AppDemandasRouteChildren = {
   AppDemandasIdRoute: AppDemandasIdRoute,
+  AppDemandasNovaRoute: AppDemandasNovaRoute,
   AppDemandasIndexRoute: AppDemandasIndexRoute,
 }
 
@@ -434,13 +455,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

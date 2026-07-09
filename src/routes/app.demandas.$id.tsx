@@ -294,15 +294,42 @@ function DemandaDetail() {
               )}
             </div>
 
-            <div className="mt-4 flex items-center gap-2 rounded-xl border border-[var(--color-outline-variant)] bg-[var(--color-surface-low)] p-2">
-              <button className="grid h-9 w-9 place-items-center rounded-lg text-[var(--color-on-surface-variant)] hover:bg-white">
+            <div className="mt-4 flex items-end gap-2 rounded-xl border border-[var(--color-outline-variant)] bg-[var(--color-surface-low)] p-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                hidden
+                onChange={handleFilesSelected}
+              />
+              <button
+                type="button"
+                onClick={handlePickFiles}
+                title="Anexar arquivo"
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-[var(--color-on-surface-variant)] hover:bg-white"
+              >
                 <Icon name="attach_file" className="text-[18px]" />
               </button>
-              <input
+              <textarea
+                ref={textareaRef}
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+                rows={1}
                 placeholder="Responder ao morador…"
-                className="flex-1 bg-transparent px-2 text-sm outline-none placeholder:text-[var(--color-on-surface-variant)]"
+                className="max-h-40 min-h-[36px] flex-1 resize-none bg-transparent px-2 py-2 text-sm outline-none placeholder:text-[var(--color-on-surface-variant)]"
               />
-              <button className="btn-press btn-press-active inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--color-brand)] px-3 text-xs font-semibold text-white hover:bg-[var(--color-brand-hover)]">
+              <button
+                type="button"
+                onClick={handleSend}
+                disabled={!draft.trim()}
+                className="btn-press btn-press-active inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-[var(--color-brand)] px-3 text-xs font-semibold text-white hover:bg-[var(--color-brand-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+              >
                 <Icon name="send" className="text-[14px]" /> Enviar
               </button>
             </div>

@@ -289,6 +289,13 @@ function MoradoresPage() {
         onImported={(n) => flash(`${n} morador(es) importado(s) com sucesso.`)}
       />
 
+      <NewMoradorModal
+        open={showNew}
+        defaultCondominioId={condoId}
+        onClose={() => setShowNew(false)}
+        onCreated={(nome) => flash(`${nome} cadastrado(a) com sucesso.`)}
+      />
+
       {toast && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-[var(--color-navy)] px-4 py-3 text-sm font-semibold text-white shadow-lg">
           <Icon name="check_circle" className="text-[18px]" filled />

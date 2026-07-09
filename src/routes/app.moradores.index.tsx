@@ -63,7 +63,6 @@ function MoradoresPage() {
     const ativos = pool.filter((m) =>
       ["Residente", "Locatário", "Proprietário"].includes(m.status),
     ).length;
-    const pets = pool.reduce((s, m) => s + m.pets, 0);
     const novos = pool.filter((m) => (m.desde ?? "").match(/2026|2025/)).length;
     return {
       unidades: totalUnidades,
@@ -71,7 +70,6 @@ function MoradoresPage() {
       ocupadas,
       vagas,
       ativos,
-      pets,
       novos,
     };
   }, [pool, condoId, condoSelecionado]);
@@ -102,7 +100,7 @@ function MoradoresPage() {
       }
     >
       {/* Dashboard */}
-      <section className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+      <section className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         <KpiCard
           label="Unidades"
           value={String(stats.unidades)}
@@ -138,7 +136,6 @@ function MoradoresPage() {
           icon="how_to_reg"
           hint="Nos últimos 12 meses"
         />
-        <KpiCard label="Pets registrados" value={String(stats.pets)} icon="pets" hint="Total no escopo" />
       </section>
 
       {/* Filters bar */}

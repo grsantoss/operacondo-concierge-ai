@@ -269,8 +269,18 @@ function DemandaDetail() {
                   Canal: WhatsApp • Monitorado pelo Agente IA
                 </p>
               </div>
-              <button className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--color-navy)] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[var(--color-navy-soft)]">
-                <Icon name="support_agent" className="text-[14px]" /> Assumir conversa
+              <button
+                type="button"
+                onClick={handleAssumir}
+                disabled={assumed}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold ${
+                  assumed
+                    ? "cursor-not-allowed border border-emerald-200 bg-emerald-50 text-emerald-700"
+                    : "bg-[var(--color-navy)] text-white hover:bg-[var(--color-navy-soft)]"
+                }`}
+              >
+                <Icon name={assumed ? "check" : "support_agent"} className="text-[14px]" />
+                {assumed ? `Assumida por ${demanda.assumedBy}` : "Assumir conversa"}
               </button>
             </header>
 

@@ -74,16 +74,55 @@ function DemandaDetail() {
   };
   const router = useRouter();
   const [toast, setToast] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const columnMeta = COLUMNS.find((c) => c.id === demanda.column)!;
   const temp = TEMP_STYLE[demanda.temperature];
   const isResolved = demanda.column === "resolvidas";
+  const assumed = Boolean(demanda.assumedBy);
+
+  const whatsappUrl = buildWhatsappUrl(demanda);
+
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2400);
+  }
 
   function handleResolve() {
     if (isResolved) return;
     resolveDemanda(demanda.id);
-    setToast("Demanda marcada como resolvida");
+    showToast("Demanda marcada como resolvida");
     router.invalidate();
-    setTimeout(() => setToast(null), 2400);
+  }
+
+  function handleAssumir() {
+    if (assumed) return;
+    assumirConversa(demanda.id, "Você");
+    showToast("Você assumiu a conversa");
+    router.invalidate();
+  }
+
+  function handleSend() {
+    const text = draft.trim();
+    if (!text) return;
+    addMensagem(demanda.id, { from: "sindico", author: "Você", text });
+    setDraft("");
+    router.invalidate();
+    requestAnimationFrame(() => textareaRef.current?.focus());
+  }
+
+  function handlePickFiles() {
+    fileInputRef.current?.click();
+  }
+
+  function handleFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    if (files.length === 0) return;
+    addAnexos(demanda.id, files);
+    showToast(`${files.length} ${files.length === 1 ? "anexo adicionado" : "anexos adicionados"}`);
+    router.invalidate();
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   return (

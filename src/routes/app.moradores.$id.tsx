@@ -1,14 +1,18 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/brand/Icon";
+import { ConfirmDialog } from "@/components/moradores/ConfirmDialog";
+import { EditMoradorModal } from "@/components/moradores/EditMoradorModal";
 import {
   CONDOMINIOS,
-  MORADORES,
   STATUS_CLS,
+  deactivateMorador,
   formatEndereco,
   getMorador,
   initials,
+  reactivateMorador,
+  useMoradores,
   whatsappUrl,
   type Morador,
 } from "@/data/moradores";
@@ -39,14 +43,27 @@ export const Route = createFileRoute("/app/moradores/$id")({
 type Tab = "chamados" | "historico" | "unidade";
 
 function MoradorDetail() {
-  const { morador, condo, chamados } = Route.useLoaderData() as {
+  const loaderData = Route.useLoaderData() as {
     morador: Morador;
     condo: (typeof CONDOMINIOS)[number];
     chamados: Demanda[];
   };
+  const router = useRouter();
+  // Subscribe to store so edits/deactivations reflect immediately
+  const all = useMoradores({ includeInactive: true });
+  const morador = all.find((m) => m.id === loaderData.morador.id) ?? loaderData.morador;
+  const condo = CONDOMINIOS.find((c) => c.id === morador.condominioId) ?? loaderData.condo;
+  const chamados = loaderData.chamados;
+
   const [tab, setTab] = useState<Tab>("chamados");
+  const [showEdit, setShowEdit] = useState(false);
+  const [confirmDeactivate, setConfirmDeactivate] = useState(false);
+  const [confirmReactivate, setConfirmReactivate] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
   const end = formatEndereco(morador.endereco);
   const isVago = morador.status === "Vago";
+  const isInativo = morador.status === "Inativo";
 
   const stats = useMemo(() => {
     const abertos = chamados.filter((c) => c.column !== "resolvidas").length;
@@ -61,6 +78,11 @@ function MoradorDetail() {
 
   const abertos = chamados.filter((c) => c.column !== "resolvidas");
   const resolvidos = chamados.filter((c) => c.column === "resolvidas");
+
+  function flash(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2800);
+  }
 
   return (
     <AppShell
@@ -78,7 +100,28 @@ function MoradorDetail() {
           >
             <Icon name="arrow_back" className="text-[18px]" /> Voltar
           </Link>
-          {!isVago && (
+          <button
+            onClick={() => setShowEdit(true)}
+            className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg border border-[var(--color-outline-variant)] bg-white px-3 text-sm font-semibold text-[var(--color-navy)] hover:bg-[var(--color-surface-mid)]"
+          >
+            <Icon name="edit" className="text-[18px]" /> Editar
+          </button>
+          {isInativo ? (
+            <button
+              onClick={() => setConfirmReactivate(true)}
+              className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700"
+            >
+              <Icon name="person_check" className="text-[18px]" /> Reativar
+            </button>
+          ) : (
+            <button
+              onClick={() => setConfirmDeactivate(true)}
+              className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg border border-red-200 bg-white px-3 text-sm font-semibold text-red-700 hover:bg-red-50"
+            >
+              <Icon name="person_off" className="text-[18px]" /> Desativar
+            </button>
+          )}
+          {!isVago && !isInativo && (
             <a
               href={whatsappUrl(morador.contato, `Olá, ${morador.nome.split(" ")[0]}!`)}
               target="_blank"
@@ -282,6 +325,52 @@ function MoradorDetail() {
           )}
         </aside>
       </div>
+
+      <EditMoradorModal
+        open={showEdit}
+        morador={morador}
+        onClose={() => setShowEdit(false)}
+        onSaved={() => flash("Alterações salvas.")}
+      />
+
+      <ConfirmDialog
+        open={confirmDeactivate}
+        title={`Desativar ${morador.nome}?`}
+        description="O morador será movido para a lista de arquivados e deixará de aparecer na listagem principal. Você poderá reativá-lo depois."
+        confirmLabel="Desativar"
+        tone="warn"
+        icon="person_off"
+        onClose={() => setConfirmDeactivate(false)}
+        onConfirm={() => {
+          deactivateMorador(morador.id);
+          setConfirmDeactivate(false);
+          flash(`${morador.nome} foi desativado.`);
+          router.invalidate();
+        }}
+      />
+
+      <ConfirmDialog
+        open={confirmReactivate}
+        title={`Reativar ${morador.nome}?`}
+        description="O morador voltará a aparecer na listagem principal como Residente."
+        confirmLabel="Reativar"
+        tone="brand"
+        icon="person_check"
+        onClose={() => setConfirmReactivate(false)}
+        onConfirm={() => {
+          reactivateMorador(morador.id);
+          setConfirmReactivate(false);
+          flash(`${morador.nome} foi reativado.`);
+          router.invalidate();
+        }}
+      />
+
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-[var(--color-navy)] px-4 py-3 text-sm font-semibold text-white shadow-lg">
+          <Icon name="check_circle" className="text-[18px]" filled />
+          {toast}
+        </div>
+      )}
     </AppShell>
   );
 }

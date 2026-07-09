@@ -22,6 +22,7 @@ import { Route as AppMoradoresIndexRouteImport } from './routes/app.moradores.in
 import { Route as AppFornecedoresIndexRouteImport } from './routes/app.fornecedores.index'
 import { Route as AppDemandasIndexRouteImport } from './routes/app.demandas.index'
 import { Route as AppBaseIndexRouteImport } from './routes/app.base.index'
+import { Route as AppMoradoresArquivadosRouteImport } from './routes/app.moradores.arquivados'
 import { Route as AppMoradoresIdRouteImport } from './routes/app.moradores.$id'
 import { Route as AppFornecedoresNovoRouteImport } from './routes/app.fornecedores.novo'
 import { Route as AppDemandasNovaRouteImport } from './routes/app.demandas.nova'
@@ -93,6 +94,11 @@ const AppBaseIndexRoute = AppBaseIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppBaseRoute,
 } as any)
+const AppMoradoresArquivadosRoute = AppMoradoresArquivadosRouteImport.update({
+  id: '/arquivados',
+  path: '/arquivados',
+  getParentRoute: () => AppMoradoresRoute,
+} as any)
 const AppMoradoresIdRoute = AppMoradoresIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -134,6 +140,7 @@ export interface FileRoutesByFullPath {
   '/app/demandas/nova': typeof AppDemandasNovaRoute
   '/app/fornecedores/novo': typeof AppFornecedoresNovoRoute
   '/app/moradores/$id': typeof AppMoradoresIdRoute
+  '/app/moradores/arquivados': typeof AppMoradoresArquivadosRoute
   '/app/base/': typeof AppBaseIndexRoute
   '/app/demandas/': typeof AppDemandasIndexRoute
   '/app/fornecedores/': typeof AppFornecedoresIndexRoute
@@ -149,6 +156,7 @@ export interface FileRoutesByTo {
   '/app/demandas/nova': typeof AppDemandasNovaRoute
   '/app/fornecedores/novo': typeof AppFornecedoresNovoRoute
   '/app/moradores/$id': typeof AppMoradoresIdRoute
+  '/app/moradores/arquivados': typeof AppMoradoresArquivadosRoute
   '/app/base': typeof AppBaseIndexRoute
   '/app/demandas': typeof AppDemandasIndexRoute
   '/app/fornecedores': typeof AppFornecedoresIndexRoute
@@ -170,6 +178,7 @@ export interface FileRoutesById {
   '/app/demandas/nova': typeof AppDemandasNovaRoute
   '/app/fornecedores/novo': typeof AppFornecedoresNovoRoute
   '/app/moradores/$id': typeof AppMoradoresIdRoute
+  '/app/moradores/arquivados': typeof AppMoradoresArquivadosRoute
   '/app/base/': typeof AppBaseIndexRoute
   '/app/demandas/': typeof AppDemandasIndexRoute
   '/app/fornecedores/': typeof AppFornecedoresIndexRoute
@@ -192,6 +201,7 @@ export interface FileRouteTypes {
     | '/app/demandas/nova'
     | '/app/fornecedores/novo'
     | '/app/moradores/$id'
+    | '/app/moradores/arquivados'
     | '/app/base/'
     | '/app/demandas/'
     | '/app/fornecedores/'
@@ -207,6 +217,7 @@ export interface FileRouteTypes {
     | '/app/demandas/nova'
     | '/app/fornecedores/novo'
     | '/app/moradores/$id'
+    | '/app/moradores/arquivados'
     | '/app/base'
     | '/app/demandas'
     | '/app/fornecedores'
@@ -227,6 +238,7 @@ export interface FileRouteTypes {
     | '/app/demandas/nova'
     | '/app/fornecedores/novo'
     | '/app/moradores/$id'
+    | '/app/moradores/arquivados'
     | '/app/base/'
     | '/app/demandas/'
     | '/app/fornecedores/'
@@ -332,6 +344,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppBaseIndexRouteImport
       parentRoute: typeof AppBaseRoute
     }
+    '/app/moradores/arquivados': {
+      id: '/app/moradores/arquivados'
+      path: '/arquivados'
+      fullPath: '/app/moradores/arquivados'
+      preLoaderRoute: typeof AppMoradoresArquivadosRouteImport
+      parentRoute: typeof AppMoradoresRoute
+    }
     '/app/moradores/$id': {
       id: '/app/moradores/$id'
       path: '/$id'
@@ -415,11 +434,13 @@ const AppFornecedoresRouteWithChildren = AppFornecedoresRoute._addFileChildren(
 
 interface AppMoradoresRouteChildren {
   AppMoradoresIdRoute: typeof AppMoradoresIdRoute
+  AppMoradoresArquivadosRoute: typeof AppMoradoresArquivadosRoute
   AppMoradoresIndexRoute: typeof AppMoradoresIndexRoute
 }
 
 const AppMoradoresRouteChildren: AppMoradoresRouteChildren = {
   AppMoradoresIdRoute: AppMoradoresIdRoute,
+  AppMoradoresArquivadosRoute: AppMoradoresArquivadosRoute,
   AppMoradoresIndexRoute: AppMoradoresIndexRoute,
 }
 

@@ -24,6 +24,9 @@ type StatusFilter = "Todos" | Status;
 
 function MoradoresPage() {
   const moradores = useMoradores();
+  const arquivadosCount = useMoradores({ includeInactive: true }).filter(
+    (m) => m.status === "Inativo",
+  ).length;
   const [condoId, setCondoId] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("Todos");
   const [query, setQuery] = useState("");
@@ -87,6 +90,15 @@ function MoradoresPage() {
       breadcrumbs={[{ label: "OperaCondo" }, { label: "Moradores" }]}
       actions={
         <>
+          <Link
+            to="/app/moradores/arquivados"
+            className="inline-flex h-10 items-center gap-2 rounded-lg border border-[var(--color-outline-variant)] bg-white px-3 text-sm font-semibold text-[var(--color-navy)] hover:bg-[var(--color-surface-mid)]"
+          >
+            <Icon name="inventory_2" className="text-[18px]" /> Arquivados
+            <span className="rounded-full bg-[var(--color-surface-mid)] px-1.5 text-[10px] font-bold text-[var(--color-on-surface-variant)]">
+              {arquivadosCount}
+            </span>
+          </Link>
           <button
             onClick={() => setShowImport(true)}
             className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg border border-[var(--color-outline-variant)] bg-white px-4 text-sm font-semibold text-[var(--color-on-surface)] hover:bg-[var(--color-surface-low)]"

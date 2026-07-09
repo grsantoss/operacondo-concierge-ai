@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 
-export type Status = "Residente" | "Locatário" | "Vago" | "Proprietário";
+export type Status = "Residente" | "Locatário" | "Vago" | "Proprietário" | "Inativo";
 export type CondoTipo = "vertical" | "horizontal";
 
 export interface Condominio {
@@ -39,6 +39,7 @@ export interface Morador {
   desde?: string;
   cpf?: string;
   ultimo: string;
+  desativadoEm?: string;
 }
 
 export const STATUS_CLS: Record<Status, string> = {
@@ -46,6 +47,7 @@ export const STATUS_CLS: Record<Status, string> = {
   Locatário: "bg-blue-50 text-blue-700 border-blue-200",
   Vago: "bg-slate-100 text-slate-600 border-slate-200",
   Proprietário: "bg-violet-50 text-violet-700 border-violet-200",
+  Inativo: "bg-zinc-100 text-zinc-600 border-zinc-300",
 };
 
 export const STATUS_LIST: Status[] = ["Residente", "Locatário", "Proprietário", "Vago"];
@@ -91,8 +93,38 @@ export function addMoradores(items: Morador[]) {
   emit();
 }
 
-export function useMoradores(): Morador[] {
-  return useSyncExternalStore(
+export function updateMorador(id: string, patch: Partial<Omit<Morador, "id">>) {
+  _moradores = _moradores.map((m) => (m.id === id ? { ...m, ...patch } : m));
+  emit();
+}
+
+export function deactivateMorador(id: string) {
+  const stamp = new Date().toLocaleDateString("pt-BR");
+  _moradores = _moradores.map((m) =>
+    m.id === id ? { ...m, status: "Inativo" as Status, desativadoEm: stamp } : m,
+  );
+  emit();
+}
+
+export function reactivateMorador(id: string, novoStatus: Status = "Residente") {
+  _moradores = _moradores.map((m) =>
+    m.id === id ? { ...m, status: novoStatus, desativadoEm: undefined } : m,
+  );
+  emit();
+}
+
+export function deleteMorador(id: string) {
+  _moradores = _moradores.filter((m) => m.id !== id);
+  emit();
+}
+
+export function deleteAllInactive() {
+  _moradores = _moradores.filter((m) => m.status !== "Inativo");
+  emit();
+}
+
+export function useMoradores(opts?: { includeInactive?: boolean }): Morador[] {
+  const all = useSyncExternalStore(
     (cb) => {
       listeners.add(cb);
       return () => listeners.delete(cb);
@@ -100,6 +132,8 @@ export function useMoradores(): Morador[] {
     () => _moradores,
     () => _moradores,
   );
+  if (opts?.includeInactive) return all;
+  return all.filter((m) => m.status !== "Inativo");
 }
 
 /* -------- Helpers -------- */

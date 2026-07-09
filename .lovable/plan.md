@@ -1,82 +1,72 @@
-# Plano — Melhorias na página `/app/moradores`
+# Plano — Edição, desativação e arquivo de moradores
 
-## 1. Importação de moradores via CSV
+## 1. Ações na página `/app/moradores/$id`
 
-**Objetivo:** permitir que o síndico traga uma lista pronta em vez de cadastrar um a um.
+Adicionar dois novos botões no header (ao lado de "Voltar" e "WhatsApp") e refletir também no bloco lateral "Ações rápidas":
 
-- Novo modal "Importar CSV" acionado pelo botão já existente no header.
-- Etapas dentro do modal:
-  1. **Upload / Drag-and-drop** de arquivo `.csv` (com link para baixar um *template* de exemplo).
-  2. **Pré-visualização** das primeiras 5 linhas em tabela, com detecção automática de colunas.
-  3. **Mapeamento de campos** (dropdown coluna do CSV → campo da aplicação) caso os headers não batam.
-  4. **Validação** com Zod: nome obrigatório, contato em formato de telefone, status entre os valores válidos, unidade preenchida. Linhas inválidas ficam destacadas com o motivo.
-  5. **Confirmação**: mostra "X moradores prontos para importar, Y com erro" e botão *Importar*.
-- Após importar, os novos moradores entram no estado local (mock) e aparecem imediatamente na lista.
-- Link "Baixar modelo CSV" gera um arquivo com os headers padrão preenchidos com 2 linhas de exemplo.
+- **Editar** (ícone `edit`, estilo secundário): abre um modal `EditMoradorModal` com formulário completo do cadastro.
+- **Desativar / Reativar** (ícone `person_off` / `person_check`, estilo vermelho ou âmbar):
+  - Se o morador está ativo → botão "Desativar" com confirmação.
+  - Se está desativado → botão "Reativar".
+  - Ao desativar: status vira `"Inativo"` e o morador é removido da listagem principal, indo para a página de arquivados.
 
-**Campos padrão do card de morador (colunas do CSV):**
+### Modal de edição
+Campos editáveis (mesmos do schema `Morador`):
+- Nome, CPF, e-mail, contato (WhatsApp)
+- Condomínio (select), tipo de endereço (vertical/horizontal)
+- Bloco/andar/apto **ou** quadra/casa (condicionais)
+- Status (Ativo / Pendente / Vago / Inativo)
+- Vagas, pets, "desde"
 
-| Campo | Obrigatório | Observação |
-|---|---|---|
-| `nome` | sim | Nome completo ou "Família X" |
-| `condominio` | sim | Nome do condomínio (case-insensitive) |
-| `tipo_endereco` | sim | `vertical` ou `horizontal` |
-| `bloco` / `andar` / `apto` | se vertical | |
-| `quadra` / `casa` | se horizontal | |
-| `status` | sim | Residente / Locatário / Proprietário / Vago |
-| `contato` | sim (exceto Vago) | Telefone com DDD |
-| `email` | não | |
-| `cpf` | não | Aceita mascarado |
-| `vagas` | não | Default 0 |
-| `pets` | não | Default 0 |
-| `desde` | não | Mês/ano de entrada |
+Validação leve inline (nome obrigatório, contato obrigatório, campos de endereço conforme o tipo). Salvar chama `updateMorador(id, patch)` no store em memória e fecha o modal.
 
-## 2. Seletor de condomínios em formato de lista/filtro
+## 2. Novo status "Inativo" e store
 
-Substituir a faixa horizontal de cards grandes por um componente mais compacto e escalável:
+Em `src/data/moradores.ts`:
 
-- **Dropdown/Select** ("Condomínio: Todos ▾") no topo da barra de filtros — funciona bem com muitas propriedades.
-- Ao lado, chips rápidos com os condomínios mais usados (opcional, top 3).
-- Botão/opção **"Todos"** que lista *todos os moradores* de todos os condomínios (comportamento explícito na label e no contador).
-- Os cards visuais grandes viram uma seção enxuta "Propriedades sob gestão" logo abaixo do header (uma linha por condomínio: ícone, nome, cidade, ocupação%), clicável para filtrar.
+- Adicionar `"Inativo"` ao union `MoradorStatus` e estilo em `STATUS_CLS` (cinza).
+- Novas funções expostas pelo store reativo:
+  - `updateMorador(id, patch)`
+  - `deactivateMorador(id)` / `reactivateMorador(id)`
+  - `deleteMorador(id)` e `deleteAllInactive()`
+  - `useMoradores({ includeInactive?: boolean })` — por padrão **exclui** inativos.
+- Getter `getMorador(id)` continua retornando qualquer status (para permitir abrir o detalhe de um arquivado).
 
-## 3. Dashboard superior mais informativo
+## 3. Filtragem na listagem `/app/moradores`
 
-Trocar os 4 stat cards atuais (Unidades, Ocupação%, Vagas, Pets) por um conjunto mais útil para o síndico:
+- A lista principal e as KPIs deixam de contar moradores `Inativo` (usa `useMoradores()` padrão).
+- Adicionar no header um link discreto **"Arquivados (N)"** que leva para `/app/moradores/arquivados`, com contador dinâmico.
+- Remover a opção "Inativo" dos filtros de status principais (fica exclusivo da página de arquivados).
 
-- **Unidades** (total) + micro barra ocupadas/vazias.
-- **Ocupação** (%) com delta vs. mês anterior (mock).
-- **Moradores ativos** (Residente + Locatário + Proprietário).
-- **Unidades vagas** (número absoluto — ação: abrir lista filtrada por Vago).
-- **Novos moradores no mês** (contagem baseada em `desde`).
-- **Pets registrados** (mantido, menor destaque).
+## 4. Nova página `/app/moradores/arquivados`
 
-Layout: 3 KPIs principais em destaque + 3 secundários compactos. Cada card é clicável e aplica o filtro correspondente (ex.: clicar em "Unidades vagas" seta `statusFilter = "Vago"`).
+Rota: `src/routes/app.moradores.arquivados.tsx`.
 
-## 4. Ação de contato: telefone → WhatsApp
-
-Na coluna **Ações** da tabela:
-
-- Remover o ícone/link `tel:` (ligação telefônica).
-- Manter apenas dois atalhos por linha (para moradores não-Vago):
-  - **WhatsApp** (verde) — abre `wa.me/<telefone>` com mensagem inicial pré-preenchida ("Olá {nome}, aqui é do {condominio}…").
-  - **Ver detalhes** — vai para `/app/moradores/$id`.
-- O mesmo padrão vale para o card de detalhe do morador (`app.moradores.$id.tsx`): botão primário "Falar no WhatsApp".
+Conteúdo:
+- AppShell com título "Moradores arquivados" e breadcrumb.
+- Tabela simplificada: nome, condomínio, unidade, contato, "desativado em" (usa `desde` ou timestamp de desativação), ações:
+  - **Reativar** (volta para "Ativo" e some da página).
+  - **Excluir** (remove definitivamente, com confirmação).
+- Barra superior:
+  - Busca por nome.
+  - Filtro por condomínio.
+  - Botão vermelho **"Excluir todos os arquivados"** com modal de confirmação exigindo clique duplo/checkbox de segurança.
+- Empty state amigável quando não há arquivados.
 
 ## 5. Detalhes técnicos
 
-- **Arquivos afetados:**
-  - `src/routes/app.moradores.index.tsx` — reescrever seletor de condomínio, dash, filtros, ações da tabela.
-  - `src/routes/app.moradores.$id.tsx` — substituir botão telefone por WhatsApp.
-  - `src/data/moradores.ts` — expor helpers para gerar template CSV e converter linhas em `Morador`; adicionar estado inicial mutável (via um pequeno store em memória para receber importações durante a sessão).
-  - Novo `src/components/moradores/ImportCsvModal.tsx` — modal isolado com upload, parsing (`papaparse`) e validação (`zod`).
-  - Novo `src/components/moradores/CondoFilter.tsx` — dropdown + chips.
-- **Dependências novas:** `papaparse` (parser CSV robusto e leve) e `@types/papaparse`.
-- **Validação:** schema Zod compartilhado entre CSV e (futuro) formulário de novo morador.
-- **Persistência:** por ora em memória (mock, coerente com o restante do app). Fácil trocar por Lovable Cloud depois.
-- **Acessibilidade:** modal com foco preso, `aria-label` nos botões de ação, mensagens de erro por linha do CSV.
+Arquivos novos:
+- `src/components/moradores/EditMoradorModal.tsx`
+- `src/components/moradores/ConfirmDialog.tsx` (reutilizável para desativar/excluir)
+- `src/routes/app.moradores.arquivados.tsx`
 
-## Fora de escopo desta rodada
-- Persistência real em banco de dados.
-- Formulário completo de "Novo morador" (o botão já existe; será alvo de outra iteração).
-- Edição em massa após importar.
+Arquivos alterados:
+- `src/data/moradores.ts` — status `Inativo`, novas mutations, filtro padrão no hook, campo opcional `desativadoEm`.
+- `src/routes/app.moradores.$id.tsx` — botões Editar / Desativar / Reativar, integração com modal e confirmações; badge "Inativo" no hero quando aplicável.
+- `src/routes/app.moradores.index.tsx` — usar hook filtrado, link para arquivados com contagem.
+
+## 6. Fora do escopo
+
+- Persistência real (segue em memória; troca para Lovable Cloud fica para depois).
+- Histórico/auditoria de alterações.
+- Undo após "Excluir todos".

@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 
-export type Status = "Residente" | "Locatário" | "Vago" | "Proprietário";
+export type Status = "Residente" | "Locatário" | "Vago" | "Proprietário" | "Inativo";
 export type CondoTipo = "vertical" | "horizontal";
 
 export interface Condominio {

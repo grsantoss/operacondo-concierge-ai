@@ -63,7 +63,6 @@ function MoradoresPage() {
     const ativos = pool.filter((m) =>
       ["Residente", "Locatário", "Proprietário"].includes(m.status),
     ).length;
-    const pets = pool.reduce((s, m) => s + m.pets, 0);
     const novos = pool.filter((m) => (m.desde ?? "").match(/2026|2025/)).length;
     return {
       unidades: totalUnidades,
@@ -71,7 +70,6 @@ function MoradoresPage() {
       ocupadas,
       vagas,
       ativos,
-      pets,
       novos,
     };
   }, [pool, condoId, condoSelecionado]);
@@ -102,7 +100,7 @@ function MoradoresPage() {
       }
     >
       {/* Dashboard */}
-      <section className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+      <section className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         <KpiCard
           label="Unidades"
           value={String(stats.unidades)}
@@ -138,7 +136,6 @@ function MoradoresPage() {
           icon="how_to_reg"
           hint="Nos últimos 12 meses"
         />
-        <KpiCard label="Pets registrados" value={String(stats.pets)} icon="pets" hint="Total no escopo" />
       </section>
 
       {/* Filters bar */}
@@ -232,7 +229,7 @@ function MoradoresPage() {
                 <th className="px-5 py-3 font-semibold">Localização</th>
                 <th className="px-5 py-3 font-semibold">Status</th>
                 <th className="px-5 py-3 font-semibold">Vagas</th>
-                <th className="px-5 py-3 font-semibold">Pets</th>
+                
                 <th className="px-5 py-3 font-semibold">Última interação</th>
                 <th className="px-5 py-3 text-right font-semibold">Ações</th>
               </tr>
@@ -240,7 +237,7 @@ function MoradoresPage() {
             <tbody className="divide-y divide-[var(--color-outline-variant)]">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-5 py-16 text-center">
+                  <td colSpan={7} className="px-5 py-16 text-center">
                     <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-[var(--color-surface-mid)] text-[var(--color-on-surface-variant)]">
                       <Icon name="search_off" />
                     </div>
@@ -357,7 +354,7 @@ function MoradorRow({ m }: { m: Morador }) {
         </span>
       </td>
       <td className="px-5 py-3.5 text-[var(--color-on-surface-variant)]">{m.vagas}</td>
-      <td className="px-5 py-3.5 text-[var(--color-on-surface-variant)]">{m.pets}</td>
+      
       <td className="px-5 py-3.5 text-xs text-[var(--color-on-surface-variant)]">
         {m.ultimo}
       </td>

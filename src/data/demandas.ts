@@ -340,3 +340,56 @@ export function getAdjacent(id: string): { prev?: Demanda; next?: Demanda } {
     next: idx < DEMANDAS.length - 1 ? DEMANDAS[idx + 1] : undefined,
   };
 }
+
+export function resolveDemanda(id: string, actor = "Síndico"): Demanda | undefined {
+  const d = DEMANDAS.find((x) => x.id === id);
+  if (!d) return undefined;
+  if (d.column === "resolvidas") return d;
+  d.column = "resolvidas";
+  d.sla = undefined;
+  d.age = "agora";
+  const now = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  d.timeline = [
+    ...d.timeline,
+    { at: now, actor, action: "Marcou a demanda como resolvida", channel: "Sistema" },
+  ];
+  return d;
+}
+
+let _nextDemandaSeq = 2402;
+export function createDemanda(input: {
+  title: string;
+  description: string;
+  morador: string;
+  unit: string;
+  priority: Priority;
+  category: Category;
+  location: string;
+  contact: { phone: string; email: string };
+  cost?: { estimated: number };
+}): Demanda {
+  const id = `D-${_nextDemandaSeq++}`;
+  const now = new Date();
+  const hhmm = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  const d: Demanda = {
+    id,
+    title: input.title,
+    description: input.description,
+    morador: input.morador,
+    unit: input.unit,
+    priority: input.priority,
+    category: input.category,
+    age: "agora",
+    createdAt: `Hoje, ${hhmm}`,
+    column: "novas",
+    location: input.location,
+    contact: input.contact,
+    attachments: [],
+    temperature: input.priority === "Crítica" ? "hot" : input.priority === "Alta" ? "warm" : "cold",
+    timeline: [{ at: hhmm, actor: input.morador, action: "Abriu demanda", channel: "Portal" }],
+    messages: [],
+    cost: input.cost,
+  };
+  DEMANDAS.unshift(d);
+  return d;
+}

@@ -1,4 +1,5 @@
 import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-router";
+import { useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/brand/Icon";
 import {
@@ -8,6 +9,7 @@ import {
   getAdjacent,
   getDemanda,
   getRelatedDemandas,
+  resolveDemanda,
   type Demanda,
   type Message,
   type TimelineEvent,
@@ -67,8 +69,19 @@ function DemandaDetail() {
     related: Demanda[];
     adjacent: { prev?: Demanda; next?: Demanda };
   };
+  const router = useRouter();
+  const [toast, setToast] = useState<string | null>(null);
   const columnMeta = COLUMNS.find((c) => c.id === demanda.column)!;
   const temp = TEMP_STYLE[demanda.temperature];
+  const isResolved = demanda.column === "resolvidas";
+
+  function handleResolve() {
+    if (isResolved) return;
+    resolveDemanda(demanda.id);
+    setToast("Demanda marcada como resolvida");
+    router.invalidate();
+    setTimeout(() => setToast(null), 2400);
+  }
 
   return (
     <AppShell
@@ -86,8 +99,18 @@ function DemandaDetail() {
           >
             <Icon name="arrow_back" className="text-[18px]" /> Voltar ao Kanban
           </Link>
-          <button className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[var(--color-brand-hover)]">
-            <Icon name="check_circle" className="text-[18px]" /> Marcar como resolvida
+          <button
+            type="button"
+            onClick={handleResolve}
+            disabled={isResolved}
+            className={`btn-press inline-flex h-10 items-center gap-2 rounded-lg px-4 text-sm font-semibold shadow-sm ${
+              isResolved
+                ? "cursor-not-allowed bg-emerald-50 text-emerald-700 border border-emerald-200"
+                : "btn-press-active bg-[var(--color-brand)] text-white hover:bg-[var(--color-brand-hover)]"
+            }`}
+          >
+            <Icon name="check_circle" className="text-[18px]" />
+            {isResolved ? "Resolvida" : "Marcar como resolvida"}
           </button>
         </>
       }
@@ -374,6 +397,11 @@ function DemandaDetail() {
           ) : null}
         </aside>
       </div>
+      {toast && (
+        <div className="pointer-events-none fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-lg bg-[var(--color-navy)] px-4 py-2 text-sm font-semibold text-white shadow-lg">
+          {toast}
+        </div>
+      )}
     </AppShell>
   );
 }

@@ -7,6 +7,10 @@ import { CAT_ICON, PRIO_CLASS, type Category, type Priority } from "@/data/deman
 import { CONDOMINIOS, MORADORES } from "@/data/moradores";
 
 export const Route = createFileRoute("/app/demandas/nova")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    moradorId: typeof search.moradorId === "string" ? search.moradorId : undefined,
+    condominioId: typeof search.condominioId === "string" ? search.condominioId : undefined,
+  }),
   head: () => ({ meta: [{ title: "Nova demanda | Concierge OperaCondo" }] }),
   component: NovaDemandaPage,
 });
@@ -59,7 +63,18 @@ const INITIAL: FormState = {
 
 function NovaDemandaPage() {
   const navigate = useNavigate();
-  const [form, setForm] = useState<FormState>(INITIAL);
+  const search = Route.useSearch();
+  const [form, setForm] = useState<FormState>(() => {
+    const moradorPre = search.moradorId
+      ? MORADORES.find((m) => m.id === search.moradorId)
+      : undefined;
+    const condoPre = search.condominioId ?? moradorPre?.condominioId ?? "";
+    return {
+      ...INITIAL,
+      condominioId: condoPre,
+      moradorId: moradorPre?.id ?? "",
+    };
+  });
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [submitted, setSubmitted] = useState(false);
 

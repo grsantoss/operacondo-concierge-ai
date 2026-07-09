@@ -39,6 +39,7 @@ export interface Morador {
   desde?: string;
   cpf?: string;
   ultimo: string;
+  desativadoEm?: string;
 }
 
 export const STATUS_CLS: Record<Status, string> = {
@@ -46,6 +47,7 @@ export const STATUS_CLS: Record<Status, string> = {
   Locatário: "bg-blue-50 text-blue-700 border-blue-200",
   Vago: "bg-slate-100 text-slate-600 border-slate-200",
   Proprietário: "bg-violet-50 text-violet-700 border-violet-200",
+  Inativo: "bg-zinc-100 text-zinc-600 border-zinc-300",
 };
 
 export const STATUS_LIST: Status[] = ["Residente", "Locatário", "Proprietário", "Vago"];

@@ -294,6 +294,7 @@ export const DEMANDAS: Demanda[] = [
     createdAt: "Ontem, 11:20",
     column: "resolvidas",
     location: "Financeiro",
+    moradorId: "m4",
     contact: { phone: "+55 11 98120-7788", email: "bruno.lima@exemplo.com" },
     attachments: [{ name: "comprovante-estorno.pdf", size: "56 KB", kind: "pdf" }],
     temperature: "cold",

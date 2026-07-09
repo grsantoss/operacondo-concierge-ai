@@ -66,6 +66,13 @@ const ATTACH_ICON = {
   video: "movie",
 } as const;
 
+function buildWhatsappUrl(demanda: Demanda): string {
+  const digits = demanda.contact.phone.replace(/\D/g, "");
+  const withCountry = digits.startsWith("55") ? digits : `55${digits}`;
+  const msg = `Olá ${demanda.morador}, aqui é a administração do condomínio sobre o chamado ${demanda.id} — ${demanda.title}.`;
+  return `https://wa.me/${withCountry}?text=${encodeURIComponent(msg)}`;
+}
+
 function DemandaDetail() {
   const { demanda, related, adjacent } = Route.useLoaderData() as {
     demanda: Demanda;

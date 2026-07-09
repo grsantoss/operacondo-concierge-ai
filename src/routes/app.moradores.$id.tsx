@@ -263,9 +263,13 @@ function MoradorDetail() {
                   <Icon name="mail" className="text-[14px]" /> E-mail
                 </a>
               )}
-              <button className="flex items-center justify-center gap-1.5 rounded-lg border border-[var(--color-outline-variant)] py-2.5 text-xs font-semibold text-[var(--color-navy)] hover:bg-[var(--color-surface-mid)]">
+              <Link
+                to="/app/demandas/nova"
+                search={{ moradorId: morador.id, condominioId: morador.condominioId }}
+                className="flex items-center justify-center gap-1.5 rounded-lg border border-[var(--color-outline-variant)] py-2.5 text-xs font-semibold text-[var(--color-navy)] hover:bg-[var(--color-surface-mid)]"
+              >
                 <Icon name="add_task" className="text-[14px]" /> Novo chamado
-              </button>
+              </Link>
             </div>
           </section>
 

@@ -24,6 +24,9 @@ type StatusFilter = "Todos" | Status;
 
 function MoradoresPage() {
   const moradores = useMoradores();
+  const arquivadosCount = useMoradores({ includeInactive: true }).filter(
+    (m) => m.status === "Inativo",
+  ).length;
   const [condoId, setCondoId] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("Todos");
   const [query, setQuery] = useState("");

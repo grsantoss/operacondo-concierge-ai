@@ -406,3 +406,71 @@ export function createDemanda(input: {
   DEMANDAS.unshift(d);
   return d;
 }
+
+function nowHHMM(): string {
+  return new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+}
+
+export function assumirConversa(id: string, actor = "Síndico"): Demanda | undefined {
+  const d = DEMANDAS.find((x) => x.id === id);
+  if (!d) return undefined;
+  if (d.assumedBy) return d;
+  d.assumedBy = actor;
+  if (!d.assigned) d.assigned = actor;
+  d.timeline = [
+    ...d.timeline,
+    { at: nowHHMM(), actor, action: "Assumiu a conversa com o morador", channel: "Sistema" },
+  ];
+  return d;
+}
+
+export function addMensagem(
+  id: string,
+  input: { from: Message["from"]; author: string; text: string },
+): Demanda | undefined {
+  const d = DEMANDAS.find((x) => x.id === id);
+  if (!d) return undefined;
+  const at = nowHHMM();
+  d.messages = [...d.messages, { at, from: input.from, author: input.author, text: input.text }];
+  d.timeline = [
+    ...d.timeline,
+    { at, actor: input.author, action: "Enviou mensagem ao morador", channel: "WhatsApp" },
+  ];
+  return d;
+}
+
+function humanSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function inferKind(mime: string, name: string): Attachment["kind"] {
+  if (mime.startsWith("image/")) return "image";
+  if (mime.startsWith("video/")) return "video";
+  if (mime === "application/pdf" || name.toLowerCase().endsWith(".pdf")) return "pdf";
+  return "pdf";
+}
+
+export function addAnexos(id: string, files: File[], actor = "Síndico"): Demanda | undefined {
+  const d = DEMANDAS.find((x) => x.id === id);
+  if (!d || files.length === 0) return d;
+  // TODO: substituir por upload real quando integrar backend
+  const novos: Attachment[] = files.map((f) => ({
+    name: f.name,
+    size: humanSize(f.size),
+    kind: inferKind(f.type, f.name),
+    url: URL.createObjectURL(f),
+  }));
+  d.attachments = [...d.attachments, ...novos];
+  d.timeline = [
+    ...d.timeline,
+    {
+      at: nowHHMM(),
+      actor,
+      action: `Anexou ${novos.length} ${novos.length === 1 ? "arquivo" : "arquivos"}`,
+      channel: "Sistema",
+    },
+  ];
+  return d;
+}

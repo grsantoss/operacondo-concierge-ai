@@ -1,11 +1,14 @@
 import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/brand/Icon";
 import {
   CAT_ICON,
   COLUMNS,
   PRIO_CLASS,
+  addAnexos,
+  addMensagem,
+  assumirConversa,
   getAdjacent,
   getDemanda,
   getRelatedDemandas,

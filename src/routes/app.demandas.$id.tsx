@@ -397,6 +397,11 @@ function DemandaDetail() {
           ) : null}
         </aside>
       </div>
+      {toast && (
+        <div className="pointer-events-none fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-lg bg-[var(--color-navy)] px-4 py-2 text-sm font-semibold text-white shadow-lg">
+          {toast}
+        </div>
+      )}
     </AppShell>
   );
 }

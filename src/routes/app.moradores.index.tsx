@@ -32,6 +32,7 @@ function MoradoresPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("Todos");
   const [query, setQuery] = useState("");
   const [showImport, setShowImport] = useState(false);
+  const [showNew, setShowNew] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   const condoSelecionado = CONDOMINIOS.find((c) => c.id === condoId);

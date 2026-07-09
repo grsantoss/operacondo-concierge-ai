@@ -44,14 +44,27 @@ export const Route = createFileRoute("/app/moradores/$id")({
 type Tab = "chamados" | "historico" | "unidade";
 
 function MoradorDetail() {
-  const { morador, condo, chamados } = Route.useLoaderData() as {
+  const loaderData = Route.useLoaderData() as {
     morador: Morador;
     condo: (typeof CONDOMINIOS)[number];
     chamados: Demanda[];
   };
+  const router = useRouter();
+  // Subscribe to store so edits/deactivations reflect immediately
+  const all = useMoradores({ includeInactive: true });
+  const morador = all.find((m) => m.id === loaderData.morador.id) ?? loaderData.morador;
+  const condo = CONDOMINIOS.find((c) => c.id === morador.condominioId) ?? loaderData.condo;
+  const chamados = loaderData.chamados;
+
   const [tab, setTab] = useState<Tab>("chamados");
+  const [showEdit, setShowEdit] = useState(false);
+  const [confirmDeactivate, setConfirmDeactivate] = useState(false);
+  const [confirmReactivate, setConfirmReactivate] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
   const end = formatEndereco(morador.endereco);
   const isVago = morador.status === "Vago";
+  const isInativo = morador.status === "Inativo";
 
   const stats = useMemo(() => {
     const abertos = chamados.filter((c) => c.column !== "resolvidas").length;
@@ -66,6 +79,11 @@ function MoradorDetail() {
 
   const abertos = chamados.filter((c) => c.column !== "resolvidas");
   const resolvidos = chamados.filter((c) => c.column === "resolvidas");
+
+  function flash(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2800);
+  }
 
   return (
     <AppShell
@@ -83,7 +101,28 @@ function MoradorDetail() {
           >
             <Icon name="arrow_back" className="text-[18px]" /> Voltar
           </Link>
-          {!isVago && (
+          <button
+            onClick={() => setShowEdit(true)}
+            className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg border border-[var(--color-outline-variant)] bg-white px-3 text-sm font-semibold text-[var(--color-navy)] hover:bg-[var(--color-surface-mid)]"
+          >
+            <Icon name="edit" className="text-[18px]" /> Editar
+          </button>
+          {isInativo ? (
+            <button
+              onClick={() => setConfirmReactivate(true)}
+              className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700"
+            >
+              <Icon name="person_check" className="text-[18px]" /> Reativar
+            </button>
+          ) : (
+            <button
+              onClick={() => setConfirmDeactivate(true)}
+              className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg border border-red-200 bg-white px-3 text-sm font-semibold text-red-700 hover:bg-red-50"
+            >
+              <Icon name="person_off" className="text-[18px]" /> Desativar
+            </button>
+          )}
+          {!isVago && !isInativo && (
             <a
               href={whatsappUrl(morador.contato, `Olá, ${morador.nome.split(" ")[0]}!`)}
               target="_blank"

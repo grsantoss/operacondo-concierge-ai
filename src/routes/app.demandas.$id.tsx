@@ -455,9 +455,17 @@ function DemandaDetail() {
                         {a.size}
                       </p>
                     </div>
-                    <button className="text-[var(--color-on-surface-variant)] hover:text-[var(--color-brand)]">
-                      <Icon name="download" className="text-[16px]" />
-                    </button>
+                    {a.url ? (
+                      <a
+                        href={a.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        download={a.name}
+                        className="text-[var(--color-on-surface-variant)] hover:text-[var(--color-brand)]"
+                      >
+                        <Icon name="download" className="text-[16px]" />
+                      </a>
+                    ) : null}
                   </li>
                 ))}
               </ul>

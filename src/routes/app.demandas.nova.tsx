@@ -63,7 +63,18 @@ const INITIAL: FormState = {
 
 function NovaDemandaPage() {
   const navigate = useNavigate();
-  const [form, setForm] = useState<FormState>(INITIAL);
+  const search = Route.useSearch();
+  const [form, setForm] = useState<FormState>(() => {
+    const moradorPre = search.moradorId
+      ? MORADORES.find((m) => m.id === search.moradorId)
+      : undefined;
+    const condoPre = search.condominioId ?? moradorPre?.condominioId ?? "";
+    return {
+      ...INITIAL,
+      condominioId: condoPre,
+      moradorId: moradorPre?.id ?? "",
+    };
+  });
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [submitted, setSubmitted] = useState(false);
 

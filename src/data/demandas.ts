@@ -171,6 +171,7 @@ export const DEMANDAS: Demanda[] = [
     assigned: "Roberto S.",
     column: "triagem",
     location: "Torre A • Elevador social",
+    moradorId: "m3",
     contact: { phone: "+55 11 98800-4455", email: "julia.t@exemplo.com" },
     attachments: [{ name: "audio-elevador.mp4", size: "3.4 MB", kind: "video" }],
     temperature: "warm",

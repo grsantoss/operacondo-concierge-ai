@@ -107,7 +107,10 @@ function MoradoresPage() {
           >
             <Icon name="upload" className="text-[18px]" /> Importar CSV
           </button>
-          <button className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[var(--color-brand-hover)]">
+          <button
+            onClick={() => setShowNew(true)}
+            className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[var(--color-brand-hover)]"
+          >
             <Icon name="person_add" className="text-[18px]" /> Novo morador
           </button>
         </>

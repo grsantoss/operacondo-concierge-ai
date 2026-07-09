@@ -229,7 +229,7 @@ function MoradoresPage() {
                 <th className="px-5 py-3 font-semibold">Localização</th>
                 <th className="px-5 py-3 font-semibold">Status</th>
                 <th className="px-5 py-3 font-semibold">Vagas</th>
-                <th className="px-5 py-3 font-semibold">Pets</th>
+                
                 <th className="px-5 py-3 font-semibold">Última interação</th>
                 <th className="px-5 py-3 text-right font-semibold">Ações</th>
               </tr>
@@ -237,7 +237,7 @@ function MoradoresPage() {
             <tbody className="divide-y divide-[var(--color-outline-variant)]">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-5 py-16 text-center">
+                  <td colSpan={7} className="px-5 py-16 text-center">
                     <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-[var(--color-surface-mid)] text-[var(--color-on-surface-variant)]">
                       <Icon name="search_off" />
                     </div>
@@ -354,7 +354,7 @@ function MoradorRow({ m }: { m: Morador }) {
         </span>
       </td>
       <td className="px-5 py-3.5 text-[var(--color-on-surface-variant)]">{m.vagas}</td>
-      <td className="px-5 py-3.5 text-[var(--color-on-surface-variant)]">{m.pets}</td>
+      
       <td className="px-5 py-3.5 text-xs text-[var(--color-on-surface-variant)]">
         {m.ultimo}
       </td>

@@ -111,22 +111,75 @@ const TEMP: Record<"cold" | "warm" | "hot", { label: string; cls: string; dot: s
   },
 };
 
+function csvEscape(v: string | number) {
+  const s = String(v);
+  return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+function exportDashboardCsv() {
+  const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+  const lines: string[] = [];
+  lines.push("Concierge OperaCondo — Visão geral do condomínio");
+  lines.push(`Gerado em;${new Date().toLocaleString("pt-BR")}`);
+  lines.push("");
+  lines.push("Métricas principais");
+  lines.push(["Indicador", "Valor", "Variação"].map(csvEscape).join(";"));
+  for (const m of METRICS) {
+    lines.push([m.label, m.value, m.delta].map(csvEscape).join(";"));
+  }
+  lines.push("");
+  lines.push("Fluxo de demandas (Kanban — últimas 24h)");
+  lines.push(["Coluna", "Quantidade"].map(csvEscape).join(";"));
+  for (const k of KANBAN_SUMMARY) {
+    lines.push([k.col, k.count].map(csvEscape).join(";"));
+  }
+  lines.push("");
+  lines.push("Temperatura das conversas");
+  lines.push(["Categoria", "Percentual"].map(csvEscape).join(";"));
+  lines.push(["Tranquilas", "62%"].map(csvEscape).join(";"));
+  lines.push(["Atenção", "28%"].map(csvEscape).join(";"));
+  lines.push(["Urgentes", "10%"].map(csvEscape).join(";"));
+  lines.push("");
+  lines.push("Conversas recentes");
+  lines.push(
+    ["Morador", "Unidade", "Mensagem", "Temperatura", "Quando"]
+      .map(csvEscape)
+      .join(";"),
+  );
+  for (const r of RECENT) {
+    lines.push(
+      [r.morador, r.unit, r.msg, TEMP[r.temp].label, r.time]
+        .map(csvEscape)
+        .join(";"),
+    );
+  }
+
+  const csv = "\uFEFF" + lines.join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `dashboard-operacondo-${stamp}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 function DashboardPage() {
   return (
     <AppShell
       title="Visão geral do condomínio"
       breadcrumbs={[{ label: "OperaCondo" }, { label: "Dashboard" }]}
       actions={
-        <>
-          <button className="btn-press btn-press-active hidden h-10 items-center gap-2 rounded-lg border border-[var(--color-outline-variant)] bg-white px-4 text-sm font-semibold text-[var(--color-on-surface)] hover:bg-[var(--color-surface-low)] sm:inline-flex">
-            <Icon name="download" className="text-[18px]" />
-            Exportar
-          </button>
-          <button className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[var(--color-brand-hover)]">
-            <Icon name="add" className="text-[18px]" />
-            Nova demanda
-          </button>
-        </>
+        <button
+          type="button"
+          onClick={exportDashboardCsv}
+          className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg border border-[var(--color-outline-variant)] bg-white px-4 text-sm font-semibold text-[var(--color-on-surface)] hover:bg-[var(--color-surface-low)]"
+        >
+          <Icon name="download" className="text-[18px]" />
+          Exportar
+        </button>
       }
     >
       {/* Metrics */}

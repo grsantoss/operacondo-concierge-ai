@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/brand/Icon";
 import { ImportCsvModal } from "@/components/moradores/ImportCsvModal";
+import { NewMoradorModal } from "@/components/moradores/NewMoradorModal";
 import {
   CONDOMINIOS,
   STATUS_CLS,
@@ -31,6 +32,7 @@ function MoradoresPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("Todos");
   const [query, setQuery] = useState("");
   const [showImport, setShowImport] = useState(false);
+  const [showNew, setShowNew] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   const condoSelecionado = CONDOMINIOS.find((c) => c.id === condoId);
@@ -105,7 +107,10 @@ function MoradoresPage() {
           >
             <Icon name="upload" className="text-[18px]" /> Importar CSV
           </button>
-          <button className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[var(--color-brand-hover)]">
+          <button
+            onClick={() => setShowNew(true)}
+            className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[var(--color-brand-hover)]"
+          >
             <Icon name="person_add" className="text-[18px]" /> Novo morador
           </button>
         </>
@@ -282,6 +287,13 @@ function MoradoresPage() {
         open={showImport}
         onClose={() => setShowImport(false)}
         onImported={(n) => flash(`${n} morador(es) importado(s) com sucesso.`)}
+      />
+
+      <NewMoradorModal
+        open={showNew}
+        defaultCondominioId={condoId}
+        onClose={() => setShowNew(false)}
+        onCreated={(nome) => flash(`${nome} cadastrado(a) com sucesso.`)}
       />
 
       {toast && (

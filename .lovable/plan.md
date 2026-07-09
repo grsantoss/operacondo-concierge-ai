@@ -1,72 +1,59 @@
-# Plano — Edição, desativação e arquivo de moradores
+# Ajustes na página de demanda (`/app/demandas/$id`)
 
-## 1. Ações na página `/app/moradores/$id`
+Objetivo: transformar os botões atualmente decorativos em ações reais, mantendo o padrão visual da página e o mock in-memory já usado em `src/data/demandas.ts`.
 
-Adicionar dois novos botões no header (ao lado de "Voltar" e "WhatsApp") e refletir também no bloco lateral "Ações rápidas":
+## Botões afetados e comportamento proposto
 
-- **Editar** (ícone `edit`, estilo secundário): abre um modal `EditMoradorModal` com formulário completo do cadastro.
-- **Desativar / Reativar** (ícone `person_off` / `person_check`, estilo vermelho ou âmbar):
-  - Se o morador está ativo → botão "Desativar" com confirmação.
-  - Se está desativado → botão "Reativar".
-  - Ao desativar: status vira `"Inativo"` e o morador é removido da listagem principal, indo para a página de arquivados.
+### 1. WhatsApp (sidebar do solicitante)
+- Trocar o botão atual por um `<a>` que abre `https://wa.me/<telefone>?text=<mensagem pré-pronta>`.
+- Sanitizar `demanda.contact.phone` (remover parênteses/espaços/traços) e assumir DDI `55` quando ausente.
+- Mensagem pré-pronta: `Olá {morador}, sobre o chamado {id} — {title}...`.
+- `target="_blank"` + `rel="noopener noreferrer"`.
+- Bônus solicitado antes: o botão de telefone (linha "call") também vira link para WhatsApp; o e-mail continua `mailto:`.
 
-### Modal de edição
-Campos editáveis (mesmos do schema `Morador`):
-- Nome, CPF, e-mail, contato (WhatsApp)
-- Condomínio (select), tipo de endereço (vertical/horizontal)
-- Bloco/andar/apto **ou** quadra/casa (condicionais)
-- Status (Ativo / Pendente / Vago / Inativo)
-- Vagas, pets, "desde"
+### 2. Ficha (sidebar do solicitante)
+- Converter em `<Link>` para `/app/moradores/$id`.
+- Precisamos de um `moradorId` em cada demanda. Como o mock usa apenas o nome, vou:
+  - Adicionar campo opcional `moradorId?: string` em `Demanda` (`src/data/demandas.ts`).
+  - Preencher via lookup por nome no seed (best-effort), usando `src/data/moradores.ts`.
+  - Se não houver match, o botão fica desabilitado com tooltip "Morador não vinculado".
 
-Validação leve inline (nome obrigatório, contato obrigatório, campos de endereço conforme o tipo). Salvar chama `updateMorador(id, patch)` no store em memória e fecha o modal.
+### 3. Assumir conversa (cabeçalho da conversa)
+- Adicionar campo `assumedBy?: string` na `Demanda` + função `assumirConversa(id, actor)` em `src/data/demandas.ts` que:
+  - grava `assumedBy`,
+  - adiciona evento na `timeline` ("Síndico assumiu a conversa"),
+  - se `assigned` estiver vazio, define como o mesmo ator.
+- No componente: `useRouter().invalidate()` + toast (reaproveitar toast existente).
+- Estado assumido: botão muda para "Você assumiu" desabilitado, com ícone `check`.
 
-## 2. Novo status "Inativo" e store
+### 4. Enviar (composer da conversa)
+- Transformar o input em componente controlado (`useState`), com `textarea` auto-resize simples.
+- Nova função `addMensagem(id, { from: "sindico", author, text })` em `demandas.ts` que:
+  - anexa a `messages` com timestamp "agora",
+  - adiciona entrada na `timeline` ("Enviou mensagem ao morador").
+- Enter envia, Shift+Enter quebra linha. Desabilitar quando `text.trim() === ""`.
+- Toast + `router.invalidate()` + limpa o campo + foca de novo.
 
-Em `src/data/moradores.ts`:
+### 5. Anexar arquivo (ícone de clipe no composer) e "+ Adicionar" (card Anexos)
+- Ambos abrem o mesmo `<input type="file" hidden multiple>` (ref compartilhada).
+- Ao selecionar arquivos:
+  - inferir `kind` (`image` | `pdf` | `video`) pelo mime,
+  - formatar tamanho ("245 KB", "1.2 MB"),
+  - chamar nova `addAnexos(id, files[])` em `demandas.ts` que atualiza `attachments` e adiciona evento na timeline.
+- Sem upload real: os arquivos ficam apenas no mock in-memory da sessão (limitação assumida — mesmo padrão dos outros mocks). Deixar comentário `// TODO: substituir por upload real quando integrar backend`.
+- Botão `download` nos anexos existentes: quando não houver URL real, remover o botão (não faz sentido baixar mock); manter apenas quando `attachment.url` estiver definido no futuro.
 
-- Adicionar `"Inativo"` ao union `MoradorStatus` e estilo em `STATUS_CLS` (cinza).
-- Novas funções expostas pelo store reativo:
-  - `updateMorador(id, patch)`
-  - `deactivateMorador(id)` / `reactivateMorador(id)`
-  - `deleteMorador(id)` e `deleteAllInactive()`
-  - `useMoradores({ includeInactive?: boolean })` — por padrão **exclui** inativos.
-- Getter `getMorador(id)` continua retornando qualquer status (para permitir abrir o detalhe de um arquivado).
+## Arquivos a alterar
 
-## 3. Filtragem na listagem `/app/moradores`
+- `src/data/demandas.ts`
+  - Ampliar tipo `Demanda` (`moradorId?`, `assumedBy?`).
+  - Adicionar `assumirConversa`, `addMensagem`, `addAnexos`.
+  - Seed: preencher `moradorId` por nome quando possível.
+- `src/routes/app.demandas.$id.tsx`
+  - Estado local para composer, ref do input file, handlers e toasts.
+  - Trocar botões estáticos por ações reais.
+  - Link para `/app/moradores/$id`, link `wa.me` para WhatsApp.
 
-- A lista principal e as KPIs deixam de contar moradores `Inativo` (usa `useMoradores()` padrão).
-- Adicionar no header um link discreto **"Arquivados (N)"** que leva para `/app/moradores/arquivados`, com contador dinâmico.
-- Remover a opção "Inativo" dos filtros de status principais (fica exclusivo da página de arquivados).
-
-## 4. Nova página `/app/moradores/arquivados`
-
-Rota: `src/routes/app.moradores.arquivados.tsx`.
-
-Conteúdo:
-- AppShell com título "Moradores arquivados" e breadcrumb.
-- Tabela simplificada: nome, condomínio, unidade, contato, "desativado em" (usa `desde` ou timestamp de desativação), ações:
-  - **Reativar** (volta para "Ativo" e some da página).
-  - **Excluir** (remove definitivamente, com confirmação).
-- Barra superior:
-  - Busca por nome.
-  - Filtro por condomínio.
-  - Botão vermelho **"Excluir todos os arquivados"** com modal de confirmação exigindo clique duplo/checkbox de segurança.
-- Empty state amigável quando não há arquivados.
-
-## 5. Detalhes técnicos
-
-Arquivos novos:
-- `src/components/moradores/EditMoradorModal.tsx`
-- `src/components/moradores/ConfirmDialog.tsx` (reutilizável para desativar/excluir)
-- `src/routes/app.moradores.arquivados.tsx`
-
-Arquivos alterados:
-- `src/data/moradores.ts` — status `Inativo`, novas mutations, filtro padrão no hook, campo opcional `desativadoEm`.
-- `src/routes/app.moradores.$id.tsx` — botões Editar / Desativar / Reativar, integração com modal e confirmações; badge "Inativo" no hero quando aplicável.
-- `src/routes/app.moradores.index.tsx` — usar hook filtrado, link para arquivados com contagem.
-
-## 6. Fora do escopo
-
-- Persistência real (segue em memória; troca para Lovable Cloud fica para depois).
-- Histórico/auditoria de alterações.
-- Undo após "Excluir todos".
+## Fora do escopo
+- Persistência real, upload real de arquivos, threads/leitura por participante, notificação ao morador.
+- Redesign da página — apenas comportamento.

@@ -7,6 +7,10 @@ import { CAT_ICON, PRIO_CLASS, type Category, type Priority } from "@/data/deman
 import { CONDOMINIOS, MORADORES } from "@/data/moradores";
 
 export const Route = createFileRoute("/app/demandas/nova")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    moradorId: typeof search.moradorId === "string" ? search.moradorId : undefined,
+    condominioId: typeof search.condominioId === "string" ? search.condominioId : undefined,
+  }),
   head: () => ({ meta: [{ title: "Nova demanda | Concierge OperaCondo" }] }),
   component: NovaDemandaPage,
 });

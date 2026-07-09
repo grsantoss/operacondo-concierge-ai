@@ -425,7 +425,11 @@ function DemandaDetail() {
               <h3 className="text-sm font-bold text-[var(--color-navy)]">
                 Anexos
               </h3>
-              <button className="text-xs font-semibold text-[var(--color-brand)] hover:underline">
+              <button
+                type="button"
+                onClick={handlePickFiles}
+                className="text-xs font-semibold text-[var(--color-brand)] hover:underline"
+              >
                 + Adicionar
               </button>
             </div>

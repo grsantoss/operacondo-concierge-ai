@@ -373,10 +373,12 @@ function DemandaDetail() {
             </div>
             <div className="mt-4 space-y-2 text-xs">
               <a
-                href={`tel:${demanda.contact.phone}`}
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="flex items-center gap-2 rounded-lg px-2 py-2 text-[var(--color-navy)] hover:bg-[var(--color-surface-mid)]"
               >
-                <Icon name="call" className="text-[16px]" />
+                <Icon name="chat" className="text-[16px]" />
                 {demanda.contact.phone}
               </a>
               <a
@@ -388,12 +390,33 @@ function DemandaDetail() {
               </a>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2">
-              <button className="flex items-center justify-center gap-1.5 rounded-lg bg-[var(--color-success)]/10 py-2 text-xs font-semibold text-[var(--color-success)] hover:bg-[var(--color-success)]/15">
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-1.5 rounded-lg bg-[var(--color-success)]/10 py-2 text-xs font-semibold text-[var(--color-success)] hover:bg-[var(--color-success)]/15"
+              >
                 <Icon name="chat" className="text-[14px]" /> WhatsApp
-              </button>
-              <button className="flex items-center justify-center gap-1.5 rounded-lg bg-[var(--color-surface-mid)] py-2 text-xs font-semibold text-[var(--color-navy)] hover:bg-[var(--color-surface-high)]">
-                <Icon name="badge" className="text-[14px]" /> Ficha
-              </button>
+              </a>
+              {demanda.moradorId ? (
+                <Link
+                  to="/app/moradores/$id"
+                  params={{ id: demanda.moradorId }}
+                  preload="intent"
+                  className="flex items-center justify-center gap-1.5 rounded-lg bg-[var(--color-surface-mid)] py-2 text-xs font-semibold text-[var(--color-navy)] hover:bg-[var(--color-surface-high)]"
+                >
+                  <Icon name="badge" className="text-[14px]" /> Ficha
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  title="Morador não vinculado"
+                  className="flex cursor-not-allowed items-center justify-center gap-1.5 rounded-lg bg-[var(--color-surface-mid)] py-2 text-xs font-semibold text-[var(--color-on-surface-variant)] opacity-60"
+                >
+                  <Icon name="badge" className="text-[14px]" /> Ficha
+                </button>
+              )}
             </div>
           </section>
 

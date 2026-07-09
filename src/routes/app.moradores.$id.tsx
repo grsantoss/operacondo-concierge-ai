@@ -325,6 +325,52 @@ function MoradorDetail() {
           )}
         </aside>
       </div>
+
+      <EditMoradorModal
+        open={showEdit}
+        morador={morador}
+        onClose={() => setShowEdit(false)}
+        onSaved={() => flash("Alterações salvas.")}
+      />
+
+      <ConfirmDialog
+        open={confirmDeactivate}
+        title={`Desativar ${morador.nome}?`}
+        description="O morador será movido para a lista de arquivados e deixará de aparecer na listagem principal. Você poderá reativá-lo depois."
+        confirmLabel="Desativar"
+        tone="warn"
+        icon="person_off"
+        onClose={() => setConfirmDeactivate(false)}
+        onConfirm={() => {
+          deactivateMorador(morador.id);
+          setConfirmDeactivate(false);
+          flash(`${morador.nome} foi desativado.`);
+          router.invalidate();
+        }}
+      />
+
+      <ConfirmDialog
+        open={confirmReactivate}
+        title={`Reativar ${morador.nome}?`}
+        description="O morador voltará a aparecer na listagem principal como Residente."
+        confirmLabel="Reativar"
+        tone="brand"
+        icon="person_check"
+        onClose={() => setConfirmReactivate(false)}
+        onConfirm={() => {
+          reactivateMorador(morador.id);
+          setConfirmReactivate(false);
+          flash(`${morador.nome} foi reativado.`);
+          router.invalidate();
+        }}
+      />
+
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-[var(--color-navy)] px-4 py-3 text-sm font-semibold text-white shadow-lg">
+          <Icon name="check_circle" className="text-[18px]" filled />
+          {toast}
+        </div>
+      )}
     </AppShell>
   );
 }

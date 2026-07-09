@@ -142,6 +142,7 @@ export const DEMANDAS: Demanda[] = [
     createdAt: "Hoje, 08:04",
     column: "novas",
     location: "Salão de festas • Térreo",
+    moradorId: "m2",
     contact: { phone: "+55 11 99911-2020", email: "marcelo.reis@exemplo.com" },
     attachments: [],
     temperature: "cold",

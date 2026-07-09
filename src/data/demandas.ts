@@ -83,6 +83,7 @@ export const DEMANDAS: Demanda[] = [
     sla: "SLA 2h",
     column: "novas",
     location: "Torre A • 12º andar • Apto 1204",
+    moradorId: "m1",
     contact: { phone: "+55 11 98421-1122", email: "ana.carvalho@exemplo.com" },
     attachments: [
       { name: "foto-vazamento-01.jpg", size: "1.2 MB", kind: "image" },

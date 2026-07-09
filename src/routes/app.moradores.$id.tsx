@@ -6,7 +6,7 @@ import { ConfirmDialog } from "@/components/moradores/ConfirmDialog";
 import { EditMoradorModal } from "@/components/moradores/EditMoradorModal";
 import {
   CONDOMINIOS,
-  MORADORES,
+  CONDOMINIOS,
   STATUS_CLS,
   deactivateMorador,
   formatEndereco,

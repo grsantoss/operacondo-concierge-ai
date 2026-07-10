@@ -98,8 +98,9 @@ export function AppShell({ title, breadcrumbs, actions, children }: AppShellProp
               </span>
             </Link>
             <Link
-              to="/app"
+              to="/app/configuracoes"
               onClick={() => setMobileOpen(false)}
+              activeProps={{ className: "bg-white/10 text-white" }}
               className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white/70 hover:bg-white/8 hover:text-white"
             >
               <Icon name="settings" className="text-[20px] shrink-0" />

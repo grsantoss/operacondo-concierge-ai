@@ -16,6 +16,7 @@ import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AppMoradoresRouteImport } from './routes/app.moradores'
 import { Route as AppFornecedoresRouteImport } from './routes/app.fornecedores'
 import { Route as AppDemandasRouteImport } from './routes/app.demandas'
+import { Route as AppConfiguracoesRouteImport } from './routes/app.configuracoes'
 import { Route as AppBaseRouteImport } from './routes/app.base'
 import { Route as AppAgenteRouteImport } from './routes/app.agente'
 import { Route as AppMoradoresIndexRouteImport } from './routes/app.moradores.index'
@@ -62,6 +63,11 @@ const AppFornecedoresRoute = AppFornecedoresRouteImport.update({
 const AppDemandasRoute = AppDemandasRouteImport.update({
   id: '/demandas',
   path: '/demandas',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppConfiguracoesRoute = AppConfiguracoesRouteImport.update({
+  id: '/configuracoes',
+  path: '/configuracoes',
   getParentRoute: () => AppRoute,
 } as any)
 const AppBaseRoute = AppBaseRouteImport.update({
@@ -131,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/app/agente': typeof AppAgenteRoute
   '/app/base': typeof AppBaseRouteWithChildren
+  '/app/configuracoes': typeof AppConfiguracoesRoute
   '/app/demandas': typeof AppDemandasRouteWithChildren
   '/app/fornecedores': typeof AppFornecedoresRouteWithChildren
   '/app/moradores': typeof AppMoradoresRouteWithChildren
@@ -150,6 +157,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/onboarding': typeof OnboardingRoute
   '/app/agente': typeof AppAgenteRoute
+  '/app/configuracoes': typeof AppConfiguracoesRoute
   '/app': typeof AppIndexRoute
   '/app/base/enviar': typeof AppBaseEnviarRoute
   '/app/demandas/$id': typeof AppDemandasIdRoute
@@ -169,6 +177,7 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/app/agente': typeof AppAgenteRoute
   '/app/base': typeof AppBaseRouteWithChildren
+  '/app/configuracoes': typeof AppConfiguracoesRoute
   '/app/demandas': typeof AppDemandasRouteWithChildren
   '/app/fornecedores': typeof AppFornecedoresRouteWithChildren
   '/app/moradores': typeof AppMoradoresRouteWithChildren
@@ -192,6 +201,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/app/agente'
     | '/app/base'
+    | '/app/configuracoes'
     | '/app/demandas'
     | '/app/fornecedores'
     | '/app/moradores'
@@ -211,6 +221,7 @@ export interface FileRouteTypes {
     | '/'
     | '/onboarding'
     | '/app/agente'
+    | '/app/configuracoes'
     | '/app'
     | '/app/base/enviar'
     | '/app/demandas/$id'
@@ -229,6 +240,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/app/agente'
     | '/app/base'
+    | '/app/configuracoes'
     | '/app/demandas'
     | '/app/fornecedores'
     | '/app/moradores'
@@ -300,6 +312,13 @@ declare module '@tanstack/react-router' {
       path: '/demandas'
       fullPath: '/app/demandas'
       preLoaderRoute: typeof AppDemandasRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/configuracoes': {
+      id: '/app/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/app/configuracoes'
+      preLoaderRoute: typeof AppConfiguracoesRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/base': {
@@ -451,6 +470,7 @@ const AppMoradoresRouteWithChildren = AppMoradoresRoute._addFileChildren(
 interface AppRouteChildren {
   AppAgenteRoute: typeof AppAgenteRoute
   AppBaseRoute: typeof AppBaseRouteWithChildren
+  AppConfiguracoesRoute: typeof AppConfiguracoesRoute
   AppDemandasRoute: typeof AppDemandasRouteWithChildren
   AppFornecedoresRoute: typeof AppFornecedoresRouteWithChildren
   AppMoradoresRoute: typeof AppMoradoresRouteWithChildren
@@ -460,6 +480,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppAgenteRoute: AppAgenteRoute,
   AppBaseRoute: AppBaseRouteWithChildren,
+  AppConfiguracoesRoute: AppConfiguracoesRoute,
   AppDemandasRoute: AppDemandasRouteWithChildren,
   AppFornecedoresRoute: AppFornecedoresRouteWithChildren,
   AppMoradoresRoute: AppMoradoresRouteWithChildren,

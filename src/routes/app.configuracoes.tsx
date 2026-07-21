@@ -350,11 +350,24 @@ function PerfilPanel({ onSave }: { onSave: () => void }) {
   );
 }
 
-function CondominioPanel({ onSave }: { onSave: () => void }) {
-  const [nome, setNome] = useState("Edifício Aurora");
+function CorporativoPanel({ onSave }: { onSave: () => void }) {
+  const [razaoSocial, setRazaoSocial] = useState("Condomínio Edifício Aurora");
+  const [nomeFantasia, setNomeFantasia] = useState("Edifício Aurora");
   const [cnpj, setCnpj] = useState("12.345.678/0001-90");
-  const [endereco, setEndereco] = useState("Rua das Palmeiras, 250 - Jardins, São Paulo/SP");
-  const [unidades, setUnidades] = useState("84");
+  const [inscricaoMunicipal, setInscricaoMunicipal] = useState("");
+  const [email, setEmail] = useState("contato@edificioaurora.com.br");
+  const [telefone, setTelefone] = useState("+55 11 3000-1000");
+
+  const [cep, setCep] = useState("01452-000");
+  const [logradouro, setLogradouro] = useState("Rua das Palmeiras");
+  const [numero, setNumero] = useState("250");
+  const [complemento, setComplemento] = useState("");
+  const [bairro, setBairro] = useState("Jardins");
+  const [cidade, setCidade] = useState("São Paulo");
+  const [uf, setUf] = useState("SP");
+
+  const [responsavel, setResponsavel] = useState("Roberto Silva");
+  const [cargo, setCargo] = useState("Síndico profissional");
   const [horario, setHorario] = useState("Seg-Sex, 8h às 18h");
   const [emergencia, setEmergencia] = useState("+55 11 3000-1111");
 
@@ -364,41 +377,58 @@ function CondominioPanel({ onSave }: { onSave: () => void }) {
         e.preventDefault();
         onSave();
       }}
+      className="space-y-6"
     >
       <Card
-        title="Identidade do condomínio"
-        desc="Usado em documentos, respostas do agente e comunicações."
+        title="Dados corporativos"
+        desc="Informações jurídicas usadas em contratos, notas fiscais e comunicações oficiais."
         footer={<PrimaryBtn type="submit">Salvar</PrimaryBtn>}
       >
         <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Nome">
-            <input className={inputCls} value={nome} onChange={(e) => setNome(e.target.value)} />
-          </Field>
-          <Field label="CNPJ">
-            <input className={inputCls} value={cnpj} onChange={(e) => setCnpj(e.target.value)} />
-          </Field>
           <div className="md:col-span-2">
-            <Field label="Endereço">
+            <Field label="Razão social">
               <input
                 className={inputCls}
-                value={endereco}
-                onChange={(e) => setEndereco(e.target.value)}
+                value={razaoSocial}
+                onChange={(e) => setRazaoSocial(e.target.value)}
               />
             </Field>
           </div>
-          <Field label="Unidades">
+          <Field label="Nome fantasia">
             <input
-              type="number"
               className={inputCls}
-              value={unidades}
-              onChange={(e) => setUnidades(e.target.value)}
+              value={nomeFantasia}
+              onChange={(e) => setNomeFantasia(e.target.value)}
             />
           </Field>
-          <Field label="Horário do síndico">
+          <Field label="CNPJ">
             <input
               className={inputCls}
-              value={horario}
-              onChange={(e) => setHorario(e.target.value)}
+              value={cnpj}
+              onChange={(e) => setCnpj(e.target.value)}
+              placeholder="00.000.000/0000-00"
+            />
+          </Field>
+          <Field label="Inscrição municipal" hint="Opcional">
+            <input
+              className={inputCls}
+              value={inscricaoMunicipal}
+              onChange={(e) => setInscricaoMunicipal(e.target.value)}
+            />
+          </Field>
+          <Field label="E-mail institucional">
+            <input
+              type="email"
+              className={inputCls}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </Field>
+          <Field label="Telefone">
+            <input
+              className={inputCls}
+              value={telefone}
+              onChange={(e) => setTelefone(e.target.value)}
             />
           </Field>
           <Field label="Telefone de emergência 24h">
@@ -410,9 +440,108 @@ function CondominioPanel({ onSave }: { onSave: () => void }) {
           </Field>
         </div>
       </Card>
+
+      <Card title="Endereço" desc="Endereço fiscal e de correspondência.">
+        <div className="grid gap-4 md:grid-cols-6">
+          <div className="md:col-span-2">
+            <Field label="CEP">
+              <input
+                className={inputCls}
+                value={cep}
+                onChange={(e) => setCep(e.target.value)}
+                placeholder="00000-000"
+              />
+            </Field>
+          </div>
+          <div className="md:col-span-4">
+            <Field label="Logradouro">
+              <input
+                className={inputCls}
+                value={logradouro}
+                onChange={(e) => setLogradouro(e.target.value)}
+              />
+            </Field>
+          </div>
+          <div className="md:col-span-1">
+            <Field label="Número">
+              <input
+                className={inputCls}
+                value={numero}
+                onChange={(e) => setNumero(e.target.value)}
+              />
+            </Field>
+          </div>
+          <div className="md:col-span-3">
+            <Field label="Complemento">
+              <input
+                className={inputCls}
+                value={complemento}
+                onChange={(e) => setComplemento(e.target.value)}
+              />
+            </Field>
+          </div>
+          <div className="md:col-span-2">
+            <Field label="Bairro">
+              <input
+                className={inputCls}
+                value={bairro}
+                onChange={(e) => setBairro(e.target.value)}
+              />
+            </Field>
+          </div>
+          <div className="md:col-span-4">
+            <Field label="Cidade">
+              <input
+                className={inputCls}
+                value={cidade}
+                onChange={(e) => setCidade(e.target.value)}
+              />
+            </Field>
+          </div>
+          <div className="md:col-span-2">
+            <Field label="UF">
+              <input
+                className={inputCls}
+                value={uf}
+                onChange={(e) => setUf(e.target.value.toUpperCase().slice(0, 2))}
+                maxLength={2}
+              />
+            </Field>
+          </div>
+        </div>
+      </Card>
+
+      <Card title="Responsável legal" desc="Representante que responde pela pessoa jurídica.">
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="Nome do responsável">
+            <input
+              className={inputCls}
+              value={responsavel}
+              onChange={(e) => setResponsavel(e.target.value)}
+            />
+          </Field>
+          <Field label="Cargo">
+            <input
+              className={inputCls}
+              value={cargo}
+              onChange={(e) => setCargo(e.target.value)}
+            />
+          </Field>
+          <div className="md:col-span-2">
+            <Field label="Horário de atendimento">
+              <input
+                className={inputCls}
+                value={horario}
+                onChange={(e) => setHorario(e.target.value)}
+              />
+            </Field>
+          </div>
+        </div>
+      </Card>
     </form>
   );
 }
+
 
 function AgentePanel({ onSave }: { onSave: () => void }) {
   const [tom, setTom] = useState<"Formal" | "Cordial" | "Casual">("Cordial");

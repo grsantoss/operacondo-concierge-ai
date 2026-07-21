@@ -391,11 +391,11 @@ function StepRegras() {
               <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]">
                 Canal preferencial
               </label>
-              <select className="mt-1.5 w-full rounded-lg border border-[var(--color-outline-variant)] bg-white px-4 py-2.5 text-sm outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand)]/15">
-                <option>WhatsApp</option>
-                <option>Portal do morador</option>
-                <option>Ambos</option>
-              </select>
+              <SelectField
+                value={channel}
+                onChange={setChannel}
+                options={["WhatsApp", "Portal do morador", "Ambos"]}
+              />
             </div>
             <Field label="Aprovação do síndico acima de (R$)" value="500" />
           </div>

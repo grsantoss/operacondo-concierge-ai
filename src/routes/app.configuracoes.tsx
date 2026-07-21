@@ -509,7 +509,111 @@ function AgentePanel({ onSave }: { onSave: () => void }) {
           desc="Quando um morador demonstra insatisfação ou é urgência."
         />
       </Card>
+
+      <RegrasReclamacoesCard />
+      <RegrasManutencaoCard />
+      <div className="flex justify-end">
+        <PrimaryBtn type="submit">Salvar comportamento</PrimaryBtn>
+      </div>
     </form>
+  );
+}
+
+function RegrasReclamacoesCard() {
+  const [auto, setAuto] = useState(true);
+  const [prioridade, setPrioridade] = useState("Normal");
+  const [escalar, setEscalar] = useState("Reincidente (3+ ocorrências)");
+  const [obs, setObs] = useState(
+    "Barulho após 22h vai direto para triagem. Disputas entre moradores só o síndico responde.",
+  );
+  return (
+    <Card
+      title="Regras para reclamações"
+      desc="Como a IA registra e classifica reclamações (barulho, vizinhança, áreas comuns)."
+    >
+      <Toggle
+        checked={auto}
+        onChange={setAuto}
+        label="IA registra e classifica reclamações automaticamente"
+        desc="Categoriza por tipo e cria a demanda no Kanban."
+      />
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
+        <Field label="Prioridade padrão">
+          <select className={inputCls} value={prioridade} onChange={(e) => setPrioridade(e.target.value)}>
+            <option>Normal</option>
+            <option>Alta</option>
+            <option>Crítica</option>
+          </select>
+        </Field>
+        <Field label="Escalar para o síndico quando">
+          <select className={inputCls} value={escalar} onChange={(e) => setEscalar(e.target.value)}>
+            <option>Reincidente (3+ ocorrências)</option>
+            <option>Envolve outro morador</option>
+            <option>Sempre</option>
+          </select>
+        </Field>
+        <div className="md:col-span-2">
+          <Field label="Instruções extras para a IA">
+            <textarea
+              className={`${inputCls} min-h-[88px] resize-y`}
+              value={obs}
+              onChange={(e) => setObs(e.target.value)}
+            />
+          </Field>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function RegrasManutencaoCard() {
+  const [canal, setCanal] = useState("WhatsApp");
+  const [limite, setLimite] = useState("500");
+  const [foto, setFoto] = useState(true);
+  const [aprovacao, setAprovacao] = useState(true);
+  const [obs, setObs] = useState(
+    "Elétrica → sempre ElétricaPro. Hidráulica → registrar foto do local. Elevadores → chamado imediato para Otis.",
+  );
+  return (
+    <Card
+      title="Abertura de chamado de manutenção"
+      desc="Regras para como a IA abre e encaminha chamados de reparo."
+    >
+      <div className="grid gap-4 md:grid-cols-2">
+        <Field label="Canal preferencial">
+          <select className={inputCls} value={canal} onChange={(e) => setCanal(e.target.value)}>
+            <option>WhatsApp</option>
+            <option>Portal do morador</option>
+            <option>Ambos</option>
+          </select>
+        </Field>
+        <Field label="Aprovação do síndico acima de (R$)">
+          <input className={inputCls} value={limite} onChange={(e) => setLimite(e.target.value)} />
+        </Field>
+      </div>
+      <div className="mt-2">
+        <Toggle
+          checked={foto}
+          onChange={setFoto}
+          label="Exigir foto ou vídeo do problema"
+          desc="A IA pede a mídia antes de abrir o chamado."
+        />
+        <Toggle
+          checked={aprovacao}
+          onChange={setAprovacao}
+          label="Aprovação do síndico para orçamentos acima do limite"
+        />
+      </div>
+      <div className="mt-4">
+        <Field label="Instruções por especialidade">
+          <textarea
+            className={`${inputCls} min-h-[88px] resize-y`}
+            value={obs}
+            onChange={(e) => setObs(e.target.value)}
+          />
+        </Field>
+      </div>
+    </Card>
   );
 }
 

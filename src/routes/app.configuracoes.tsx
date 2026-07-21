@@ -106,8 +106,8 @@ function ConfiguracoesPage() {
 
           <section className="min-w-0">
             {tab === "perfil" && <PerfilPanel onSave={() => showToast("Perfil atualizado")} />}
-            {tab === "condominio" && (
-              <CondominioPanel onSave={() => showToast("Dados do condomínio salvos")} />
+            {tab === "corporativo" && (
+              <CorporativoPanel onSave={() => showToast("Dados corporativos salvos")} />
             )}
             {tab === "agente" && <AgentePanel onSave={() => showToast("Comportamento da IA atualizado")} />}
             {tab === "notificacoes" && (

@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Logo } from "@/components/brand/Logo";
 import { Icon } from "@/components/brand/Icon";
+import { SelectField } from "@/components/ui/SelectField";
 
 export const Route = createFileRoute("/onboarding")({
   head: () => ({
@@ -294,6 +295,9 @@ function StepRegras() {
   const [complaintsAuto, setComplaintsAuto] = useState(true);
   const [maintRequirePhoto, setMaintRequirePhoto] = useState(true);
   const [maintApproval, setMaintApproval] = useState(true);
+  const [priority, setPriority] = useState("Normal");
+  const [escalate, setEscalate] = useState("Reincidente (3+ ocorrências)");
+  const [channel, setChannel] = useState("WhatsApp");
   return (
     <>
       <StepHeader
@@ -340,21 +344,21 @@ function StepRegras() {
               <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]">
                 Prioridade padrão
               </label>
-              <select className="mt-1.5 w-full rounded-lg border border-[var(--color-outline-variant)] bg-white px-4 py-2.5 text-sm outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand)]/15">
-                <option>Normal</option>
-                <option>Alta</option>
-                <option>Crítica</option>
-              </select>
+              <SelectField
+                value={priority}
+                onChange={setPriority}
+                options={["Normal", "Alta", "Crítica"]}
+              />
             </div>
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]">
                 Escalar para o síndico quando
               </label>
-              <select className="mt-1.5 w-full rounded-lg border border-[var(--color-outline-variant)] bg-white px-4 py-2.5 text-sm outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand)]/15">
-                <option>Reincidente (3+ ocorrências)</option>
-                <option>Envolve outro morador</option>
-                <option>Sempre</option>
-              </select>
+              <SelectField
+                value={escalate}
+                onChange={setEscalate}
+                options={["Reincidente (3+ ocorrências)", "Envolve outro morador", "Sempre"]}
+              />
             </div>
           </div>
           <div className="mt-3">
@@ -387,11 +391,11 @@ function StepRegras() {
               <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]">
                 Canal preferencial
               </label>
-              <select className="mt-1.5 w-full rounded-lg border border-[var(--color-outline-variant)] bg-white px-4 py-2.5 text-sm outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand)]/15">
-                <option>WhatsApp</option>
-                <option>Portal do morador</option>
-                <option>Ambos</option>
-              </select>
+              <SelectField
+                value={channel}
+                onChange={setChannel}
+                options={["WhatsApp", "Portal do morador", "Ambos"]}
+              />
             </div>
             <Field label="Aprovação do síndico acima de (R$)" value="500" />
           </div>

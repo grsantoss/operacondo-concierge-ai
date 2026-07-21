@@ -480,10 +480,8 @@ function AgentePanel({ onSave }: { onSave: () => void }) {
         </div>
       </Card>
 
-      <Card
-        title="O que a IA pode resolver sozinha"
-        footer={<PrimaryBtn type="submit">Salvar comportamento</PrimaryBtn>}
-      >
+      <Card title="O que a IA pode resolver sozinha">
+
         <Toggle
           checked={reservas}
           onChange={setReservas}

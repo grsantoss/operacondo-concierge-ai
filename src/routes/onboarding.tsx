@@ -13,9 +13,11 @@ export const Route = createFileRoute("/onboarding")({
 const STEPS = [
   { n: 1, title: "Configuração do gestor", desc: "Tom de voz e comportamento" },
   { n: 2, title: "Dados do condomínio", desc: "CNPJ, endereço, unidades" },
-  { n: 3, title: "Regras específicas", desc: "Silêncio, pets, áreas comuns" },
-  { n: 4, title: "Revisão final", desc: "Verificação e ativação" },
+  { n: 3, title: "Regras específicas", desc: "Silêncio, reclamações e chamados" },
+  { n: 4, title: "Conectar WhatsApp", desc: "Z-API ou API oficial da Meta" },
+  { n: 5, title: "Revisão final", desc: "Verificação e ativação" },
 ];
+const TOTAL_STEPS = 5;
 
 function OnboardingPage() {
   const navigate = useNavigate();

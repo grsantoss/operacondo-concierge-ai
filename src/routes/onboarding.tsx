@@ -579,7 +579,7 @@ function StepWhatsApp() {
   );
 }
 
-function StepRevisao() {
+function StepRevisao({ onEdit }: { onEdit: (step: number) => void }) {
   return (
     <>
       <StepHeader
@@ -605,7 +605,13 @@ function StepRevisao() {
               <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]">{r.t}</p>
               <p className="truncate text-sm font-semibold text-[var(--color-navy)]">{r.v}</p>
             </div>
-            <button className="text-xs font-semibold text-[var(--color-brand)] hover:underline">Editar</button>
+            <button
+              type="button"
+              onClick={() => onEdit(r.step)}
+              className="btn-press btn-press-active inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-[var(--color-brand)] hover:bg-[var(--color-brand-soft)]"
+            >
+              <Icon name="edit" className="text-[14px]" /> Editar
+            </button>
           </div>
         ))}
       </div>

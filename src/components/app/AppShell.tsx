@@ -1,5 +1,5 @@
-import { Link, useRouterState, type LinkProps } from "@tanstack/react-router";
-import { useState, type ReactNode } from "react";
+import { Link, useRouterState, useNavigate, type LinkProps } from "@tanstack/react-router";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Logo } from "@/components/brand/Logo";
 import { Icon } from "@/components/brand/Icon";
 
@@ -26,12 +26,130 @@ interface AppShellProps {
   children: ReactNode;
 }
 
+interface UserMenuItem {
+  icon: string;
+  label: string;
+  to?: LinkProps["to"];
+  onClick?: () => void;
+  danger?: boolean;
+  divider?: boolean;
+}
+
+function useOutsideClose(open: boolean, onClose: () => void) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    };
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    document.addEventListener("mousedown", handler);
+    document.addEventListener("keydown", esc);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("keydown", esc);
+    };
+  }, [open, onClose]);
+  return ref;
+}
+
+function UserMenu({
+  open,
+  onClose,
+  align,
+  items,
+}: {
+  open: boolean;
+  onClose: () => void;
+  align: "left" | "right";
+  items: UserMenuItem[];
+}) {
+  const ref = useOutsideClose(open, onClose);
+  if (!open) return null;
+  return (
+    <div
+      ref={ref}
+      className={`absolute z-50 w-64 overflow-hidden rounded-xl border border-[var(--color-outline-variant)] bg-white shadow-xl ${
+        align === "right" ? "right-0" : "left-0"
+      }`}
+    >
+      <div className="border-b border-[var(--color-outline-variant)] bg-[var(--color-surface-mid)] px-4 py-3">
+        <p className="text-sm font-semibold text-[var(--color-navy)]">Roberto Silva</p>
+        <p className="truncate text-xs text-[var(--color-on-surface-variant)]">
+          roberto@operacondo.com.br
+        </p>
+      </div>
+      <ul className="py-1">
+        {items.map((item, i) => {
+          if (item.divider) {
+            return <li key={`d-${i}`} className="my-1 h-px bg-[var(--color-outline-variant)]" />;
+          }
+          const cls = `flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors ${
+            item.danger
+              ? "text-[var(--color-danger)] hover:bg-red-50"
+              : "text-[var(--color-on-surface)] hover:bg-[var(--color-surface-mid)]"
+          }`;
+          const inner = (
+            <>
+              <Icon name={item.icon} className="text-[18px] shrink-0" />
+              <span className="flex-1 truncate">{item.label}</span>
+            </>
+          );
+          if (item.to) {
+            return (
+              <li key={item.label}>
+                <Link to={item.to} onClick={onClose} className={cls}>
+                  {inner}
+                </Link>
+              </li>
+            );
+          }
+          return (
+            <li key={item.label}>
+              <button
+                onClick={() => {
+                  onClose();
+                  item.onClick?.();
+                }}
+                className={cls}
+              >
+                {inner}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 export function AppShell({ title, breadcrumbs, actions, children }: AppShellProps) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [topMenu, setTopMenu] = useState(false);
+  const [sideMenu, setSideMenu] = useState(false);
 
   const isActive = (to: string) =>
     to === "/app" ? pathname === "/app" : pathname.startsWith(to);
+
+  const handleLogout = () => {
+    if (confirm("Deseja realmente sair da aplicação?")) {
+      navigate({ to: "/" });
+    }
+  };
+
+  const menuItems: UserMenuItem[] = [
+    { icon: "person", label: "Meu perfil", to: "/app/configuracoes" },
+    { icon: "settings", label: "Configurações", to: "/app/configuracoes" },
+    { icon: "apartment", label: "Meu condomínio", to: "/app/configuracoes" },
+    { icon: "notifications", label: "Notificações", to: "/app/configuracoes" },
+    { divider: true, icon: "", label: "" },
+    { icon: "rocket_launch", label: "Onboarding", to: "/onboarding" },
+    { icon: "help", label: "Central de ajuda", onClick: () => window.open("https://docs.lovable.dev", "_blank") },
+    { divider: true, icon: "", label: "" },
+    { icon: "logout", label: "Sair da aplicação", onClick: handleLogout, danger: true },
+  ];
 
   return (
     <div className="min-h-screen w-full bg-[var(--color-surface)] text-[var(--color-on-surface)]">
@@ -109,8 +227,11 @@ export function AppShell({ title, breadcrumbs, actions, children }: AppShellProp
           </div>
         </nav>
 
-        <div className="border-t border-white/10 p-3">
-          <div className="flex items-center gap-3 rounded-lg p-2 hover:bg-white/8">
+        <div className="relative border-t border-white/10 p-3">
+          <button
+            onClick={() => setSideMenu((v) => !v)}
+            className="flex w-full items-center gap-3 rounded-lg p-2 text-left hover:bg-white/8"
+          >
             <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[var(--color-brand)] to-[var(--color-brand-hover)] text-sm font-bold text-white">
               RS
             </div>
@@ -122,8 +243,13 @@ export function AppShell({ title, breadcrumbs, actions, children }: AppShellProp
                 Síndico • Premium
               </p>
             </div>
-            <Icon name="more_vert" className="text-[18px] text-white/50" />
-          </div>
+            <Icon name={sideMenu ? "expand_less" : "more_vert"} className="text-[18px] text-white/50" />
+          </button>
+          {sideMenu ? (
+            <div className="absolute bottom-[76px] left-3 right-3">
+              <UserMenu open={sideMenu} onClose={() => setSideMenu(false)} align="left" items={menuItems} />
+            </div>
+          ) : null}
         </div>
       </aside>
 
@@ -166,22 +292,30 @@ export function AppShell({ title, breadcrumbs, actions, children }: AppShellProp
               </span>
             </button>
             <div className="mx-2 h-6 w-px bg-[var(--color-outline-variant)]" />
-            <div className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-[var(--color-surface-mid)]">
-              <div className="grid h-8 w-8 place-items-center rounded-full bg-[var(--color-navy)] text-xs font-bold text-white">
-                RS
-              </div>
-              <div className="hidden text-left md:block">
-                <p className="text-xs font-semibold leading-tight text-[var(--color-on-surface)]">
-                  Roberto Silva
-                </p>
-                <p className="text-[10px] leading-tight text-[var(--color-on-surface-variant)]">
-                  Edifício Aurora
-                </p>
-              </div>
-              <Icon
-                name="expand_more"
-                className="hidden text-[18px] text-[var(--color-on-surface-variant)] md:inline-block"
-              />
+            <div className="relative">
+              <button
+                onClick={() => setTopMenu((v) => !v)}
+                className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-[var(--color-surface-mid)]"
+                aria-haspopup="menu"
+                aria-expanded={topMenu}
+              >
+                <div className="grid h-8 w-8 place-items-center rounded-full bg-[var(--color-navy)] text-xs font-bold text-white">
+                  RS
+                </div>
+                <div className="hidden text-left md:block">
+                  <p className="text-xs font-semibold leading-tight text-[var(--color-on-surface)]">
+                    Roberto Silva
+                  </p>
+                  <p className="text-[10px] leading-tight text-[var(--color-on-surface-variant)]">
+                    Edifício Aurora
+                  </p>
+                </div>
+                <Icon
+                  name="expand_more"
+                  className="hidden text-[18px] text-[var(--color-on-surface-variant)] md:inline-block"
+                />
+              </button>
+              <UserMenu open={topMenu} onClose={() => setTopMenu(false)} align="right" items={menuItems} />
             </div>
           </div>
         </header>

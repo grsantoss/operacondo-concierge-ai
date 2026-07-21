@@ -480,10 +480,8 @@ function AgentePanel({ onSave }: { onSave: () => void }) {
         </div>
       </Card>
 
-      <Card
-        title="O que a IA pode resolver sozinha"
-        footer={<PrimaryBtn type="submit">Salvar comportamento</PrimaryBtn>}
-      >
+      <Card title="O que a IA pode resolver sozinha">
+
         <Toggle
           checked={reservas}
           onChange={setReservas}
@@ -509,7 +507,111 @@ function AgentePanel({ onSave }: { onSave: () => void }) {
           desc="Quando um morador demonstra insatisfação ou é urgência."
         />
       </Card>
+
+      <RegrasReclamacoesCard />
+      <RegrasManutencaoCard />
+      <div className="flex justify-end">
+        <PrimaryBtn type="submit">Salvar comportamento</PrimaryBtn>
+      </div>
     </form>
+  );
+}
+
+function RegrasReclamacoesCard() {
+  const [auto, setAuto] = useState(true);
+  const [prioridade, setPrioridade] = useState("Normal");
+  const [escalar, setEscalar] = useState("Reincidente (3+ ocorrências)");
+  const [obs, setObs] = useState(
+    "Barulho após 22h vai direto para triagem. Disputas entre moradores só o síndico responde.",
+  );
+  return (
+    <Card
+      title="Regras para reclamações"
+      desc="Como a IA registra e classifica reclamações (barulho, vizinhança, áreas comuns)."
+    >
+      <Toggle
+        checked={auto}
+        onChange={setAuto}
+        label="IA registra e classifica reclamações automaticamente"
+        desc="Categoriza por tipo e cria a demanda no Kanban."
+      />
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
+        <Field label="Prioridade padrão">
+          <select className={inputCls} value={prioridade} onChange={(e) => setPrioridade(e.target.value)}>
+            <option>Normal</option>
+            <option>Alta</option>
+            <option>Crítica</option>
+          </select>
+        </Field>
+        <Field label="Escalar para o síndico quando">
+          <select className={inputCls} value={escalar} onChange={(e) => setEscalar(e.target.value)}>
+            <option>Reincidente (3+ ocorrências)</option>
+            <option>Envolve outro morador</option>
+            <option>Sempre</option>
+          </select>
+        </Field>
+        <div className="md:col-span-2">
+          <Field label="Instruções extras para a IA">
+            <textarea
+              className={`${inputCls} min-h-[88px] resize-y`}
+              value={obs}
+              onChange={(e) => setObs(e.target.value)}
+            />
+          </Field>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function RegrasManutencaoCard() {
+  const [canal, setCanal] = useState("WhatsApp");
+  const [limite, setLimite] = useState("500");
+  const [foto, setFoto] = useState(true);
+  const [aprovacao, setAprovacao] = useState(true);
+  const [obs, setObs] = useState(
+    "Elétrica → sempre ElétricaPro. Hidráulica → registrar foto do local. Elevadores → chamado imediato para Otis.",
+  );
+  return (
+    <Card
+      title="Abertura de chamado de manutenção"
+      desc="Regras para como a IA abre e encaminha chamados de reparo."
+    >
+      <div className="grid gap-4 md:grid-cols-2">
+        <Field label="Canal preferencial">
+          <select className={inputCls} value={canal} onChange={(e) => setCanal(e.target.value)}>
+            <option>WhatsApp</option>
+            <option>Portal do morador</option>
+            <option>Ambos</option>
+          </select>
+        </Field>
+        <Field label="Aprovação do síndico acima de (R$)">
+          <input className={inputCls} value={limite} onChange={(e) => setLimite(e.target.value)} />
+        </Field>
+      </div>
+      <div className="mt-2">
+        <Toggle
+          checked={foto}
+          onChange={setFoto}
+          label="Exigir foto ou vídeo do problema"
+          desc="A IA pede a mídia antes de abrir o chamado."
+        />
+        <Toggle
+          checked={aprovacao}
+          onChange={setAprovacao}
+          label="Aprovação do síndico para orçamentos acima do limite"
+        />
+      </div>
+      <div className="mt-4">
+        <Field label="Instruções por especialidade">
+          <textarea
+            className={`${inputCls} min-h-[88px] resize-y`}
+            value={obs}
+            onChange={(e) => setObs(e.target.value)}
+          />
+        </Field>
+      </div>
+    </Card>
   );
 }
 
@@ -589,13 +691,6 @@ function NotificacoesPanel({ onSave }: { onSave: () => void }) {
 function IntegracoesPanel({ onToast }: { onToast: (m: string) => void }) {
   const [integrations, setIntegrations] = useState([
     {
-      id: "whatsapp",
-      name: "WhatsApp Business",
-      desc: "Canal principal de conversa com moradores.",
-      icon: "chat",
-      connected: true,
-    },
-    {
       id: "email",
       name: "E-mail (SMTP)",
       desc: "Envio de comunicados e boletos.",
@@ -634,44 +729,180 @@ function IntegracoesPanel({ onToast }: { onToast: (m: string) => void }) {
   }
 
   return (
-    <Card title="Integrações" desc="Conecte serviços que o Concierge usa para operar.">
-      <ul className="divide-y divide-[var(--color-outline-variant)]">
-        {integrations.map((i) => (
-          <li key={i.id} className="flex items-center gap-4 py-3">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[var(--color-surface-container)]">
-              <Icon name={i.icon} className="text-[20px] text-[var(--color-navy-deep)]" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-[var(--color-on-surface)]">
-                {i.name}
-              </p>
-              <p className="truncate text-xs text-[var(--color-on-surface-variant)]">
-                {i.desc}
-              </p>
-            </div>
-            <span
-              className={`hidden shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold md:inline-block ${
-                i.connected
-                  ? "bg-emerald-50 text-emerald-700"
-                  : "bg-[var(--color-surface-container)] text-[var(--color-on-surface-variant)]"
-              }`}
-            >
-              {i.connected ? "Conectado" : "Desconectado"}
-            </span>
+    <>
+      <WhatsAppIntegrationCard onToast={onToast} />
+
+      <Card title="Outras integrações" desc="Conecte serviços que o Concierge usa para operar.">
+        <ul className="divide-y divide-[var(--color-outline-variant)]">
+          {integrations.map((i) => (
+            <li key={i.id} className="flex items-center gap-4 py-3">
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[var(--color-surface-container)]">
+                <Icon name={i.icon} className="text-[20px] text-[var(--color-navy-deep)]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-[var(--color-on-surface)]">
+                  {i.name}
+                </p>
+                <p className="truncate text-xs text-[var(--color-on-surface-variant)]">
+                  {i.desc}
+                </p>
+              </div>
+              <span
+                className={`hidden shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold md:inline-block ${
+                  i.connected
+                    ? "bg-emerald-50 text-emerald-700"
+                    : "bg-[var(--color-surface-container)] text-[var(--color-on-surface-variant)]"
+                }`}
+              >
+                {i.connected ? "Conectado" : "Desconectado"}
+              </span>
+              <button
+                type="button"
+                onClick={() => toggle(i.id)}
+                className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                  i.connected
+                    ? "border border-[var(--color-outline-variant)] bg-white text-[var(--color-on-surface)] hover:bg-[var(--color-surface-container)]"
+                    : "bg-[var(--color-navy-deep)] text-white hover:opacity-90"
+                }`}
+              >
+                {i.connected ? "Desconectar" : "Conectar"}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </Card>
+    </>
+  );
+}
+
+function WhatsAppIntegrationCard({ onToast }: { onToast: (m: string) => void }) {
+  const [provider, setProvider] = useState<"zapi" | "meta">("zapi");
+  const [status, setStatus] = useState<"idle" | "testing" | "connected">("connected");
+  const [instanceId, setInstanceId] = useState("3AB1C-INSTANCIA");
+  const [zapiToken, setZapiToken] = useState("••••••••••••");
+  const [clientToken, setClientToken] = useState("");
+  const [phoneId, setPhoneId] = useState("");
+  const [wabaId, setWabaId] = useState("");
+  const [metaToken, setMetaToken] = useState("");
+  const [verifyToken, setVerifyToken] = useState("");
+
+  function test() {
+    setStatus("testing");
+    onToast("Testando conexão…");
+    window.setTimeout(() => {
+      setStatus("connected");
+      onToast("WhatsApp conectado");
+    }, 1200);
+  }
+
+  function disconnect() {
+    setStatus("idle");
+    onToast("WhatsApp desconectado");
+  }
+
+  return (
+    <Card
+      title="WhatsApp"
+      desc="Canal principal do Concierge. Conecte via Z-API ou API oficial da Meta."
+    >
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="flex gap-2">
+          {(
+            [
+              { id: "zapi", label: "Z-API" },
+              { id: "meta", label: "Meta Cloud API" },
+            ] as const
+          ).map((p) => (
             <button
+              key={p.id}
               type="button"
-              onClick={() => toggle(i.id)}
-              className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                i.connected
-                  ? "border border-[var(--color-outline-variant)] bg-white text-[var(--color-on-surface)] hover:bg-[var(--color-surface-container)]"
-                  : "bg-[var(--color-navy-deep)] text-white hover:opacity-90"
+              onClick={() => setProvider(p.id)}
+              className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
+                provider === p.id
+                  ? "border-[var(--color-brand)] bg-[var(--color-brand)]/10 text-[var(--color-brand)]"
+                  : "border-[var(--color-outline-variant)] bg-white text-[var(--color-on-surface)]"
               }`}
             >
-              {i.connected ? "Desconectar" : "Conectar"}
+              {p.label}
             </button>
-          </li>
-        ))}
-      </ul>
+          ))}
+        </div>
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+            status === "connected"
+              ? "bg-emerald-50 text-emerald-700"
+              : status === "testing"
+              ? "bg-amber-50 text-amber-700"
+              : "bg-[var(--color-surface-container)] text-[var(--color-on-surface-variant)]"
+          }`}
+        >
+          <span
+            className={`h-1.5 w-1.5 rounded-full ${
+              status === "connected"
+                ? "bg-emerald-500"
+                : status === "testing"
+                ? "bg-amber-500 animate-pulse"
+                : "bg-slate-400"
+            }`}
+          />
+          {status === "connected" ? "Conectado" : status === "testing" ? "Testando…" : "Não conectado"}
+        </span>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        {provider === "zapi" ? (
+          <>
+            <Field label="Instance ID">
+              <input className={inputCls} value={instanceId} onChange={(e) => setInstanceId(e.target.value)} />
+            </Field>
+            <Field label="Token">
+              <input className={inputCls} value={zapiToken} onChange={(e) => setZapiToken(e.target.value)} />
+            </Field>
+            <div className="md:col-span-2">
+              <Field label="Client-Token (opcional)" hint="Obrigatório em contas com segurança avançada.">
+                <input className={inputCls} value={clientToken} onChange={(e) => setClientToken(e.target.value)} />
+              </Field>
+            </div>
+          </>
+        ) : (
+          <>
+            <Field label="Phone Number ID">
+              <input className={inputCls} value={phoneId} onChange={(e) => setPhoneId(e.target.value)} />
+            </Field>
+            <Field label="WhatsApp Business Account ID">
+              <input className={inputCls} value={wabaId} onChange={(e) => setWabaId(e.target.value)} />
+            </Field>
+            <div className="md:col-span-2">
+              <Field label="Access Token permanente">
+                <input className={inputCls} value={metaToken} onChange={(e) => setMetaToken(e.target.value)} />
+              </Field>
+            </div>
+            <div className="md:col-span-2">
+              <Field label="Webhook Verify Token">
+                <input className={inputCls} value={verifyToken} onChange={(e) => setVerifyToken(e.target.value)} />
+              </Field>
+            </div>
+          </>
+        )}
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <PrimaryBtn onClick={test}>
+          <Icon name="bolt" className="text-[16px]" />
+          {provider === "zapi" ? "Testar conexão" : "Validar credenciais"}
+        </PrimaryBtn>
+        <GhostBtn onClick={disconnect}>
+          <Icon name="link_off" className="text-[16px]" /> Desconectar
+        </GhostBtn>
+        <a
+          href={provider === "zapi" ? "https://z-api.io" : "https://developers.facebook.com/docs/whatsapp"}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-outline-variant)] bg-white px-3 py-2 text-xs font-semibold text-[var(--color-on-surface)] hover:bg-[var(--color-surface-container)]"
+        >
+          Como obter <Icon name="open_in_new" className="text-[14px]" />
+        </a>
+      </div>
     </Card>
   );
 }

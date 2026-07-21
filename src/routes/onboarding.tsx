@@ -13,9 +13,11 @@ export const Route = createFileRoute("/onboarding")({
 const STEPS = [
   { n: 1, title: "Configuração do gestor", desc: "Tom de voz e comportamento" },
   { n: 2, title: "Dados do condomínio", desc: "CNPJ, endereço, unidades" },
-  { n: 3, title: "Regras específicas", desc: "Silêncio, pets, áreas comuns" },
-  { n: 4, title: "Revisão final", desc: "Verificação e ativação" },
+  { n: 3, title: "Regras específicas", desc: "Silêncio, reclamações e chamados" },
+  { n: 4, title: "Conectar WhatsApp", desc: "Z-API ou API oficial da Meta" },
+  { n: 5, title: "Revisão final", desc: "Verificação e ativação" },
 ];
+const TOTAL_STEPS = 5;
 
 function OnboardingPage() {
   const navigate = useNavigate();
@@ -101,7 +103,7 @@ function OnboardingPage() {
       <main className="flex flex-col">
         <header className="flex items-center justify-between border-b border-[var(--color-outline-variant)] bg-white px-6 py-4">
           <p className="text-xs text-[var(--color-on-surface-variant)]">
-            Passo <span className="font-bold text-[var(--color-navy)]">{step}</span> de 4
+            Passo <span className="font-bold text-[var(--color-navy)]">{step}</span> de {TOTAL_STEPS}
           </p>
           <Link
             to="/app"
@@ -116,7 +118,8 @@ function OnboardingPage() {
           {step === 1 ? <StepGestor /> : null}
           {step === 2 ? <StepCondominio /> : null}
           {step === 3 ? <StepRegras /> : null}
-          {step === 4 ? <StepRevisao /> : null}
+          {step === 4 ? <StepWhatsApp /> : null}
+          {step === 5 ? <StepRevisao /> : null}
         </div>
 
         <footer className="sticky bottom-0 flex items-center justify-between gap-3 border-t border-[var(--color-outline-variant)] bg-white/90 px-6 py-4 backdrop-blur">
@@ -132,12 +135,12 @@ function OnboardingPage() {
             <div className="h-1.5 w-32 overflow-hidden rounded-full bg-[var(--color-surface-mid)]">
               <div
                 className="h-full rounded-full bg-[var(--color-brand)] transition-all"
-                style={{ width: `${(step / 4) * 100}%` }}
+                style={{ width: `${(step / TOTAL_STEPS) * 100}%` }}
               />
             </div>
-            <span className="font-semibold text-[var(--color-navy)]">{Math.round((step / 4) * 100)}%</span>
+            <span className="font-semibold text-[var(--color-navy)]">{Math.round((step / TOTAL_STEPS) * 100)}%</span>
           </div>
-          {step < 4 ? (
+          {step < TOTAL_STEPS ? (
             <button
               onClick={() => setStep((s) => s + 1)}
               className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[var(--color-brand-hover)]"
@@ -288,14 +291,18 @@ function StepCondominio() {
 }
 
 function StepRegras() {
+  const [complaintsAuto, setComplaintsAuto] = useState(true);
+  const [maintRequirePhoto, setMaintRequirePhoto] = useState(true);
+  const [maintApproval, setMaintApproval] = useState(true);
   return (
     <>
       <StepHeader
         kicker="Passo 3"
         title="Regras de convivência"
-        desc="Configure as principais regras. A IA usará isso para responder dúvidas dos moradores."
+        desc="Configure as principais regras. A IA usará isso para responder e triar demandas dos moradores."
       />
       <div className="space-y-4">
+        {/* Silêncio */}
         <div className="card-elev rounded-2xl p-5">
           <div className="flex items-center gap-3">
             <div className="grid h-10 w-10 place-items-center rounded-xl bg-[var(--color-surface-mid)] text-[var(--color-navy)]">
@@ -312,50 +319,261 @@ function StepRegras() {
           </div>
         </div>
 
+        {/* Reclamações */}
         <div className="card-elev rounded-2xl p-5">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[var(--color-surface-mid)] text-[var(--color-navy)]">
-                <Icon name="pets" />
+                <Icon name="report_problem" />
               </div>
               <div className="min-w-0">
-                <h3 className="text-sm font-semibold text-[var(--color-navy)]">Política de pets</h3>
-                <p className="text-xs text-[var(--color-on-surface-variant)]">Permitidos com registro e uso obrigatório de coleira nas áreas comuns.</p>
+                <h3 className="text-sm font-semibold text-[var(--color-navy)]">Regras para reclamações</h3>
+                <p className="text-xs text-[var(--color-on-surface-variant)]">
+                  Como a IA deve registrar e classificar reclamações (barulho, vizinhança, áreas comuns).
+                </p>
               </div>
             </div>
-            <Toggle on />
+            <Toggle on={complaintsAuto} onChange={setComplaintsAuto} />
+          </div>
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]">
+                Prioridade padrão
+              </label>
+              <select className="mt-1.5 w-full rounded-lg border border-[var(--color-outline-variant)] bg-white px-4 py-2.5 text-sm outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand)]/15">
+                <option>Normal</option>
+                <option>Alta</option>
+                <option>Crítica</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]">
+                Escalar para o síndico quando
+              </label>
+              <select className="mt-1.5 w-full rounded-lg border border-[var(--color-outline-variant)] bg-white px-4 py-2.5 text-sm outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand)]/15">
+                <option>Reincidente (3+ ocorrências)</option>
+                <option>Envolve outro morador</option>
+                <option>Sempre</option>
+              </select>
+            </div>
+          </div>
+          <div className="mt-3">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]">
+              Instruções extras para a IA
+            </label>
+            <textarea
+              rows={3}
+              placeholder="Ex.: barulho após 22h vai direto para triagem • disputas entre moradores só o síndico responde."
+              className="mt-1.5 w-full rounded-xl border border-[var(--color-outline-variant)] bg-white p-3 text-sm outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand)]/15"
+            />
           </div>
         </div>
 
+        {/* Manutenção */}
         <div className="card-elev rounded-2xl p-5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[var(--color-surface-mid)] text-[var(--color-navy)]">
-                <Icon name="celebration" />
-              </div>
-              <div className="min-w-0">
-                <h3 className="text-sm font-semibold text-[var(--color-navy)]">Reserva de áreas comuns via IA</h3>
-                <p className="text-xs text-[var(--color-on-surface-variant)]">A IA pode confirmar reservas dentro da agenda configurada.</p>
-              </div>
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[var(--color-surface-mid)] text-[var(--color-navy)]">
+              <Icon name="build" />
             </div>
-            <Toggle on />
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold text-[var(--color-navy)]">Abertura de chamado de manutenção</h3>
+              <p className="text-xs text-[var(--color-on-surface-variant)]">
+                Regras para como a IA abre e encaminha chamados de reparo.
+              </p>
+            </div>
           </div>
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]">
+                Canal preferencial
+              </label>
+              <select className="mt-1.5 w-full rounded-lg border border-[var(--color-outline-variant)] bg-white px-4 py-2.5 text-sm outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand)]/15">
+                <option>WhatsApp</option>
+                <option>Portal do morador</option>
+                <option>Ambos</option>
+              </select>
+            </div>
+            <Field label="Aprovação do síndico acima de (R$)" value="500" />
+          </div>
+          <div className="mt-3 space-y-1">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm text-[var(--color-on-surface)]">Exigir foto ou vídeo do problema</p>
+              <Toggle on={maintRequirePhoto} onChange={setMaintRequirePhoto} />
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm text-[var(--color-on-surface)]">Aprovação do síndico para orçamentos acima do limite</p>
+              <Toggle on={maintApproval} onChange={setMaintApproval} />
+            </div>
+          </div>
+          <div className="mt-3">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]">
+              Instruções por especialidade
+            </label>
+            <textarea
+              rows={3}
+              placeholder="Ex.: elétrica → sempre ElétricaPro • hidráulica → registrar foto do local • elevadores → chamado imediato para Otis."
+              className="mt-1.5 w-full rounded-xl border border-[var(--color-outline-variant)] bg-white p-3 text-sm outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand)]/15"
+            />
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function StepWhatsApp() {
+  const [provider, setProvider] = useState<"zapi" | "meta">("zapi");
+  const [status, setStatus] = useState<"idle" | "testing" | "connected">("idle");
+  const [skipForNow, setSkipForNow] = useState(false);
+
+  function handleTest() {
+    setStatus("testing");
+    window.setTimeout(() => setStatus("connected"), 1200);
+  }
+
+  return (
+    <>
+      <StepHeader
+        kicker="Passo 4"
+        title="Conectar o WhatsApp do condomínio"
+        desc="O WhatsApp é o canal principal do Concierge. Você pode conectar via Z-API (rápido, com QR Code) ou pela API oficial da Meta."
+      />
+
+      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {[
+          {
+            id: "zapi" as const,
+            title: "Z-API",
+            desc: "Integração rápida via QR Code. Ideal para começar.",
+            icon: "qr_code_2",
+          },
+          {
+            id: "meta" as const,
+            title: "WhatsApp Business API (Meta)",
+            desc: "API oficial da Meta. Recomendada para alto volume.",
+            icon: "verified",
+          },
+        ].map((p) => {
+          const active = provider === p.id;
+          return (
+            <button
+              key={p.id}
+              onClick={() => {
+                setProvider(p.id);
+                setStatus("idle");
+              }}
+              className={`flex items-start gap-3 rounded-2xl border p-4 text-left transition ${
+                active
+                  ? "border-[var(--color-brand)] bg-[var(--color-brand-soft)]/40 ring-2 ring-[var(--color-brand)]/20"
+                  : "border-[var(--color-outline-variant)] bg-white hover:border-[var(--color-brand)]/50"
+              }`}
+            >
+              <div
+                className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${
+                  active ? "bg-[var(--color-brand)] text-white" : "bg-[var(--color-surface-mid)] text-[var(--color-navy)]"
+                }`}
+              >
+                <Icon name={p.icon} filled={active} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-[var(--color-navy)]">{p.title}</p>
+                <p className="mt-0.5 text-xs text-[var(--color-on-surface-variant)]">{p.desc}</p>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="card-elev rounded-2xl p-5">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-semibold text-[var(--color-navy)]">
+              {provider === "zapi" ? "Credenciais Z-API" : "Credenciais Meta Cloud API"}
+            </h3>
+            <p className="text-xs text-[var(--color-on-surface-variant)]">
+              {provider === "zapi"
+                ? "Encontre no painel da Z-API em Instâncias → Sua instância."
+                : "Encontre no Meta for Developers → WhatsApp → API Setup."}
+            </p>
+          </div>
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+              status === "connected"
+                ? "bg-emerald-50 text-emerald-700"
+                : status === "testing"
+                ? "bg-amber-50 text-amber-700"
+                : "bg-[var(--color-surface-mid)] text-[var(--color-on-surface-variant)]"
+            }`}
+          >
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${
+                status === "connected"
+                  ? "bg-emerald-500"
+                  : status === "testing"
+                  ? "bg-amber-500 animate-pulse"
+                  : "bg-slate-400"
+              }`}
+            />
+            {status === "connected" ? "Conectado" : status === "testing" ? "Testando…" : "Não conectado"}
+          </span>
         </div>
 
-        <div className="card-elev rounded-2xl p-5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[var(--color-surface-mid)] text-[var(--color-navy)]">
-                <Icon name="local_shipping" />
-              </div>
-              <div className="min-w-0">
-                <h3 className="text-sm font-semibold text-[var(--color-navy)]">Mudanças</h3>
-                <p className="text-xs text-[var(--color-on-surface-variant)]">Permitidas seg–sex, 9h às 17h, com aviso de 48h.</p>
-              </div>
-            </div>
-            <Toggle />
-          </div>
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {provider === "zapi" ? (
+            <>
+              <Field label="Instance ID" value="" />
+              <Field label="Token" value="" />
+              <Field label="Client-Token (opcional)" value="" full />
+            </>
+          ) : (
+            <>
+              <Field label="Phone Number ID" value="" />
+              <Field label="WhatsApp Business Account ID" value="" />
+              <Field label="Access Token permanente" value="" full />
+              <Field label="Webhook Verify Token" value="" full />
+            </>
+          )}
         </div>
+
+        {provider === "zapi" ? (
+          <div className="mt-4 flex items-center gap-4 rounded-xl border border-dashed border-[var(--color-outline-variant)] bg-[var(--color-surface-low)] p-4">
+            <div className="grid h-24 w-24 shrink-0 place-items-center rounded-lg bg-white text-[var(--color-on-surface-variant)]">
+              <Icon name="qr_code_2" className="text-[48px]" />
+            </div>
+            <div className="text-xs text-[var(--color-on-surface-variant)]">
+              Após salvar as credenciais, o QR Code de pareamento aparecerá aqui. Escaneie com o WhatsApp do condomínio para ativar.
+            </div>
+          </div>
+        ) : null}
+
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={handleTest}
+            className="btn-press inline-flex h-9 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-3 text-xs font-semibold text-white hover:bg-[var(--color-brand-hover)]"
+          >
+            <Icon name="bolt" className="text-[16px]" />
+            {provider === "zapi" ? "Testar conexão" : "Validar credenciais"}
+          </button>
+          <a
+            href={provider === "zapi" ? "https://z-api.io" : "https://developers.facebook.com/docs/whatsapp"}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex h-9 items-center gap-1 rounded-lg border border-[var(--color-outline-variant)] bg-white px-3 text-xs font-semibold text-[var(--color-on-surface)] hover:bg-[var(--color-surface-low)]"
+          >
+            Como obter <Icon name="open_in_new" className="text-[14px]" />
+          </a>
+        </div>
+      </div>
+
+      <div className="mt-5 flex items-center justify-between gap-3 rounded-2xl border border-[var(--color-outline-variant)] bg-white p-4">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-[var(--color-navy)]">Pular por agora</p>
+          <p className="text-xs text-[var(--color-on-surface-variant)]">
+            Você pode conectar depois em Configurações → Integrações.
+          </p>
+        </div>
+        <Toggle on={skipForNow} onChange={setSkipForNow} />
       </div>
     </>
   );
@@ -365,7 +583,7 @@ function StepRevisao() {
   return (
     <>
       <StepHeader
-        kicker="Passo 4"
+        kicker="Passo 5"
         title="Revisão final"
         desc="Confirme as informações abaixo antes de ativar o Concierge para o Edifício Aurora."
       />
@@ -375,7 +593,9 @@ function StepRevisao() {
           { t: "Condomínio", v: "Edifício Aurora — 248 unidades • Pinheiros, SP", i: "apartment", step: 2 },
           { t: "Modelo de gestão", v: "Administradora", i: "business_center", step: 2 },
           { t: "Silêncio", v: "22:00 às 08:00", i: "bedtime", step: 3 },
-          { t: "Pets / Reservas / Mudanças", v: "Permitido • IA confirma reservas • Mudanças seg–sex", i: "rule", step: 3 },
+          { t: "Reclamações", v: "IA classifica automaticamente • prioridade Normal", i: "report_problem", step: 3 },
+          { t: "Manutenção", v: "Foto obrigatória • aprovação acima de R$ 500", i: "build", step: 3 },
+          { t: "WhatsApp", v: "Z-API — não conectado (pendente)", i: "chat", step: 4 },
         ].map((r) => (
           <div key={r.t} className="card-elev grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 rounded-2xl p-5">
             <div className="grid h-11 w-11 place-items-center rounded-xl bg-[var(--color-brand-soft)] text-[var(--color-brand)]">
@@ -421,12 +641,18 @@ function Field({ label, value, full = false }: { label: string; value: string; f
   );
 }
 
-function Toggle({ on = false }: { on?: boolean }) {
-  const [v, setV] = useState(on);
+function Toggle({ on = false, onChange }: { on?: boolean; onChange?: (v: boolean) => void }) {
+  const [internal, setInternal] = useState(on);
+  const controlled = onChange !== undefined;
+  const v = controlled ? on : internal;
   return (
     <button
       type="button"
-      onClick={() => setV((x) => !x)}
+      onClick={() => {
+        const next = !v;
+        if (controlled) onChange!(next);
+        else setInternal(next);
+      }}
       className={`relative h-6 w-11 shrink-0 rounded-full transition ${v ? "bg-[var(--color-brand)]" : "bg-[var(--color-surface-high)]"}`}
     >
       <span

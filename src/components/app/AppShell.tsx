@@ -284,16 +284,6 @@ export function AppShell({ title, breadcrumbs, actions, children }: AppShellProp
           </div>
         </nav>
 
-        {/* Collapse toggle (desktop) */}
-        <button
-          onClick={toggleCollapse}
-          aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
-          title={collapsed ? "Expandir menu" : "Recolher menu"}
-          className="mx-3 mb-2 hidden lg:flex items-center justify-center gap-2 rounded-lg border border-white/10 py-2 text-xs font-semibold text-white/70 hover:bg-white/8 hover:text-white"
-        >
-          <Icon name={collapsed ? "chevron_right" : "chevron_left"} className="text-[18px]" />
-          {!collapsed ? <span>Recolher</span> : null}
-        </button>
 
         <div className="relative border-t border-white/10 p-3">
           <button

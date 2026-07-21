@@ -108,18 +108,19 @@
 }
 
 .dark {
+  /* shadcn tokens */
   --background: #0a0f1a;
   --foreground: #eff0fa;
-  --card: #0d3566;
+  --card: #111a2e;
   --card-foreground: #eff0fa;
-  --popover: #0d3566;
+  --popover: #111a2e;
   --popover-foreground: #eff0fa;
   --primary: #acc7ff;
   --primary-foreground: #001a40;
-  --secondary: #244779;
+  --secondary: #1a2540;
   --secondary-foreground: #eff0fa;
-  --muted: #244779;
-  --muted-foreground: #c1c6d6;
+  --muted: #172033;
+  --muted-foreground: #a4acbd;
   --accent: #244779;
   --accent-foreground: #eff0fa;
   --destructive: #ff6b6b;
@@ -127,7 +128,39 @@
   --border: rgba(255, 255, 255, 0.1);
   --input: rgba(255, 255, 255, 0.15);
   --ring: #acc7ff;
+
+  /* OperaCondo semantic tokens (override @theme defaults) */
+  --color-brand: #4d8fe6;
+  --color-brand-hover: #6ba3ee;
+  --color-brand-soft: #1a2b4d;
+  --color-brand-fixed: #acc7ff;
+  --color-navy: #0f1b30;
+  --color-navy-deep: #08111f;
+  --color-navy-soft: #1a2540;
+
+  --color-surface: #0a0f1a;
+  --color-surface-low: #0d1424;
+  --color-surface-mid: #141c30;
+  --color-surface-high: #1a2540;
+  --color-surface-elev: #111a2e;
+  --color-surface-container: #141c30;
+  --color-on-surface: #eff0fa;
+  --color-on-surface-variant: #a4acbd;
+  --color-outline: #4a5468;
+  --color-outline-variant: #2a3348;
+
+  --color-success: #4ade80;
+  --color-success-soft: #14351f;
+  --color-warning: #fbbf24;
+  --color-warning-soft: #3d2a0a;
+  --color-danger: #ff6b6b;
+  --color-danger-soft: #3d1414;
+  --color-info: #4d8fe6;
+  --color-info-soft: #1a2b4d;
+
+  color-scheme: dark;
 }
+
 
 @layer base {
   * {

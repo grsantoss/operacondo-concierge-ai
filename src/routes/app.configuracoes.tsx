@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/brand/Icon";
+import { applyTheme, getStoredTheme, type ThemeMode } from "@/lib/theme";
 
 export const Route = createFileRoute("/app/configuracoes")({
   head: () => ({

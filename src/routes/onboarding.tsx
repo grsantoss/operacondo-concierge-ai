@@ -294,6 +294,9 @@ function StepRegras() {
   const [complaintsAuto, setComplaintsAuto] = useState(true);
   const [maintRequirePhoto, setMaintRequirePhoto] = useState(true);
   const [maintApproval, setMaintApproval] = useState(true);
+  const [priority, setPriority] = useState("Normal");
+  const [escalate, setEscalate] = useState("Reincidente (3+ ocorrências)");
+  const [channel, setChannel] = useState("WhatsApp");
   return (
     <>
       <StepHeader

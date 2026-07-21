@@ -184,7 +184,9 @@ export function AppShell({ title, breadcrumbs, actions, children }: AppShellProp
       >
         <div className={`flex items-center border-b border-white/10 ${collapsed ? "justify-center px-2 py-4" : "justify-between px-5 py-5"}`}>
           {collapsed ? (
-            <Logo variant="light" iconOnly />
+            <Link to="/app" className="grid h-10 w-10 place-items-center rounded-xl bg-white/10 text-white transition-transform hover:scale-105" title="Concierge OperaCondo">
+              <Icon name="apartment" className="text-[22px]" />
+            </Link>
           ) : (
             <Logo variant="light" subtitle="OperaCondo SaaS • Admin" />
           )}

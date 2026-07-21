@@ -11,24 +11,33 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as AppRouteImport } from './routes/app'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AppMoradoresRouteImport } from './routes/app.moradores'
 import { Route as AppFornecedoresRouteImport } from './routes/app.fornecedores'
 import { Route as AppDemandasRouteImport } from './routes/app.demandas'
 import { Route as AppConfiguracoesRouteImport } from './routes/app.configuracoes'
 import { Route as AppBaseRouteImport } from './routes/app.base'
 import { Route as AppAgenteRouteImport } from './routes/app.agente'
+import { Route as AdminUsuariosRouteImport } from './routes/admin.usuarios'
+import { Route as AdminFinanceiroRouteImport } from './routes/admin.financeiro'
+import { Route as AdminConfiguracoesRouteImport } from './routes/admin.configuracoes'
+import { Route as AdminAmbientesRouteImport } from './routes/admin.ambientes'
 import { Route as AppMoradoresIndexRouteImport } from './routes/app.moradores.index'
 import { Route as AppFornecedoresIndexRouteImport } from './routes/app.fornecedores.index'
 import { Route as AppDemandasIndexRouteImport } from './routes/app.demandas.index'
 import { Route as AppBaseIndexRouteImport } from './routes/app.base.index'
+import { Route as AdminUsuariosIndexRouteImport } from './routes/admin.usuarios.index'
 import { Route as AppMoradoresArquivadosRouteImport } from './routes/app.moradores.arquivados'
 import { Route as AppMoradoresIdRouteImport } from './routes/app.moradores.$id'
 import { Route as AppFornecedoresNovoRouteImport } from './routes/app.fornecedores.novo'
 import { Route as AppDemandasNovaRouteImport } from './routes/app.demandas.nova'
 import { Route as AppDemandasIdRouteImport } from './routes/app.demandas.$id'
 import { Route as AppBaseEnviarRouteImport } from './routes/app.base.enviar'
+import { Route as AdminUsuariosNovoRouteImport } from './routes/admin.usuarios.novo'
+import { Route as AdminUsuariosIdRouteImport } from './routes/admin.usuarios.$id'
 
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
@@ -40,6 +49,11 @@ const AppRoute = AppRouteImport.update({
   path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -49,6 +63,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppRoute,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AppMoradoresRoute = AppMoradoresRouteImport.update({
   id: '/moradores',
@@ -80,6 +99,26 @@ const AppAgenteRoute = AppAgenteRouteImport.update({
   path: '/agente',
   getParentRoute: () => AppRoute,
 } as any)
+const AdminUsuariosRoute = AdminUsuariosRouteImport.update({
+  id: '/usuarios',
+  path: '/usuarios',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminFinanceiroRoute = AdminFinanceiroRouteImport.update({
+  id: '/financeiro',
+  path: '/financeiro',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminConfiguracoesRoute = AdminConfiguracoesRouteImport.update({
+  id: '/configuracoes',
+  path: '/configuracoes',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAmbientesRoute = AdminAmbientesRouteImport.update({
+  id: '/ambientes',
+  path: '/ambientes',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AppMoradoresIndexRoute = AppMoradoresIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -99,6 +138,11 @@ const AppBaseIndexRoute = AppBaseIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppBaseRoute,
+} as any)
+const AdminUsuariosIndexRoute = AdminUsuariosIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminUsuariosRoute,
 } as any)
 const AppMoradoresArquivadosRoute = AppMoradoresArquivadosRouteImport.update({
   id: '/arquivados',
@@ -130,24 +174,43 @@ const AppBaseEnviarRoute = AppBaseEnviarRouteImport.update({
   path: '/enviar',
   getParentRoute: () => AppBaseRoute,
 } as any)
+const AdminUsuariosNovoRoute = AdminUsuariosNovoRouteImport.update({
+  id: '/novo',
+  path: '/novo',
+  getParentRoute: () => AdminUsuariosRoute,
+} as any)
+const AdminUsuariosIdRoute = AdminUsuariosIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AdminUsuariosRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/onboarding': typeof OnboardingRoute
+  '/admin/ambientes': typeof AdminAmbientesRoute
+  '/admin/configuracoes': typeof AdminConfiguracoesRoute
+  '/admin/financeiro': typeof AdminFinanceiroRoute
+  '/admin/usuarios': typeof AdminUsuariosRouteWithChildren
   '/app/agente': typeof AppAgenteRoute
   '/app/base': typeof AppBaseRouteWithChildren
   '/app/configuracoes': typeof AppConfiguracoesRoute
   '/app/demandas': typeof AppDemandasRouteWithChildren
   '/app/fornecedores': typeof AppFornecedoresRouteWithChildren
   '/app/moradores': typeof AppMoradoresRouteWithChildren
+  '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
+  '/admin/usuarios/$id': typeof AdminUsuariosIdRoute
+  '/admin/usuarios/novo': typeof AdminUsuariosNovoRoute
   '/app/base/enviar': typeof AppBaseEnviarRoute
   '/app/demandas/$id': typeof AppDemandasIdRoute
   '/app/demandas/nova': typeof AppDemandasNovaRoute
   '/app/fornecedores/novo': typeof AppFornecedoresNovoRoute
   '/app/moradores/$id': typeof AppMoradoresIdRoute
   '/app/moradores/arquivados': typeof AppMoradoresArquivadosRoute
+  '/admin/usuarios/': typeof AdminUsuariosIndexRoute
   '/app/base/': typeof AppBaseIndexRoute
   '/app/demandas/': typeof AppDemandasIndexRoute
   '/app/fornecedores/': typeof AppFornecedoresIndexRoute
@@ -156,15 +219,22 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/onboarding': typeof OnboardingRoute
+  '/admin/ambientes': typeof AdminAmbientesRoute
+  '/admin/configuracoes': typeof AdminConfiguracoesRoute
+  '/admin/financeiro': typeof AdminFinanceiroRoute
   '/app/agente': typeof AppAgenteRoute
   '/app/configuracoes': typeof AppConfiguracoesRoute
+  '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
+  '/admin/usuarios/$id': typeof AdminUsuariosIdRoute
+  '/admin/usuarios/novo': typeof AdminUsuariosNovoRoute
   '/app/base/enviar': typeof AppBaseEnviarRoute
   '/app/demandas/$id': typeof AppDemandasIdRoute
   '/app/demandas/nova': typeof AppDemandasNovaRoute
   '/app/fornecedores/novo': typeof AppFornecedoresNovoRoute
   '/app/moradores/$id': typeof AppMoradoresIdRoute
   '/app/moradores/arquivados': typeof AppMoradoresArquivadosRoute
+  '/admin/usuarios': typeof AdminUsuariosIndexRoute
   '/app/base': typeof AppBaseIndexRoute
   '/app/demandas': typeof AppDemandasIndexRoute
   '/app/fornecedores': typeof AppFornecedoresIndexRoute
@@ -173,21 +243,30 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/onboarding': typeof OnboardingRoute
+  '/admin/ambientes': typeof AdminAmbientesRoute
+  '/admin/configuracoes': typeof AdminConfiguracoesRoute
+  '/admin/financeiro': typeof AdminFinanceiroRoute
+  '/admin/usuarios': typeof AdminUsuariosRouteWithChildren
   '/app/agente': typeof AppAgenteRoute
   '/app/base': typeof AppBaseRouteWithChildren
   '/app/configuracoes': typeof AppConfiguracoesRoute
   '/app/demandas': typeof AppDemandasRouteWithChildren
   '/app/fornecedores': typeof AppFornecedoresRouteWithChildren
   '/app/moradores': typeof AppMoradoresRouteWithChildren
+  '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
+  '/admin/usuarios/$id': typeof AdminUsuariosIdRoute
+  '/admin/usuarios/novo': typeof AdminUsuariosNovoRoute
   '/app/base/enviar': typeof AppBaseEnviarRoute
   '/app/demandas/$id': typeof AppDemandasIdRoute
   '/app/demandas/nova': typeof AppDemandasNovaRoute
   '/app/fornecedores/novo': typeof AppFornecedoresNovoRoute
   '/app/moradores/$id': typeof AppMoradoresIdRoute
   '/app/moradores/arquivados': typeof AppMoradoresArquivadosRoute
+  '/admin/usuarios/': typeof AdminUsuariosIndexRoute
   '/app/base/': typeof AppBaseIndexRoute
   '/app/demandas/': typeof AppDemandasIndexRoute
   '/app/fornecedores/': typeof AppFornecedoresIndexRoute
@@ -197,21 +276,30 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/app'
     | '/onboarding'
+    | '/admin/ambientes'
+    | '/admin/configuracoes'
+    | '/admin/financeiro'
+    | '/admin/usuarios'
     | '/app/agente'
     | '/app/base'
     | '/app/configuracoes'
     | '/app/demandas'
     | '/app/fornecedores'
     | '/app/moradores'
+    | '/admin/'
     | '/app/'
+    | '/admin/usuarios/$id'
+    | '/admin/usuarios/novo'
     | '/app/base/enviar'
     | '/app/demandas/$id'
     | '/app/demandas/nova'
     | '/app/fornecedores/novo'
     | '/app/moradores/$id'
     | '/app/moradores/arquivados'
+    | '/admin/usuarios/'
     | '/app/base/'
     | '/app/demandas/'
     | '/app/fornecedores/'
@@ -220,15 +308,22 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/onboarding'
+    | '/admin/ambientes'
+    | '/admin/configuracoes'
+    | '/admin/financeiro'
     | '/app/agente'
     | '/app/configuracoes'
+    | '/admin'
     | '/app'
+    | '/admin/usuarios/$id'
+    | '/admin/usuarios/novo'
     | '/app/base/enviar'
     | '/app/demandas/$id'
     | '/app/demandas/nova'
     | '/app/fornecedores/novo'
     | '/app/moradores/$id'
     | '/app/moradores/arquivados'
+    | '/admin/usuarios'
     | '/app/base'
     | '/app/demandas'
     | '/app/fornecedores'
@@ -236,21 +331,30 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/app'
     | '/onboarding'
+    | '/admin/ambientes'
+    | '/admin/configuracoes'
+    | '/admin/financeiro'
+    | '/admin/usuarios'
     | '/app/agente'
     | '/app/base'
     | '/app/configuracoes'
     | '/app/demandas'
     | '/app/fornecedores'
     | '/app/moradores'
+    | '/admin/'
     | '/app/'
+    | '/admin/usuarios/$id'
+    | '/admin/usuarios/novo'
     | '/app/base/enviar'
     | '/app/demandas/$id'
     | '/app/demandas/nova'
     | '/app/fornecedores/novo'
     | '/app/moradores/$id'
     | '/app/moradores/arquivados'
+    | '/admin/usuarios/'
     | '/app/base/'
     | '/app/demandas/'
     | '/app/fornecedores/'
@@ -259,6 +363,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
   AppRoute: typeof AppRouteWithChildren
   OnboardingRoute: typeof OnboardingRoute
 }
@@ -279,6 +384,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -292,6 +404,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/app/'
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/app/moradores': {
       id: '/app/moradores'
@@ -335,6 +454,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAgenteRouteImport
       parentRoute: typeof AppRoute
     }
+    '/admin/usuarios': {
+      id: '/admin/usuarios'
+      path: '/usuarios'
+      fullPath: '/admin/usuarios'
+      preLoaderRoute: typeof AdminUsuariosRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/financeiro': {
+      id: '/admin/financeiro'
+      path: '/financeiro'
+      fullPath: '/admin/financeiro'
+      preLoaderRoute: typeof AdminFinanceiroRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/configuracoes': {
+      id: '/admin/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/admin/configuracoes'
+      preLoaderRoute: typeof AdminConfiguracoesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/ambientes': {
+      id: '/admin/ambientes'
+      path: '/ambientes'
+      fullPath: '/admin/ambientes'
+      preLoaderRoute: typeof AdminAmbientesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/app/moradores/': {
       id: '/app/moradores/'
       path: '/'
@@ -362,6 +509,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/app/base/'
       preLoaderRoute: typeof AppBaseIndexRouteImport
       parentRoute: typeof AppBaseRoute
+    }
+    '/admin/usuarios/': {
+      id: '/admin/usuarios/'
+      path: '/'
+      fullPath: '/admin/usuarios/'
+      preLoaderRoute: typeof AdminUsuariosIndexRouteImport
+      parentRoute: typeof AdminUsuariosRoute
     }
     '/app/moradores/arquivados': {
       id: '/app/moradores/arquivados'
@@ -405,8 +559,56 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppBaseEnviarRouteImport
       parentRoute: typeof AppBaseRoute
     }
+    '/admin/usuarios/novo': {
+      id: '/admin/usuarios/novo'
+      path: '/novo'
+      fullPath: '/admin/usuarios/novo'
+      preLoaderRoute: typeof AdminUsuariosNovoRouteImport
+      parentRoute: typeof AdminUsuariosRoute
+    }
+    '/admin/usuarios/$id': {
+      id: '/admin/usuarios/$id'
+      path: '/$id'
+      fullPath: '/admin/usuarios/$id'
+      preLoaderRoute: typeof AdminUsuariosIdRouteImport
+      parentRoute: typeof AdminUsuariosRoute
+    }
   }
 }
+
+interface AdminUsuariosRouteChildren {
+  AdminUsuariosIdRoute: typeof AdminUsuariosIdRoute
+  AdminUsuariosNovoRoute: typeof AdminUsuariosNovoRoute
+  AdminUsuariosIndexRoute: typeof AdminUsuariosIndexRoute
+}
+
+const AdminUsuariosRouteChildren: AdminUsuariosRouteChildren = {
+  AdminUsuariosIdRoute: AdminUsuariosIdRoute,
+  AdminUsuariosNovoRoute: AdminUsuariosNovoRoute,
+  AdminUsuariosIndexRoute: AdminUsuariosIndexRoute,
+}
+
+const AdminUsuariosRouteWithChildren = AdminUsuariosRoute._addFileChildren(
+  AdminUsuariosRouteChildren,
+)
+
+interface AdminRouteChildren {
+  AdminAmbientesRoute: typeof AdminAmbientesRoute
+  AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
+  AdminFinanceiroRoute: typeof AdminFinanceiroRoute
+  AdminUsuariosRoute: typeof AdminUsuariosRouteWithChildren
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminAmbientesRoute: AdminAmbientesRoute,
+  AdminConfiguracoesRoute: AdminConfiguracoesRoute,
+  AdminFinanceiroRoute: AdminFinanceiroRoute,
+  AdminUsuariosRoute: AdminUsuariosRouteWithChildren,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface AppBaseRouteChildren {
   AppBaseEnviarRoute: typeof AppBaseEnviarRoute
@@ -491,6 +693,7 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
   AppRoute: AppRouteWithChildren,
   OnboardingRoute: OnboardingRoute,
 }

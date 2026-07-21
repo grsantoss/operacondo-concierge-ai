@@ -2,6 +2,7 @@ import { Link, useRouterState, useNavigate, type LinkProps } from "@tanstack/rea
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Logo } from "@/components/brand/Logo";
 import { Icon } from "@/components/brand/Icon";
+import { isAdminMaster } from "@/lib/admin";
 
 interface NavItem {
   to: LinkProps["to"];

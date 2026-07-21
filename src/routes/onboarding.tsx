@@ -103,7 +103,7 @@ function OnboardingPage() {
       <main className="flex flex-col">
         <header className="flex items-center justify-between border-b border-[var(--color-outline-variant)] bg-white px-6 py-4">
           <p className="text-xs text-[var(--color-on-surface-variant)]">
-            Passo <span className="font-bold text-[var(--color-navy)]">{step}</span> de 4
+            Passo <span className="font-bold text-[var(--color-navy)]">{step}</span> de {TOTAL_STEPS}
           </p>
           <Link
             to="/app"
@@ -118,7 +118,8 @@ function OnboardingPage() {
           {step === 1 ? <StepGestor /> : null}
           {step === 2 ? <StepCondominio /> : null}
           {step === 3 ? <StepRegras /> : null}
-          {step === 4 ? <StepRevisao /> : null}
+          {step === 4 ? <StepWhatsApp /> : null}
+          {step === 5 ? <StepRevisao /> : null}
         </div>
 
         <footer className="sticky bottom-0 flex items-center justify-between gap-3 border-t border-[var(--color-outline-variant)] bg-white/90 px-6 py-4 backdrop-blur">
@@ -134,12 +135,12 @@ function OnboardingPage() {
             <div className="h-1.5 w-32 overflow-hidden rounded-full bg-[var(--color-surface-mid)]">
               <div
                 className="h-full rounded-full bg-[var(--color-brand)] transition-all"
-                style={{ width: `${(step / 4) * 100}%` }}
+                style={{ width: `${(step / TOTAL_STEPS) * 100}%` }}
               />
             </div>
-            <span className="font-semibold text-[var(--color-navy)]">{Math.round((step / 4) * 100)}%</span>
+            <span className="font-semibold text-[var(--color-navy)]">{Math.round((step / TOTAL_STEPS) * 100)}%</span>
           </div>
-          {step < 4 ? (
+          {step < TOTAL_STEPS ? (
             <button
               onClick={() => setStep((s) => s + 1)}
               className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[var(--color-brand-hover)]"

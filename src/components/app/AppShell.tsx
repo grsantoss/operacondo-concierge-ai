@@ -165,6 +165,12 @@ export function AppShell({ title, breadcrumbs, actions, children }: AppShellProp
     { icon: "settings", label: "Configurações", to: "/app/configuracoes" },
     { icon: "apartment", label: "Meu condomínio", to: "/app/configuracoes" },
     { icon: "notifications", label: "Notificações", to: "/app/configuracoes" },
+    ...(isAdminMaster()
+      ? ([
+          { divider: true, icon: "", label: "" },
+          { icon: "shield_person", label: "Portal Admin Master", to: "/admin" },
+        ] as UserMenuItem[])
+      : []),
     { divider: true, icon: "", label: "" },
     { icon: "rocket_launch", label: "Onboarding", to: "/onboarding" },
     { icon: "help", label: "Central de ajuda", onClick: () => window.open("https://docs.lovable.dev", "_blank") },

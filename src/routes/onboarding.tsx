@@ -119,7 +119,7 @@ function OnboardingPage() {
           {step === 2 ? <StepCondominio /> : null}
           {step === 3 ? <StepRegras /> : null}
           {step === 4 ? <StepWhatsApp /> : null}
-          {step === 5 ? <StepRevisao /> : null}
+          {step === 5 ? <StepRevisao onEdit={setStep} /> : null}
         </div>
 
         <footer className="sticky bottom-0 flex items-center justify-between gap-3 border-t border-[var(--color-outline-variant)] bg-white/90 px-6 py-4 backdrop-blur">

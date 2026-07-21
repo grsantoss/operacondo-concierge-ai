@@ -641,12 +641,18 @@ function Field({ label, value, full = false }: { label: string; value: string; f
   );
 }
 
-function Toggle({ on = false }: { on?: boolean }) {
-  const [v, setV] = useState(on);
+function Toggle({ on = false, onChange }: { on?: boolean; onChange?: (v: boolean) => void }) {
+  const [internal, setInternal] = useState(on);
+  const controlled = onChange !== undefined;
+  const v = controlled ? on : internal;
   return (
     <button
       type="button"
-      onClick={() => setV((x) => !x)}
+      onClick={() => {
+        const next = !v;
+        if (controlled) onChange!(next);
+        else setInternal(next);
+      }}
       className={`relative h-6 w-11 shrink-0 rounded-full transition ${v ? "bg-[var(--color-brand)]" : "bg-[var(--color-surface-high)]"}`}
     >
       <span

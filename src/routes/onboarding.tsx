@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Logo } from "@/components/brand/Logo";
 import { Icon } from "@/components/brand/Icon";
+import { SelectField } from "@/components/ui/SelectField";
 
 export const Route = createFileRoute("/onboarding")({
   head: () => ({

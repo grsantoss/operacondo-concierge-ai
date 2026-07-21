@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/brand/Icon";
+import { applyTheme, getStoredTheme, type ThemeMode } from "@/lib/theme";
 
 export const Route = createFileRoute("/app/configuracoes")({
   head: () => ({
@@ -908,9 +909,14 @@ function WhatsAppIntegrationCard({ onToast }: { onToast: (m: string) => void }) 
 }
 
 function AparenciaPanel({ onSave }: { onSave: () => void }) {
-  const [tema, setTema] = useState<"claro" | "escuro" | "auto">("claro");
+  const [tema, setTema] = useState<ThemeMode>(() => getStoredTheme());
   const [densidade, setDensidade] = useState<"confortavel" | "compacto">("confortavel");
   const [idioma, setIdioma] = useState("pt-BR");
+
+  const handleTheme = (id: ThemeMode) => {
+    setTema(id);
+    applyTheme(id);
+  };
 
   return (
     <form
@@ -932,11 +938,11 @@ function AparenciaPanel({ onSave }: { onSave: () => void }) {
               <button
                 key={op.id}
                 type="button"
-                onClick={() => setTema(op.id)}
+                onClick={() => handleTheme(op.id)}
                 className={`flex flex-col items-center gap-1 rounded-xl border px-3 py-4 text-sm font-medium transition ${
                   tema === op.id
                     ? "border-[var(--color-brand)] bg-[var(--color-brand)]/10 text-[var(--color-brand)]"
-                    : "border-[var(--color-outline-variant)] bg-white text-[var(--color-on-surface)]"
+                    : "border-[var(--color-outline-variant)] bg-[var(--color-surface-elev)] text-[var(--color-on-surface)]"
                 }`}
               >
                 <Icon name={op.icon} className="text-[22px]" />
@@ -945,6 +951,7 @@ function AparenciaPanel({ onSave }: { onSave: () => void }) {
             ))}
           </div>
         </Field>
+
 
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <Field label="Densidade">

@@ -20,7 +20,7 @@ export const Route = createFileRoute("/app/configuracoes")({
 
 type TabId =
   | "perfil"
-  | "condominio"
+  | "corporativo"
   | "agente"
   | "notificacoes"
   | "integracoes"
@@ -36,7 +36,7 @@ interface TabDef {
 
 const TABS: TabDef[] = [
   { id: "perfil", label: "Perfil", icon: "person", hint: "Seus dados e preferências" },
-  { id: "condominio", label: "Condomínio", icon: "apartment", hint: "Dados institucionais" },
+  { id: "corporativo", label: "Dados corporativos", icon: "business", hint: "CNPJ, razão social, endereço" },
   { id: "agente", label: "Agente IA", icon: "smart_toy", hint: "Tom, escopo e limites" },
   { id: "notificacoes", label: "Notificações", icon: "notifications", hint: "Alertas e canais" },
   { id: "integracoes", label: "Integrações", icon: "hub", hint: "WhatsApp, e-mail, ERP" },

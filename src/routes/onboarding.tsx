@@ -119,7 +119,7 @@ function OnboardingPage() {
           {step === 2 ? <StepCondominio /> : null}
           {step === 3 ? <StepRegras /> : null}
           {step === 4 ? <StepWhatsApp /> : null}
-          {step === 5 ? <StepRevisao /> : null}
+          {step === 5 ? <StepRevisao onEdit={setStep} /> : null}
         </div>
 
         <footer className="sticky bottom-0 flex items-center justify-between gap-3 border-t border-[var(--color-outline-variant)] bg-white/90 px-6 py-4 backdrop-blur">
@@ -579,7 +579,7 @@ function StepWhatsApp() {
   );
 }
 
-function StepRevisao() {
+function StepRevisao({ onEdit }: { onEdit: (step: number) => void }) {
   return (
     <>
       <StepHeader
@@ -605,7 +605,13 @@ function StepRevisao() {
               <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]">{r.t}</p>
               <p className="truncate text-sm font-semibold text-[var(--color-navy)]">{r.v}</p>
             </div>
-            <button className="text-xs font-semibold text-[var(--color-brand)] hover:underline">Editar</button>
+            <button
+              type="button"
+              onClick={() => onEdit(r.step)}
+              className="btn-press btn-press-active inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-[var(--color-brand)] hover:bg-[var(--color-brand-soft)]"
+            >
+              <Icon name="edit" className="text-[14px]" /> Editar
+            </button>
           </div>
         ))}
       </div>

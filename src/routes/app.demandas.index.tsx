@@ -158,7 +158,7 @@ function DemandasPage() {
           </div>
           <Link
             to="/app/demandas/nova"
-            search={{}}
+            search={{ moradorId: undefined, condominioId: undefined }}
             className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[var(--color-brand-hover)]"
           >
             <Icon name="add" className="text-[18px]" />

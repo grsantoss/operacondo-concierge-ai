@@ -436,7 +436,10 @@ function AgentePage() {
           onSubmit={handleAbrirDemanda}
           onOpenFull={() => {
             setDemandaOpen(false);
-            navigate({ to: "/app/demandas/nova", search: {} });
+            navigate({
+              to: "/app/demandas/nova",
+              search: { moradorId: undefined, condominioId: undefined },
+            });
           }}
         />
       )}

@@ -3,7 +3,7 @@ import {
   Link,
   notFound,
   useRouter,
-  type ErrorRouteComponent,
+  type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
@@ -633,11 +633,7 @@ function mostFrequent<T extends string>(arr: T[]): string {
   return [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0];
 }
 
-const MoradorError: ErrorRouteComponent = function MoradorError({
-  error,
-}: {
-  error: Error;
-}) {
+function MoradorError({ error }: ErrorComponentProps) {
   return (
     <AppShell title="Erro">
       <div className="card-elev mx-auto max-w-lg rounded-2xl p-8 text-center">

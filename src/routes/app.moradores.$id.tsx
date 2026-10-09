@@ -642,7 +642,7 @@ function MoradorError({ error }: ErrorComponentProps) {
           Não foi possível carregar o morador
         </h2>
         <p className="mt-1 text-xs text-[var(--color-on-surface-variant)]">
-          {error.message}
+          {error instanceof Error ? error.message : String(error)}
         </p>
       </div>
     </AppShell>

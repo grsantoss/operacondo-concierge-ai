@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/brand/Icon";
+import { WhatsAppIcon } from "@/components/brand/WhatsAppIcon";
 import { ImportCsvModal } from "@/components/moradores/ImportCsvModal";
 import { NewMoradorModal } from "@/components/moradores/NewMoradorModal";
 import {
@@ -392,11 +393,11 @@ function MoradorRow({ m }: { m: Morador }) {
               )}
               target="_blank"
               rel="noreferrer"
-              title="Abrir no WhatsApp"
+              title="Conversar no WhatsApp"
               aria-label={`Enviar WhatsApp para ${m.nome}`}
-              className="inline-flex h-8 items-center gap-1 rounded-lg bg-emerald-600 px-2.5 text-xs font-semibold text-white hover:bg-emerald-700"
+              className="btn-press btn-press-active inline-flex transition hover:opacity-85"
             >
-              <Icon name="chat" className="text-[14px]" /> WhatsApp
+              <WhatsAppIcon className="h-8 w-8" />
             </a>
           )}
           <Link

@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/brand/Icon";
+import { WhatsAppIcon } from "@/components/brand/WhatsAppIcon";
 import { ConfirmDialog } from "@/components/moradores/ConfirmDialog";
 import { EditSupplierModal } from "@/components/fornecedores/EditSupplierModal";
 import { FichaFornecedorModal } from "@/components/fornecedores/FichaFornecedorModal";
@@ -302,11 +303,11 @@ function SupplierCard({ s, onFicha, onEdit, onHomologar, onArquivar, onCopyCnpj,
           href={waHref}
           target="_blank"
           rel="noopener noreferrer"
-          title={`Enviar WhatsApp para ${s.nome}`}
+          title={`Conversar no WhatsApp com ${s.nome}`}
           aria-label={`WhatsApp ${s.nome}`}
-          className="btn-press btn-press-active grid h-10 w-10 place-items-center rounded-lg bg-emerald-600 text-white hover:bg-emerald-700"
+          className="btn-press btn-press-active inline-flex transition hover:opacity-85"
         >
-          <Icon name="chat" className="text-[18px]" filled />
+          <WhatsAppIcon className="h-10 w-10" />
         </a>
         <button
           onClick={onFicha}

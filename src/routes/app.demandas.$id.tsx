@@ -2,6 +2,7 @@ import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-rout
 import { useRef, useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/brand/Icon";
+import { WhatsAppIcon } from "@/components/brand/WhatsAppIcon";
 import {
   CAT_ICON,
   COLUMNS,
@@ -383,9 +384,13 @@ function DemandaDetail() {
                 href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
+                title="Conversar no WhatsApp"
                 className="flex items-center gap-2 rounded-lg px-2 py-2 text-[var(--color-navy)] hover:bg-[var(--color-surface-mid)]"
               >
-                <Icon name="chat" className="text-[16px]" />
+                <WhatsAppIcon
+                  variant="glyph"
+                  className="h-[16px] w-[16px] text-[#25D366]"
+                />
                 {demanda.contact.phone}
               </a>
               <a
@@ -401,9 +406,10 @@ function DemandaDetail() {
                 href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
+                title="Conversar no WhatsApp"
                 className="flex items-center justify-center gap-1.5 rounded-lg bg-[var(--color-success)]/10 py-2 text-xs font-semibold text-[var(--color-success)] hover:bg-[var(--color-success)]/15"
               >
-                <Icon name="chat" className="text-[14px]" /> WhatsApp
+                <WhatsAppIcon variant="glyph" className="h-[14px] w-[14px]" /> WhatsApp
               </a>
               {demanda.moradorId ? (
                 <Link

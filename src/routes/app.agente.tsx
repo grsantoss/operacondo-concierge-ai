@@ -436,7 +436,7 @@ function AgentePage() {
           onSubmit={handleAbrirDemanda}
           onOpenFull={() => {
             setDemandaOpen(false);
-            navigate({ to: "/app/demandas/nova" });
+            navigate({ to: "/app/demandas/nova", search: {} });
           }}
         />
       )}

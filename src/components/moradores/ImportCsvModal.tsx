@@ -2,10 +2,10 @@ import { useMemo, useRef, useState } from "react";
 import Papa from "papaparse";
 import { Icon } from "@/components/brand/Icon";
 import {
-  CONDOMINIOS,
   CSV_HEADERS,
-  addMoradores,
   downloadCsvTemplate,
+  useCondominios,
+  useMoradoresAcoes,
   validateCsvRows,
   type CsvRow,
   type CsvValidationResult,
@@ -21,6 +21,9 @@ export function ImportCsvModal({
   onImported: (count: number) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const condominios = useCondominios();
+  const { addMoradores } = useMoradoresAcoes();
+  const [importando, setImportando] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const [rows, setRows] = useState<CsvRow[] | null>(null);
@@ -53,15 +56,23 @@ export function ImportCsvModal({
         }
         const parsed = res.data as CsvRow[];
         setRows(parsed);
-        setResult(validateCsvRows(parsed));
+        setResult(validateCsvRows(parsed, condominios));
       },
       error: (err) => setParseError(err.message),
     });
   }
 
-  function confirmImport() {
+  async function confirmImport() {
     if (!result || result.valid.length === 0) return;
-    addMoradores(result.valid);
+    setImportando(true);
+    try {
+      // Tudo ou nada: se uma linha falhar no banco (ex.: telefone repetido), nada é gravado.
+      await addMoradores(result.valid);
+    } catch (err) {
+      return setParseError((err as Error).message);
+    } finally {
+      setImportando(false);
+    }
     onImported(result.valid.length);
     reset();
     onClose();
@@ -179,7 +190,7 @@ export function ImportCsvModal({
                 </div>
                 <p className="mt-3 text-[11px] text-[var(--color-on-surface-variant)]">
                   Condomínios aceitos:{" "}
-                  {CONDOMINIOS.map((c) => (
+                  {condominios.map((c) => (
                     <span key={c.id} className="font-semibold text-[var(--color-navy)]">
                       {c.nome}
                       {"; "}
@@ -288,6 +299,11 @@ export function ImportCsvModal({
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-2 border-t border-[var(--color-outline-variant)] bg-[var(--color-surface-low)] px-5 py-3">
+          {result && parseError ? (
+            <p role="alert" className="mr-auto text-xs text-destructive">
+              {parseError}
+            </p>
+          ) : null}
           <button
             onClick={onClose}
             className="h-9 rounded-lg border border-[var(--color-outline-variant)] bg-white px-4 text-xs font-semibold text-[var(--color-navy)] hover:bg-[var(--color-surface-mid)]"
@@ -296,7 +312,7 @@ export function ImportCsvModal({
           </button>
           <button
             onClick={confirmImport}
-            disabled={!result || result.valid.length === 0}
+            disabled={importando || !result || result.valid.length === 0}
             className="btn-press btn-press-active inline-flex h-9 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-xs font-semibold text-white hover:bg-[var(--color-brand-hover)] disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Icon name="check" className="text-[14px]" />

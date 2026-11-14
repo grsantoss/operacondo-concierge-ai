@@ -24,6 +24,7 @@ jobs:
       DATABASE_URL_MIGRATIONS: postgres://oc_owner:ci@localhost:5432/concierge
       BETTER_AUTH_SECRET: ci-segredo-com-pelo-menos-32-caracteres
       BETTER_AUTH_URL: http://localhost:8080
+      CPF_PEPPER: ci-pepper
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2

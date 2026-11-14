@@ -1,9 +1,9 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Icon } from "@/components/brand/Icon";
 import {
-  CONDOMINIOS,
   STATUS_LIST,
-  updateMorador,
+  useCondominios,
+  useMoradoresAcoes,
   type Endereco,
   type Morador,
   type Status,
@@ -58,6 +58,9 @@ function fromMorador(m: Morador): FormState {
 export function EditMoradorModal({ open, morador, onClose, onSaved }: Props) {
   const [form, setForm] = useState<FormState | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [salvando, setSalvando] = useState(false);
+  const condominios = useCondominios();
+  const { updateMorador } = useMoradoresAcoes();
 
   useEffect(() => {
     if (open && morador) {
@@ -72,7 +75,7 @@ export function EditMoradorModal({ open, morador, onClose, onSaved }: Props) {
     setForm((f) => (f ? { ...f, [key]: value } : f));
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!form || !morador) return;
 
@@ -93,7 +96,9 @@ export function EditMoradorModal({ open, morador, onClose, onSaved }: Props) {
       endereco = { tipo: "horizontal", quadra: form.quadra.trim(), casa: form.casa.trim() };
     }
 
-    updateMorador(morador.id, {
+    setSalvando(true);
+    try {
+      await updateMorador(morador.id, {
       nome: form.nome.trim(),
       cpf: form.cpf.trim() || undefined,
       email: form.email.trim() || undefined,
@@ -104,7 +109,12 @@ export function EditMoradorModal({ open, morador, onClose, onSaved }: Props) {
       vagas: Number(form.vagas) || 0,
       pets: Number(form.pets) || 0,
       desde: form.desde.trim() || undefined,
-    });
+      });
+    } catch (err) {
+      return setError((err as Error).message);
+    } finally {
+      setSalvando(false);
+    }
     onSaved?.();
     onClose();
   }
@@ -179,7 +189,7 @@ export function EditMoradorModal({ open, morador, onClose, onSaved }: Props) {
                 onChange={(e) => set("condominioId", e.target.value)}
                 className={inputCls}
               >
-                {CONDOMINIOS.map((c) => (
+                {condominios.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.nome}
                   </option>
@@ -300,7 +310,8 @@ export function EditMoradorModal({ open, morador, onClose, onSaved }: Props) {
           </button>
           <button
             type="submit"
-            className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white shadow-soft hover:bg-[var(--color-brand-hover)]"
+            disabled={salvando}
+            className="disabled:opacity-60 btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white shadow-soft hover:bg-[var(--color-brand-hover)]"
           >
             <Icon name="save" className="text-[18px]" /> Salvar alterações
           </button>

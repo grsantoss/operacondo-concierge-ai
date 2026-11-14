@@ -6,7 +6,10 @@ import { WhatsAppIcon } from "@/components/brand/WhatsAppIcon";
 import { ImportCsvModal } from "@/components/moradores/ImportCsvModal";
 import { NewMoradorModal } from "@/components/moradores/NewMoradorModal";
 import {
-  CONDOMINIOS,
+  condominiosQuery,
+  moradoresQuery,
+  useCondominios,
+  type Condominio,
   STATUS_CLS,
   STATUS_LIST,
   formatEndereco,
@@ -18,6 +21,8 @@ import {
 } from "@/data/moradores";
 
 export const Route = createFileRoute("/app/moradores/")({
+  loader: ({ context: { queryClient } }) =>
+    Promise.all([queryClient.ensureQueryData(moradoresQuery), queryClient.ensureQueryData(condominiosQuery)]),
   head: () => ({ meta: [{ title: "Moradores | OperaCondo Concierge" }] }),
   component: MoradoresPage,
 });
@@ -25,6 +30,7 @@ export const Route = createFileRoute("/app/moradores/")({
 type StatusFilter = "Todos" | Status;
 
 function MoradoresPage() {
+  const condominios = useCondominios();
   const moradores = useMoradores();
   const arquivadosCount = useMoradores({ includeInactive: true }).filter(
     (m) => m.status === "Inativo",
@@ -36,7 +42,7 @@ function MoradoresPage() {
   const [showNew, setShowNew] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
-  const condoSelecionado = CONDOMINIOS.find((c) => c.id === condoId);
+  const condoSelecionado = condominios.find((c) => c.id === condoId);
 
   const pool = useMemo(
     () => (condoId === "all" ? moradores : moradores.filter((m) => m.condominioId === condoId)),
@@ -62,7 +68,7 @@ function MoradoresPage() {
   const stats = useMemo(() => {
     const totalUnidades =
       condoId === "all"
-        ? CONDOMINIOS.reduce((s, c) => s + c.unidades, 0)
+        ? condominios.reduce((s, c) => s + c.unidades, 0)
         : condoSelecionado?.unidades ?? pool.length;
     const ocupadas = pool.filter((m) => m.status !== "Vago").length;
     const vagas = pool.filter((m) => m.status === "Vago").length;
@@ -171,7 +177,7 @@ function MoradoresPage() {
               className="bg-transparent text-sm font-semibold text-[var(--color-navy)] outline-none"
             >
               <option value="all">Todos ({moradores.length})</option>
-              {CONDOMINIOS.map((c) => (
+              {condominios.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.nome} ({moradores.filter((m) => m.condominioId === c.id).length})
                 </option>
@@ -308,7 +314,8 @@ function MoradoresPage() {
 }
 
 function MoradorRow({ m }: { m: Morador }) {
-  const condo = CONDOMINIOS.find((c) => c.id === m.condominioId)!;
+  const condominios = useCondominios();
+  const condo = condominios.find((c) => c.id === m.condominioId)!;
   const end = formatEndereco(m.endereco);
   const isVago = m.status === "Vago";
   return (

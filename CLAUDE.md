@@ -9,8 +9,9 @@ Responda sempre em português do Brasil, com acentuação correta.
 
 ## Estado atual (13/11/2026)
 
-- **Fase 0 (fundação) feita** (issues #2–#7): Postgres + schema + RLS + login. As telas ainda
-  leem os mocks de `src/data/*.ts`; trocar pelos dados do banco é a Fase 1 (issues #8–#14).
+- **Fase 0 (fundação) feita** (issues #2–#7, `v0.1.0`): Postgres + schema + RLS + login.
+- **Fase 1 em andamento** (issues #8–#14): telas passam dos mocks de `src/data/*.ts` para o banco.
+  Moradores e condomínios já leem e gravam no banco (#8).
 - Rodar localmente: `cp .env.example .env` → `bun run db:reset` (sobe containers, migrations e
   seed) → `bun run dev`. Login: `sindico@operacondo.local` (cliente Aurora) ou
   `admin@operacondo.local` (Admin Master), senha `SEED_SENHA` (padrão `operacondo123`).
@@ -281,6 +282,11 @@ fim do período, sem reembolso proporcional.
   compostas com `tenant_id` e entrada na lista de RLS (o teste `tests/rls.test.ts` falha se faltar).
 - Acesso a dados de cliente sempre por `withTenant(tenantId, tx => …)` (`src/server/db`); fora
   dele a RLS não devolve nada.
+- Padrão de dados das telas (Fase 1): server functions em `src/lib/<area>.functions.ts`
+  (`exigirCliente()` de `src/server/auth/contexto.ts` + `withTenant` + validação com zod) e, no
+  navegador, `src/data/<area>.ts` com `queryOptions` + hooks (`useX()` lê, `useXAcoes()` grava e
+  invalida o cache). Rotas fazem `loader: queryClient.ensureQueryData(...)` para a página chegar
+  pronta do servidor. Dados de exemplo ficam só em `scripts/dados-exemplo/` (seed).
 - Prettier só em arquivos novos ou já formatados; não formatar arquivos antigos inteiros.
 
 ## Design system

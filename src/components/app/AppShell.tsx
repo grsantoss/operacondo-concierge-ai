@@ -1,8 +1,8 @@
-import { Link, useRouterState, useNavigate, type LinkProps } from "@tanstack/react-router";
+import { Link, useRouterState, useNavigate, useRouteContext, type LinkProps } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Logo } from "@/components/brand/Logo";
 import { Icon } from "@/components/brand/Icon";
-import { isAdminMaster } from "@/lib/admin";
+import { authClient } from "@/lib/auth-client";
 
 interface NavItem {
   to: LinkProps["to"];
@@ -154,8 +154,11 @@ export function AppShell({ title, breadcrumbs, actions, children }: AppShellProp
   const isActive = (to: string) =>
     to === "/app" ? pathname === "/app" : pathname.startsWith(to);
 
-  const handleLogout = () => {
+  const sessao = useRouteContext({ strict: false }).sessao;
+
+  const handleLogout = async () => {
     if (confirm("Deseja realmente sair da aplicação?")) {
+      await authClient.signOut();
       navigate({ to: "/" });
     }
   };
@@ -165,7 +168,7 @@ export function AppShell({ title, breadcrumbs, actions, children }: AppShellProp
     { icon: "settings", label: "Configurações", to: "/app/configuracoes" },
     { icon: "apartment", label: "Meu condomínio", to: "/app/configuracoes" },
     { icon: "notifications", label: "Notificações", to: "/app/configuracoes" },
-    ...(isAdminMaster()
+    ...(sessao?.admin
       ? ([
           { divider: true, icon: "", label: "" },
           { icon: "shield_person", label: "Portal Admin Master", to: "/admin" },

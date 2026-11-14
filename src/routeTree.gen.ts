@@ -28,6 +28,7 @@ import { Route as AppMoradoresRouteImport } from './routes/app.moradores'
 import { Route as AdminUsuariosIndexRouteImport } from './routes/admin.usuarios.index'
 import { Route as AdminUsuariosIdRouteImport } from './routes/admin.usuarios.$id'
 import { Route as AdminUsuariosNovoRouteImport } from './routes/admin.usuarios.novo'
+import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AppBaseIndexRouteImport } from './routes/app.base.index'
 import { Route as AppBaseEnviarRouteImport } from './routes/app.base.enviar'
 import { Route as AppDemandasIndexRouteImport } from './routes/app.demandas.index'
@@ -134,6 +135,11 @@ const AdminUsuariosNovoRoute = AdminUsuariosNovoRouteImport.update({
   path: '/novo',
   getParentRoute: () => AdminUsuariosRoute,
 } as any)
+const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
+  id: '/api/auth/$',
+  path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppBaseIndexRoute = AppBaseIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -204,6 +210,7 @@ export interface FileRoutesByFullPath {
   '/app/': typeof AppIndexRoute
   '/admin/usuarios/$id': typeof AdminUsuariosIdRoute
   '/admin/usuarios/novo': typeof AdminUsuariosNovoRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
   '/app/base/enviar': typeof AppBaseEnviarRoute
   '/app/demandas/$id': typeof AppDemandasIdRoute
   '/app/demandas/nova': typeof AppDemandasNovaRoute
@@ -228,6 +235,7 @@ export interface FileRoutesByTo {
   '/app': typeof AppIndexRoute
   '/admin/usuarios/$id': typeof AdminUsuariosIdRoute
   '/admin/usuarios/novo': typeof AdminUsuariosNovoRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
   '/app/base/enviar': typeof AppBaseEnviarRoute
   '/app/demandas/$id': typeof AppDemandasIdRoute
   '/app/demandas/nova': typeof AppDemandasNovaRoute
@@ -260,6 +268,7 @@ export interface FileRoutesById {
   '/app/': typeof AppIndexRoute
   '/admin/usuarios/$id': typeof AdminUsuariosIdRoute
   '/admin/usuarios/novo': typeof AdminUsuariosNovoRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
   '/app/base/enviar': typeof AppBaseEnviarRoute
   '/app/demandas/$id': typeof AppDemandasIdRoute
   '/app/demandas/nova': typeof AppDemandasNovaRoute
@@ -293,6 +302,7 @@ export interface FileRouteTypes {
     | '/app/'
     | '/admin/usuarios/$id'
     | '/admin/usuarios/novo'
+    | '/api/auth/$'
     | '/app/base/enviar'
     | '/app/demandas/$id'
     | '/app/demandas/nova'
@@ -317,6 +327,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/admin/usuarios/$id'
     | '/admin/usuarios/novo'
+    | '/api/auth/$'
     | '/app/base/enviar'
     | '/app/demandas/$id'
     | '/app/demandas/nova'
@@ -348,6 +359,7 @@ export interface FileRouteTypes {
     | '/app/'
     | '/admin/usuarios/$id'
     | '/admin/usuarios/novo'
+    | '/api/auth/$'
     | '/app/base/enviar'
     | '/app/demandas/$id'
     | '/app/demandas/nova'
@@ -366,6 +378,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   AppRoute: typeof AppRouteWithChildren
   OnboardingRoute: typeof OnboardingRoute
+  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -502,6 +515,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/usuarios/novo'
       preLoaderRoute: typeof AdminUsuariosNovoRouteImport
       parentRoute: typeof AdminUsuariosRoute
+    }
+    '/api/auth/$': {
+      id: '/api/auth/$'
+      path: '/api/auth/$'
+      fullPath: '/api/auth/$'
+      preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/app/base/': {
       id: '/app/base/'
@@ -696,6 +716,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   AppRoute: AppRouteWithChildren,
   OnboardingRoute: OnboardingRoute,
+  ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

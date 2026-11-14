@@ -239,6 +239,10 @@ export function useSuppliers(): Supplier[] {
   );
 }
 
+export function listSuppliers(): Supplier[] {
+  return _suppliers;
+}
+
 export function getSupplier(id: string) {
   return _suppliers.find((s) => s.id === id);
 }

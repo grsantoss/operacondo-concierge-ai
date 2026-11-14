@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { authClient } from "@/lib/auth-client";
 import { Icon } from "@/components/brand/Icon";
 import { Logo } from "@/components/brand/Logo";
 
@@ -14,12 +15,17 @@ export const Route = createFileRoute("/")({
       },
     ],
   }),
+  validateSearch: (s: Record<string, unknown>): { redirect?: string } =>
+    typeof s.redirect === "string" && s.redirect.startsWith("/") ? { redirect: s.redirect } : {},
   component: LoginPage,
 });
 
 function LoginPage() {
   const navigate = useNavigate();
   const [showPwd, setShowPwd] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+  const [entrando, setEntrando] = useState(false);
+  const { redirect } = Route.useSearch();
 
   return (
     <main className="flex min-h-screen w-full overflow-hidden bg-[var(--color-surface)]">
@@ -87,10 +93,23 @@ function LoginPage() {
           </div>
 
           <form
+            // post: se o envio acontecer antes do JavaScript carregar, a senha não vai para a URL
+            method="post"
             className="space-y-5"
-            onSubmit={(e) => {
+            onSubmit={async (e) => {
               e.preventDefault();
-              navigate({ to: "/app" });
+              const f = new FormData(e.currentTarget);
+              setErro(null);
+              setEntrando(true);
+              const { error } = await authClient.signIn.email({
+                email: String(f.get("email")),
+                password: String(f.get("password")),
+                rememberMe: f.get("lembrar") === "on",
+              });
+              setEntrando(false);
+              if (error) return setErro("E-mail ou senha incorretos.");
+              // /app manda o Admin Master sem cliente para /admin
+              navigate({ to: redirect ?? "/app" });
             }}
           >
             <div className="space-y-1.5">
@@ -102,8 +121,10 @@ function LoginPage() {
               </label>
               <input
                 id="email"
+                name="email"
                 type="email"
-                defaultValue="roberto@auroraadmin.com.br"
+                required
+                autoComplete="email"
                 placeholder="nome@empresa.com.br"
                 className="w-full rounded-lg border border-[var(--color-outline-variant)] bg-white px-4 py-3 text-sm outline-none transition-all focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand)]/20"
               />
@@ -127,8 +148,10 @@ function LoginPage() {
               <div className="relative">
                 <input
                   id="password"
+                  name="password"
                   type={showPwd ? "text" : "password"}
-                  defaultValue="••••••••••"
+                  required
+                  autoComplete="current-password"
                   className="w-full rounded-lg border border-[var(--color-outline-variant)] bg-white px-4 py-3 pr-12 text-sm outline-none transition-all focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand)]/20"
                 />
                 <button
@@ -144,17 +167,25 @@ function LoginPage() {
             <label className="flex items-center gap-2 text-sm text-[var(--color-on-surface-variant)]">
               <input
                 type="checkbox"
+                name="lembrar"
                 defaultChecked
                 className="h-4 w-4 rounded border-[var(--color-outline-variant)] text-[var(--color-brand)] focus:ring-[var(--color-brand)]"
               />
               Manter-me conectado por 30 dias
             </label>
 
+            {erro ? (
+              <p role="alert" className="text-sm font-medium text-destructive">
+                {erro}
+              </p>
+            ) : null}
+
             <button
               type="submit"
-              className="btn-press btn-press-active w-full rounded-lg bg-[var(--color-brand)] py-3.5 text-sm font-semibold text-white shadow-soft hover:bg-[var(--color-brand-hover)] hover:shadow-card"
+              disabled={entrando}
+              className="disabled:opacity-60 btn-press btn-press-active w-full rounded-lg bg-[var(--color-brand)] py-3.5 text-sm font-semibold text-white shadow-soft hover:bg-[var(--color-brand-hover)] hover:shadow-card"
             >
-              Entrar na plataforma
+              {entrando ? "Entrando…" : "Entrar na plataforma"}
             </button>
           </form>
 

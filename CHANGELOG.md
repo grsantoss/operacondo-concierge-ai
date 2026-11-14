@@ -8,6 +8,16 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
 
 ### Adicionado
 
+- **Banco de dados Postgres com as 23 tabelas do produto** (Drizzle, `src/server/db`), com
+  migrations que rodam sem superusuário e `db/bootstrap.sql` para preparar o banco uma vez. (#46)
+- **Isolamento entre clientes no banco (RLS)**: cada síndico só enxerga os dados do próprio
+  cliente, inclusive em referências entre tabelas; testes automáticos provam o isolamento. (#46)
+- **Login de verdade** com e-mail e senha (Better Auth): `/app` exige login e `/admin` só abre
+  para o Admin Master; "Sair" encerra a sessão. (#46)
+- **Ambiente local com um comando** (`bun run db:reset`): Postgres, armazenamento S3 e dados de
+  exemplo. (#46)
+- **CI no GitHub** em toda PR: tipos, migrations num banco novo, testes de isolamento, seed e
+  build. (#46)
 - **`CLAUDE.md` com as decisões do produto e da arquitetura**: WhatsApp por síndico, Postgres com
   RLS, agente com ferramentas, cobrança pelo Stripe, observabilidade (Langfuse + Sentry) e
   ordem de execução do backend. (#1)
@@ -27,6 +37,8 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
 
 ### Removido
 
+- **Opção "Meu usuário é Admin Master"** em `/admin/configuracoes`: o papel agora vem do
+  cadastro do usuário. (#46)
 - **Integração com o Lovable**: configuração do Vite, relatório de erros, link de ajuda e
   arquivos `.lovable/`. (#1)
 - **Seletor de tema** em Configurações → Aparência (o modo escuro está desligado). (#1)

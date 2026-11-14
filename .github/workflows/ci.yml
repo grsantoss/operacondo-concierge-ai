@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: concierge
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d concierge" --health-interval 2s --health-retries 30
+    env:
+      DATABASE_URL: postgres://oc_app:ci@localhost:5432/concierge
+      DATABASE_URL_ADMIN: postgres://oc_admin:ci@localhost:5432/concierge
+      DATABASE_URL_MIGRATIONS: postgres://oc_owner:ci@localhost:5432/concierge
+      BETTER_AUTH_SECRET: ci-segredo-com-pelo-menos-32-caracteres
+      BETTER_AUTH_URL: http://localhost:8080
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.3
+      - run: bun install --frozen-lockfile
+      - name: Tipos
+        run: bunx tsc --noEmit -p .
+      - name: Papéis e extensões (db/bootstrap.sql)
+        run: >-
+          psql postgres://postgres:postgres@localhost:5432/concierge -v ON_ERROR_STOP=1
+          -v dbname=concierge -v owner_pw=ci -v app_pw=ci -v admin_pw=ci -f db/bootstrap.sql
+      - name: Migrations (como oc_owner, sem superusuário)
+        run: bunx drizzle-kit migrate
+      - name: Schema sem migration pendente
+        run: bunx drizzle-kit generate && test -z "$(git status --porcelain src/server/db/migrations)"
+      - name: Testes (RLS)
+        run: bun test
+      - name: Seed
+        run: bun run db:seed
+      - name: Build
+        run: bun run build

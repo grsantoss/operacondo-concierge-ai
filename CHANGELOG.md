@@ -6,6 +6,8 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
 
 ## [Não lançado]
 
+## [0.1.0] - 2026-11-14
+
 ### Adicionado
 
 - **Banco de dados Postgres com as 23 tabelas do produto** (Drizzle, `src/server/db`), com
@@ -21,6 +23,9 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
 - **`CLAUDE.md` com as decisões do produto e da arquitetura**: WhatsApp por síndico, Postgres com
   RLS, agente com ferramentas, cobrança pelo Stripe, observabilidade (Langfuse + Sentry) e
   ordem de execução do backend. (#1)
+- **Protótipo navegável de todas as telas** (feito no Lovable antes do versionamento): caixa de
+  conversas do agente, demandas em kanban, moradores com importação CSV, fornecedores, base de
+  conhecimento, configurações, onboarding e portal Admin Master, com dados de exemplo.
 
 ### Alterado
 
@@ -42,3 +47,6 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
 - **Integração com o Lovable**: configuração do Vite, relatório de erros, link de ajuda e
   arquivos `.lovable/`. (#1)
 - **Seletor de tema** em Configurações → Aparência (o modo escuro está desligado). (#1)
+
+[Não lançado]: https://github.com/grsantoss/operacondo-concierge-ai/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/grsantoss/operacondo-concierge-ai/releases/tag/v0.1.0

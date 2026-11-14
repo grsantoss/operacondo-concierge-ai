@@ -4,13 +4,15 @@ import { z } from "zod";
 import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/brand/Icon";
 import { CAT_ICON, PRIO_CLASS, type Category, type Priority } from "@/data/demandas";
-import { CONDOMINIOS, MORADORES } from "@/data/moradores";
+import { condominiosQuery, moradoresQuery, useCondominios, useMoradores } from "@/data/moradores";
 
 export const Route = createFileRoute("/app/demandas/nova")({
   validateSearch: (search: Record<string, unknown>) => ({
     moradorId: typeof search.moradorId === "string" ? search.moradorId : undefined,
     condominioId: typeof search.condominioId === "string" ? search.condominioId : undefined,
   }),
+  loader: ({ context: { queryClient } }) =>
+    Promise.all([queryClient.ensureQueryData(moradoresQuery), queryClient.ensureQueryData(condominiosQuery)]),
   head: () => ({ meta: [{ title: "Nova demanda | OperaCondo Concierge" }] }),
   component: NovaDemandaPage,
 });
@@ -64,6 +66,8 @@ const INITIAL: FormState = {
 function NovaDemandaPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
+  const CONDOMINIOS = useCondominios();
+  const MORADORES = useMoradores();
   const [form, setForm] = useState<FormState>(() => {
     const moradorPre = search.moradorId
       ? MORADORES.find((m) => m.id === search.moradorId)
@@ -83,12 +87,12 @@ function NovaDemandaPage() {
       form.condominioId
         ? MORADORES.filter((m) => m.condominioId === form.condominioId)
         : [],
-    [form.condominioId],
+    [form.condominioId, MORADORES],
   );
 
   const moradorSel = useMemo(
     () => MORADORES.find((m) => m.id === form.moradorId),
-    [form.moradorId],
+    [form.moradorId, MORADORES],
   );
 
   const completude = useMemo(() => {

@@ -1,9 +1,9 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Icon } from "@/components/brand/Icon";
 import {
-  addMoradores,
-  CONDOMINIOS,
-  getMoradoresSnapshot,
+  useCondominios,
+  useMoradoresAcoes,
+  type Condominio,
   STATUS_LIST,
   type Endereco,
   type Status,
@@ -34,17 +34,17 @@ type FormState = {
   desde: string;
 };
 
-function initial(condoId?: string): FormState {
-  const first = CONDOMINIOS[0];
-  const cid = condoId && condoId !== "all" ? condoId : first.id;
-  const condo = CONDOMINIOS.find((c) => c.id === cid) ?? first;
+function initial(condominios: Condominio[], condoId?: string): FormState {
+  const first = condominios[0];
+  const cid = condoId && condoId !== "all" ? condoId : first?.id;
+  const condo = condominios.find((c) => c.id === cid) ?? first;
   return {
     nome: "",
     cpf: "",
     email: "",
     contato: "",
-    condominioId: condo.id,
-    tipoEndereco: condo.tipo,
+    condominioId: condo?.id ?? "",
+    tipoEndereco: condo?.tipo ?? "vertical",
     bloco: "",
     andar: "",
     apto: "",
@@ -57,24 +57,19 @@ function initial(condoId?: string): FormState {
   };
 }
 
-function nextId(): string {
-  const nums = getMoradoresSnapshot()
-    .map((m) => Number(m.id.replace(/^m/, "")))
-    .filter((n) => !Number.isNaN(n));
-  const max = nums.length ? Math.max(...nums) : 0;
-  return `m${max + 1}`;
-}
-
 export function NewMoradorModal({ open, defaultCondominioId, onClose, onCreated }: Props) {
-  const [form, setForm] = useState<FormState>(() => initial(defaultCondominioId));
+  const condominios = useCondominios();
+  const { addMoradores } = useMoradoresAcoes();
+  const [form, setForm] = useState<FormState>(() => initial(condominios, defaultCondominioId));
   const [error, setError] = useState<string | null>(null);
+  const [salvando, setSalvando] = useState(false);
 
   useEffect(() => {
     if (open) {
-      setForm(initial(defaultCondominioId));
+      setForm(initial(condominios, defaultCondominioId));
       setError(null);
     }
-  }, [open, defaultCondominioId]);
+  }, [open, defaultCondominioId, condominios.length]);
 
   if (!open) return null;
 
@@ -82,7 +77,7 @@ export function NewMoradorModal({ open, defaultCondominioId, onClose, onCreated 
     setForm((f) => ({ ...f, [key]: value }));
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!form.nome.trim()) return setError("Nome é obrigatório.");
     if (form.status !== "Vago" && !form.contato.trim())
@@ -102,9 +97,10 @@ export function NewMoradorModal({ open, defaultCondominioId, onClose, onCreated 
     }
 
     const nome = form.nome.trim();
-    addMoradores([
+    setSalvando(true);
+    try {
+      await addMoradores([
       {
-        id: nextId(),
         nome,
         condominioId: form.condominioId,
         endereco,
@@ -115,9 +111,13 @@ export function NewMoradorModal({ open, defaultCondominioId, onClose, onCreated 
         email: form.email.trim() || undefined,
         cpf: form.cpf.trim() || undefined,
         desde: form.desde.trim() || undefined,
-        ultimo: "agora",
       },
     ]);
+    } catch (err) {
+      return setError((err as Error).message);
+    } finally {
+      setSalvando(false);
+    }
     onCreated?.(nome);
     onClose();
   }
@@ -172,7 +172,7 @@ export function NewMoradorModal({ open, defaultCondominioId, onClose, onCreated 
                 value={form.condominioId}
                 onChange={(e) => {
                   const cid = e.target.value;
-                  const condo = CONDOMINIOS.find((c) => c.id === cid);
+                  const condo = condominios.find((c) => c.id === cid);
                   setForm((f) => ({
                     ...f,
                     condominioId: cid,
@@ -181,7 +181,7 @@ export function NewMoradorModal({ open, defaultCondominioId, onClose, onCreated 
                 }}
                 className={inputCls}
               >
-                {CONDOMINIOS.map((c) => (
+                {condominios.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.nome}
                   </option>
@@ -259,7 +259,8 @@ export function NewMoradorModal({ open, defaultCondominioId, onClose, onCreated 
           </button>
           <button
             type="submit"
-            className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white shadow-soft hover:bg-[var(--color-brand-hover)]"
+            disabled={salvando}
+            className="disabled:opacity-60 btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white shadow-soft hover:bg-[var(--color-brand-hover)]"
           >
             <Icon name="person_add" className="text-[18px]" /> Cadastrar morador
           </button>

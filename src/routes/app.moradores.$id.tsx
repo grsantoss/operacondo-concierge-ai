@@ -12,24 +12,30 @@ import { WhatsAppIcon } from "@/components/brand/WhatsAppIcon";
 import { ConfirmDialog } from "@/components/moradores/ConfirmDialog";
 import { EditMoradorModal } from "@/components/moradores/EditMoradorModal";
 import {
-  CONDOMINIOS,
+  condominiosQuery,
+  moradoresQuery,
+  useCondominios,
+  type Condominio,
   STATUS_CLS,
-  deactivateMorador,
   formatEndereco,
-  getMorador,
   initials,
-  reactivateMorador,
   useMoradores,
+  useMoradoresAcoes,
   whatsappUrl,
   type Morador,
 } from "@/data/moradores";
 import { CAT_ICON, DEMANDAS, PRIO_CLASS, type Demanda } from "@/data/demandas";
 
 export const Route = createFileRoute("/app/moradores/$id")({
-  loader: ({ params }) => {
-    const morador = getMorador(params.id);
+  loader: async ({ params, context: { queryClient } }) => {
+    const [moradores, condominios] = await Promise.all([
+      queryClient.ensureQueryData(moradoresQuery),
+      queryClient.ensureQueryData(condominiosQuery),
+    ]);
+    const morador = moradores.find((m) => m.id === params.id);
     if (!morador) throw notFound();
-    const condo = CONDOMINIOS.find((c) => c.id === morador.condominioId)!;
+    const condo = condominios.find((c) => c.id === morador.condominioId)!;
+    // ponytail: chamados ainda vêm do mock de demandas até a #9.
     const chamados = DEMANDAS.filter((d) => d.morador === morador.nome);
     return { morador, condo, chamados };
   },
@@ -50,16 +56,18 @@ export const Route = createFileRoute("/app/moradores/$id")({
 type Tab = "chamados" | "historico" | "unidade";
 
 function MoradorDetail() {
+  const condominios = useCondominios();
   const loaderData = Route.useLoaderData() as {
     morador: Morador;
-    condo: (typeof CONDOMINIOS)[number];
+    condo: Condominio;
     chamados: Demanda[];
   };
   const router = useRouter();
-  // Subscribe to store so edits/deactivations reflect immediately
+  const { deactivateMorador, reactivateMorador } = useMoradoresAcoes();
+  // A lista em cache é atualizada depois de cada gravação
   const all = useMoradores({ includeInactive: true });
   const morador = all.find((m) => m.id === loaderData.morador.id) ?? loaderData.morador;
-  const condo = CONDOMINIOS.find((c) => c.id === morador.condominioId) ?? loaderData.condo;
+  const condo = condominios.find((c) => c.id === morador.condominioId) ?? loaderData.condo;
   const chamados = loaderData.chamados;
 
   const [tab, setTab] = useState<Tab>("chamados");
@@ -356,10 +364,14 @@ function MoradorDetail() {
         tone="warn"
         icon="person_off"
         onClose={() => setConfirmDeactivate(false)}
-        onConfirm={() => {
-          deactivateMorador(morador.id);
+        onConfirm={async () => {
           setConfirmDeactivate(false);
-          flash(`${morador.nome} foi desativado.`);
+          try {
+            await deactivateMorador(morador.id);
+            flash(`${morador.nome} foi desativado.`);
+          } catch (err) {
+            flash((err as Error).message);
+          }
           router.invalidate();
         }}
       />
@@ -372,10 +384,14 @@ function MoradorDetail() {
         tone="brand"
         icon="person_check"
         onClose={() => setConfirmReactivate(false)}
-        onConfirm={() => {
-          reactivateMorador(morador.id);
+        onConfirm={async () => {
           setConfirmReactivate(false);
-          flash(`${morador.nome} foi reativado.`);
+          try {
+            await reactivateMorador(morador.id);
+            flash(`${morador.nome} foi reativado.`);
+          } catch (err) {
+            flash((err as Error).message);
+          }
           router.invalidate();
         }}
       />

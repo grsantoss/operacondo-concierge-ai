@@ -4,23 +4,37 @@ import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/brand/Icon";
 import { ConfirmDialog } from "@/components/moradores/ConfirmDialog";
 import {
-  CONDOMINIOS,
-  deleteAllInactive,
-  deleteMorador,
+  condominiosQuery,
+  moradoresQuery,
+  useCondominios,
+  type Condominio,
   formatEndereco,
   initials,
-  reactivateMorador,
   useMoradores,
+  useMoradoresAcoes,
   type Morador,
 } from "@/data/moradores";
 
 export const Route = createFileRoute("/app/moradores/arquivados")({
+  loader: ({ context: { queryClient } }) =>
+    Promise.all([queryClient.ensureQueryData(moradoresQuery), queryClient.ensureQueryData(condominiosQuery)]),
   head: () => ({ meta: [{ title: "Moradores arquivados | OperaCondo" }] }),
   component: ArquivadosPage,
 });
 
 function ArquivadosPage() {
+  const condominios = useCondominios();
   const all = useMoradores({ includeInactive: true });
+  const { reactivateMorador, deleteMorador, deleteAllInactive } = useMoradoresAcoes();
+  /** Grava no banco e avisa; erro vira aviso com a mensagem do servidor. */
+  async function acao(gravar: () => Promise<void>, ok: string) {
+    try {
+      await gravar();
+      flash(ok);
+    } catch (err) {
+      flash((err as Error).message);
+    }
+  }
   const arquivados = useMemo(
     () => all.filter((m) => m.status === "Inativo"),
     [all],
@@ -101,7 +115,7 @@ function ArquivadosPage() {
               className="bg-transparent text-sm font-semibold text-[var(--color-navy)] outline-none"
             >
               <option value="all">Todos os condomínios</option>
-              {CONDOMINIOS.map((c) => (
+              {condominios.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.nome}
                 </option>
@@ -157,7 +171,7 @@ function ArquivadosPage() {
                 </tr>
               ) : (
                 filtered.map((m) => {
-                  const condo = CONDOMINIOS.find((c) => c.id === m.condominioId)!;
+                  const condo = condominios.find((c) => c.id === m.condominioId)!;
                   const end = formatEndereco(m.endereco);
                   return (
                     <tr key={m.id} className="bg-white hover:bg-[var(--color-surface-low)]">
@@ -222,8 +236,8 @@ function ArquivadosPage() {
         onClose={() => setToReactivate(null)}
         onConfirm={() => {
           if (toReactivate) {
-            reactivateMorador(toReactivate.id);
-            flash(`${toReactivate.nome} reativado.`);
+            const m = toReactivate;
+            void acao(() => reactivateMorador(m.id), `${m.nome} reativado.`);
           }
           setToReactivate(null);
         }}
@@ -239,8 +253,8 @@ function ArquivadosPage() {
         onClose={() => setToDelete(null)}
         onConfirm={() => {
           if (toDelete) {
-            deleteMorador(toDelete.id);
-            flash(`${toDelete.nome} excluído.`);
+            const m = toDelete;
+            void acao(() => deleteMorador(m.id), `${m.nome} excluído.`);
           }
           setToDelete(null);
         }}
@@ -257,9 +271,8 @@ function ArquivadosPage() {
         onClose={() => setPurgeAll(false)}
         onConfirm={() => {
           const n = arquivados.length;
-          deleteAllInactive();
           setPurgeAll(false);
-          flash(`${n} morador(es) excluído(s).`);
+          void acao(deleteAllInactive, `${n} morador(es) excluído(s).`);
         }}
       />
 

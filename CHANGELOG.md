@@ -6,6 +6,18 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
 
 ## [Não lançado]
 
+### Alterado
+
+- **Moradores e condomínios gravados no banco**: cadastro, edição, importação CSV, arquivamento,
+  reativação e exclusão passam a valer de verdade (antes sumiam ao recarregar a página). A
+  importação CSV é tudo ou nada: se uma linha falhar, nenhuma é gravada.
+- **Telefone sempre no padrão internacional (E.164)**: aceita "(11) 99999-0000", "11 99999-0000"
+  ou "+55 11 99999-0000" e recusa número repetido no mesmo condomínio.
+
+### Segurança
+
+- **CPF do morador nunca fica em texto no banco**: só um hash e os dois últimos dígitos.
+
 ## [0.1.0] - 2026-11-14
 
 ### Adicionado

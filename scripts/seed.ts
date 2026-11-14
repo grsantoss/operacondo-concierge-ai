@@ -8,7 +8,7 @@ import { sql } from "drizzle-orm";
 import { DEMANDAS } from "../src/data/demandas";
 import { listFaturas } from "../src/data/faturas";
 import { listSuppliers } from "../src/data/fornecedores";
-import { CONDOMINIOS, getMoradoresSnapshot } from "../src/data/moradores";
+import { CONDOMINIOS, MORADORES_EXEMPLO } from "./dados-exemplo/moradores";
 import { PLANOS } from "../src/data/planos";
 import { listTenants } from "../src/data/tenants";
 import { dbAdmin, schema as s } from "../src/server/db";
@@ -201,7 +201,7 @@ async function main() {
     Inativo: "inativo",
   } as const;
   const moradorId = new Map<string, { id: string; unidadeId: string; condominioId: string }>();
-  for (const m of getMoradoresSnapshot()) {
+  for (const m of MORADORES_EXEMPLO) {
     const cid = condoId.get(m.condominioId)!;
     const e = m.endereco;
     const [u] = await db

@@ -1,4 +1,13 @@
-import { useSyncExternalStore } from "react";
+import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  atualizarMorador,
+  criarMoradores,
+  desativarMorador,
+  excluirMoradores,
+  listarCondominios,
+  listarMoradores,
+  reativarMorador,
+} from "@/lib/moradores.functions";
 
 export type Status = "Residente" | "Locatário" | "Vago" | "Proprietário" | "Inativo";
 export type CondoTipo = "vertical" | "horizontal";
@@ -52,88 +61,77 @@ export const STATUS_CLS: Record<Status, string> = {
 
 export const STATUS_LIST: Status[] = ["Residente", "Locatário", "Proprietário", "Vago"];
 
-export const CONDOMINIOS: Condominio[] = [
-  { id: "aurora", nome: "Edifício Aurora", tipo: "vertical", cidade: "São Paulo — SP", unidades: 248 },
-  { id: "parqueverde", nome: "Residencial Parque Verde", tipo: "horizontal", cidade: "Campinas — SP", unidades: 96 },
-  { id: "montebello", nome: "Edifício Monte Bello", tipo: "vertical", cidade: "São Paulo — SP", unidades: 132 },
-];
+/* -------- Dados do banco (React Query) -------- */
 
-const SEED_MORADORES: Morador[] = [
-  { id: "m1", nome: "Ana Carvalho", condominioId: "aurora", endereco: { tipo: "vertical", bloco: "Torre A", andar: 12, apto: "1204" }, status: "Residente", vagas: 2, pets: 1, contato: "+55 11 99988-1204", email: "ana.carvalho@exemplo.com", desde: "Mar 2019", cpf: "123.***.***-04", ultimo: "Hoje, 09:14" },
-  { id: "m2", nome: "Marcelo Reis", condominioId: "aurora", endereco: { tipo: "vertical", bloco: "Torre A", andar: 8, apto: "802" }, status: "Locatário", vagas: 1, pets: 0, contato: "+55 11 99812-0802", email: "marcelo.reis@exemplo.com", desde: "Ago 2023", cpf: "234.***.***-02", ultimo: "Ontem, 21:02" },
-  { id: "m3", nome: "Júlia Tavares", condominioId: "aurora", endereco: { tipo: "vertical", bloco: "Torre B", andar: 5, apto: "506" }, status: "Residente", vagas: 1, pets: 2, contato: "+55 11 98123-0506", email: "julia.t@exemplo.com", desde: "Jan 2021", cpf: "345.***.***-06", ultimo: "Há 2d" },
-  { id: "m4", nome: "Bruno Lima", condominioId: "aurora", endereco: { tipo: "vertical", bloco: "Torre B", andar: 22, apto: "Cob. 02" }, status: "Proprietário", vagas: 3, pets: 0, contato: "+55 11 99777-0002", email: "bruno.lima@exemplo.com", desde: "Fev 2017", cpf: "456.***.***-02", ultimo: "Há 4d" },
-  { id: "m5", nome: "Família Mendes", condominioId: "aurora", endereco: { tipo: "vertical", bloco: "Torre A", andar: 4, apto: "401" }, status: "Residente", vagas: 2, pets: 1, contato: "+55 11 98888-0401", email: "mendes@exemplo.com", desde: "Nov 2020", ultimo: "Há 1 sem" },
-  { id: "m6", nome: "—", condominioId: "aurora", endereco: { tipo: "vertical", bloco: "Torre B", andar: 11, apto: "1101" }, status: "Vago", vagas: 0, pets: 0, contato: "—", ultimo: "—" },
-  { id: "m7", nome: "Camila Duarte", condominioId: "parqueverde", endereco: { tipo: "horizontal", quadra: "Q3", casa: "12" }, status: "Residente", vagas: 2, pets: 1, contato: "+55 19 99001-0303", email: "camila.d@exemplo.com", desde: "Mai 2022", cpf: "567.***.***-12", ultimo: "Hoje, 14:22" },
-  { id: "m8", nome: "Eduardo Pires", condominioId: "parqueverde", endereco: { tipo: "horizontal", quadra: "Q1", casa: "05" }, status: "Locatário", vagas: 1, pets: 0, contato: "+55 19 98444-0907", email: "edu.pires@exemplo.com", desde: "Jul 2024", cpf: "678.***.***-05", ultimo: "Há 3d" },
-  { id: "m9", nome: "Renata Sales", condominioId: "parqueverde", endereco: { tipo: "horizontal", quadra: "Q5", casa: "27" }, status: "Proprietário", vagas: 2, pets: 2, contato: "+55 19 97555-2727", email: "renata.sales@exemplo.com", desde: "Set 2018", cpf: "789.***.***-27", ultimo: "Ontem, 08:40" },
-  { id: "m10", nome: "Família Oliveira", condominioId: "parqueverde", endereco: { tipo: "horizontal", quadra: "Q2", casa: "18" }, status: "Residente", vagas: 3, pets: 1, contato: "+55 19 96222-1818", email: "oliveira@exemplo.com", desde: "Fev 2020", ultimo: "Há 6d" },
-  { id: "m11", nome: "Sandra Ribeiro", condominioId: "montebello", endereco: { tipo: "vertical", bloco: "Bloco 1", andar: 3, apto: "302" }, status: "Residente", vagas: 1, pets: 0, contato: "+55 11 95111-0302", email: "sandra.r@exemplo.com", desde: "Out 2021", cpf: "890.***.***-02", ultimo: "Hoje, 07:55" },
-  { id: "m12", nome: "Pedro Nakamura", condominioId: "montebello", endereco: { tipo: "vertical", bloco: "Bloco 2", andar: 9, apto: "908" }, status: "Locatário", vagas: 1, pets: 1, contato: "+55 11 94222-0908", email: "pedro.n@exemplo.com", desde: "Abr 2024", cpf: "901.***.***-08", ultimo: "Há 2 sem" },
-];
+export const condominiosQuery = queryOptions({
+  queryKey: ["condominios"],
+  queryFn: () => listarCondominios(),
+});
 
-/* -------- Reactive in-memory store -------- */
+export const moradoresQuery = queryOptions({
+  queryKey: ["moradores"],
+  queryFn: () => listarMoradores(),
+});
 
-let _moradores: Morador[] = [...SEED_MORADORES];
-const listeners = new Set<() => void>();
-
-function emit() {
-  listeners.forEach((l) => l());
-}
-
-export const MORADORES = _moradores; // legacy export (snapshot-like)
-
-export function getMoradoresSnapshot(): Morador[] {
-  return _moradores;
-}
-
-export function addMoradores(items: Morador[]) {
-  _moradores = [..._moradores, ...items];
-  emit();
-}
-
-export function updateMorador(id: string, patch: Partial<Omit<Morador, "id">>) {
-  _moradores = _moradores.map((m) => (m.id === id ? { ...m, ...patch } : m));
-  emit();
-}
-
-export function deactivateMorador(id: string) {
-  const stamp = new Date().toLocaleDateString("pt-BR");
-  _moradores = _moradores.map((m) =>
-    m.id === id ? { ...m, status: "Inativo" as Status, desativadoEm: stamp } : m,
-  );
-  emit();
-}
-
-export function reactivateMorador(id: string, novoStatus: Status = "Residente") {
-  _moradores = _moradores.map((m) =>
-    m.id === id ? { ...m, status: novoStatus, desativadoEm: undefined } : m,
-  );
-  emit();
-}
-
-export function deleteMorador(id: string) {
-  _moradores = _moradores.filter((m) => m.id !== id);
-  emit();
-}
-
-export function deleteAllInactive() {
-  _moradores = _moradores.filter((m) => m.status !== "Inativo");
-  emit();
+export function useCondominios(): Condominio[] {
+  return useQuery(condominiosQuery).data ?? [];
 }
 
 export function useMoradores(opts?: { includeInactive?: boolean }): Morador[] {
-  const all = useSyncExternalStore(
-    (cb) => {
-      listeners.add(cb);
-      return () => listeners.delete(cb);
-    },
-    () => _moradores,
-    () => _moradores,
-  );
+  const all = useQuery(moradoresQuery).data ?? [];
   if (opts?.includeInactive) return all;
   return all.filter((m) => m.status !== "Inativo");
+}
+
+type NovoMorador = Omit<Morador, "id" | "ultimo">;
+
+function paraEntrada(m: NovoMorador) {
+  return {
+    nome: m.nome === "—" ? "Unidade vaga" : m.nome,
+    condominioId: m.condominioId,
+    endereco: m.endereco,
+    status: m.status === "Inativo" ? ("Residente" as const) : m.status,
+    contato: m.contato,
+    email: m.email,
+    cpf: m.cpf,
+    vagas: m.vagas,
+    pets: m.pets,
+    desde: m.desde,
+  };
+}
+
+/** Gravações. Cada uma vai ao banco e recarrega a lista. Erros chegam como Error com mensagem pronta. */
+export function useMoradoresAcoes() {
+  const qc = useQueryClient();
+  const recarregar = () => qc.invalidateQueries({ queryKey: moradoresQuery.queryKey });
+  return {
+    async addMoradores(items: NovoMorador[]) {
+      await criarMoradores({ data: items.map(paraEntrada) });
+      await recarregar();
+    },
+    async updateMorador(id: string, patch: Partial<Omit<Morador, "id">>) {
+      const atual = qc.getQueryData(moradoresQuery.queryKey)?.find((m) => m.id === id);
+      if (!atual) throw new Error("Morador não encontrado.");
+      await atualizarMorador({ data: { id, dados: paraEntrada({ ...atual, ...patch }) } });
+      await recarregar();
+    },
+    async deactivateMorador(id: string) {
+      await desativarMorador({ data: { id } });
+      await recarregar();
+    },
+    async reactivateMorador(id: string, novoStatus: "Residente" | "Locatário" | "Proprietário" = "Residente") {
+      await reativarMorador({ data: { id, status: novoStatus } });
+      await recarregar();
+    },
+    async deleteMorador(id: string) {
+      await excluirMoradores({ data: { ids: [id] } });
+      await recarregar();
+    },
+    async deleteAllInactive() {
+      await excluirMoradores({ data: {} });
+      await recarregar();
+    },
+  };
 }
 
 /* -------- Helpers -------- */
@@ -148,14 +146,6 @@ export function formatEndereco(e: Endereco) {
 export function initials(nome: string) {
   if (nome === "—") return "—";
   return nome.split(" ").map((s) => s[0]).slice(0, 2).join("").toUpperCase();
-}
-
-export function getMorador(id: string) {
-  return _moradores.find((m) => m.id === id);
-}
-
-export function getCondominio(id: string) {
-  return CONDOMINIOS.find((c) => c.id === id);
 }
 
 export function whatsappUrl(phone: string, msg?: string) {
@@ -208,26 +198,21 @@ export function downloadCsvTemplate() {
 }
 
 export interface CsvValidationResult {
-  valid: Morador[];
+  valid: Omit<Morador, "id">[];
   errors: { row: number; message: string; raw: CsvRow }[];
 }
 
-function findCondoId(nomeOuId: string): string | null {
+function findCondoId(condominios: Condominio[], nomeOuId: string): string | null {
   const n = nomeOuId.trim().toLowerCase();
   if (!n) return null;
-  const found = CONDOMINIOS.find(
+  const found = condominios.find(
     (c) => c.id === n || c.nome.toLowerCase() === n,
   );
   return found?.id ?? null;
 }
 
-let _importSeq = 1;
-function nextId() {
-  return `mi${Date.now().toString(36)}${_importSeq++}`;
-}
-
-export function validateCsvRows(rows: CsvRow[]): CsvValidationResult {
-  const valid: Morador[] = [];
+export function validateCsvRows(rows: CsvRow[], condominios: Condominio[]): CsvValidationResult {
+  const valid: CsvValidationResult["valid"] = [];
   const errors: CsvValidationResult["errors"] = [];
 
   rows.forEach((raw, i) => {
@@ -239,7 +224,7 @@ export function validateCsvRows(rows: CsvRow[]): CsvValidationResult {
     const contato = (raw.contato ?? "").trim();
 
     if (!nome) return errors.push({ row: rowNum, message: "Nome é obrigatório", raw });
-    const condominioId = findCondoId(condoInput);
+    const condominioId = findCondoId(condominios, condoInput);
     if (!condominioId)
       return errors.push({ row: rowNum, message: `Condomínio "${condoInput}" não encontrado`, raw });
     if (tipo !== "vertical" && tipo !== "horizontal")
@@ -269,7 +254,6 @@ export function validateCsvRows(rows: CsvRow[]): CsvValidationResult {
     }
 
     valid.push({
-      id: nextId(),
       nome,
       condominioId,
       endereco,

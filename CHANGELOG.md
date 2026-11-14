@@ -6,6 +6,8 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
 
 ## [Não lançado]
 
+## [0.2.0] - 2026-11-14
+
 ### Alterado
 
 - **Demandas gravadas no banco**: o kanban, o detalhe e a abertura de demanda pelo painel passam
@@ -70,5 +72,6 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   arquivos `.lovable/`. (#1)
 - **Seletor de tema** em Configurações → Aparência (o modo escuro está desligado). (#1)
 
-[Não lançado]: https://github.com/grsantoss/operacondo-concierge-ai/compare/v0.1.0...HEAD
+[Não lançado]: https://github.com/grsantoss/operacondo-concierge-ai/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/grsantoss/operacondo-concierge-ai/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/grsantoss/operacondo-concierge-ai/releases/tag/v0.1.0

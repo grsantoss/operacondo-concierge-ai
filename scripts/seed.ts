@@ -5,7 +5,7 @@
  */
 import { hashPassword } from "better-auth/crypto";
 import { sql } from "drizzle-orm";
-import { DEMANDAS } from "../src/data/demandas";
+import { DEMANDAS_EXEMPLO as DEMANDAS } from "./dados-exemplo/demandas";
 import { listFaturas } from "../src/data/faturas";
 import { listSuppliers } from "../src/data/fornecedores";
 import { CONDOMINIOS, MORADORES_EXEMPLO } from "./dados-exemplo/moradores";

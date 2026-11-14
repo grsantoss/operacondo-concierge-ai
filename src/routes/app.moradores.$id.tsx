@@ -24,19 +24,19 @@ import {
   whatsappUrl,
   type Morador,
 } from "@/data/moradores";
-import { CAT_ICON, DEMANDAS, PRIO_CLASS, type Demanda } from "@/data/demandas";
+import { CAT_ICON, PRIO_CLASS, demandasQuery, type Demanda } from "@/data/demandas";
 
 export const Route = createFileRoute("/app/moradores/$id")({
   loader: async ({ params, context: { queryClient } }) => {
-    const [moradores, condominios] = await Promise.all([
+    const [moradores, condominios, demandas] = await Promise.all([
       queryClient.ensureQueryData(moradoresQuery),
       queryClient.ensureQueryData(condominiosQuery),
+      queryClient.ensureQueryData(demandasQuery),
     ]);
     const morador = moradores.find((m) => m.id === params.id);
     if (!morador) throw notFound();
     const condo = condominios.find((c) => c.id === morador.condominioId)!;
-    // ponytail: chamados ainda vêm do mock de demandas até a #9.
-    const chamados = DEMANDAS.filter((d) => d.morador === morador.nome);
+    const chamados = demandas.filter((d) => d.moradorId === morador.id);
     return { morador, condo, chamados };
   },
   head: ({ loaderData }) => ({

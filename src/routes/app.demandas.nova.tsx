@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { z } from "zod";
 import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/brand/Icon";
-import { CAT_ICON, PRIO_CLASS, type Category, type Priority } from "@/data/demandas";
+import { CAT_ICON, PRIO_CLASS, useDemandasAcoes, type Category, type Priority } from "@/data/demandas";
 import { condominiosQuery, moradoresQuery, useCondominios, useMoradores } from "@/data/moradores";
 
 export const Route = createFileRoute("/app/demandas/nova")({
@@ -67,7 +67,10 @@ function NovaDemandaPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
   const CONDOMINIOS = useCondominios();
-  const MORADORES = useMoradores();
+  const MORADORES = useMoradores().filter((m) => m.status !== "Vago");
+  const { criar } = useDemandasAcoes();
+  const [erroEnvio, setErroEnvio] = useState<string | null>(null);
+  const [codigo, setCodigo] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(() => {
     const moradorPre = search.moradorId
       ? MORADORES.find((m) => m.id === search.moradorId)
@@ -118,7 +121,7 @@ function NovaDemandaPage() {
     if (errors.condominioId) setErrors((e) => ({ ...e, condominioId: undefined }));
   }
 
-  function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     const parsed = schema.safeParse(form);
     if (!parsed.success) {
@@ -130,11 +133,16 @@ function NovaDemandaPage() {
       setErrors(fieldErrors);
       return;
     }
-    setSubmitted(true);
-    setTimeout(() => navigate({ to: "/app/demandas" }), 900);
+    setErroEnvio(null);
+    try {
+      const novo = await criar({ ...parsed.data, custoEstimado: parsed.data.custoEstimado });
+      setCodigo(novo);
+      setSubmitted(true);
+      setTimeout(() => navigate({ to: "/app/demandas/$id", params: { id: novo } }), 900);
+    } catch (err) {
+      setErroEnvio((err as Error).message);
+    }
   }
-
-  const nextId = `D-${2402}`;
 
   return (
     <AppShell
@@ -168,10 +176,10 @@ function NovaDemandaPage() {
             <Icon name="check_circle" className="text-[32px]" filled />
           </div>
           <h2 className="mt-4 text-lg font-bold text-[var(--color-navy)]">
-            Demanda {nextId} aberta
+            Demanda {codigo} aberta
           </h2>
           <p className="mt-1 text-sm text-[var(--color-on-surface-variant)]">
-            Encaminhando ao quadro de demandas…
+            Abrindo a demanda…
           </p>
         </div>
       ) : (
@@ -182,6 +190,11 @@ function NovaDemandaPage() {
             noValidate
             className="space-y-5"
           >
+            {erroEnvio ? (
+              <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {erroEnvio}
+              </p>
+            ) : null}
             <FormSection
               icon="edit_note"
               title="Descrição do chamado"
@@ -378,7 +391,7 @@ function NovaDemandaPage() {
               <div className="mt-3 rounded-xl border border-[var(--color-outline-variant)] bg-white p-3.5 shadow-soft">
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-[10px] font-semibold text-[var(--color-on-surface-variant)]">
-                    {nextId}
+                    D-nova
                   </span>
                   <span
                     className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${PRIO_CLASS[form.prioridade]}`}

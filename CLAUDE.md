@@ -9,12 +9,14 @@ Responda sempre em português do Brasil, com acentuação correta.
 
 ## Estado atual (13/11/2026)
 
-- Frontend completo, **dados ainda em mock** em `src/data/*.ts` (stores em memória). Não há backend,
-  banco nem autenticação.
+- **Fase 0 (fundação) feita** (issues #2–#7): Postgres + schema + RLS + login. As telas ainda
+  leem os mocks de `src/data/*.ts`; trocar pelos dados do banco é a Fase 1 (issues #8–#14).
+- Rodar localmente: `cp .env.example .env` → `bun run db:reset` (sobe containers, migrations e
+  seed) → `bun run dev`. Login: `sindico@operacondo.local` (cliente Aurora) ou
+  `admin@operacondo.local` (Admin Master), senha `SEED_SENHA` (padrão `operacondo123`).
 - Stack: TanStack Start + React 19 + Tailwind 4 + shadcn/ui (`new-york`, `slate`), Nitro com
   `preset: "node-server"` (`bun run build && bun start` → `.output/server/index.mjs`).
-- **Lovable foi removido** (branch `chore/design-system-sem-lovable`, ainda sem commit). O `main`
-  ainda está conectado ao Lovable: desconectar o GitHub do Lovable antes do merge.
+- Lovable removido e desconectado (PR #1).
 - Baseline conhecida: `tsc` limpo; `bun run lint` já tinha ~18 mil erros (Prettier) antes das
   mudanças. Algumas telas vazam na horizontal a 390px (já acontecia no `main`).
 
@@ -68,19 +70,24 @@ deve sair das telas (ver decisões abaixo).
   superusuário ignoram RLS). Nada de separação de clientes por pasta; só os arquivos usam o caminho
   `{tenant_id}/{condominio_id}/{colecao}/…`.
 - **Backend:** Drizzle (ORM + migrations), Better Auth, pg-boss (fila, reenvio, agendamento,
-  espera de 5–10 s para agrupar mensagens), LISTEN/NOTIFY + SSE para tempo real, MinIO/S3 para
+  espera de 5–10 s para agrupar mensagens), LISTEN/NOTIFY + SSE para tempo real, S3 para
   arquivos, Voyage para embeddings.
 - **Containers (Docker Compose):** `web` (telas + API + webhooks), `worker` (mesma imagem, consome
-  a fila), `docling` (docling-serve), `postgres` (pgvector/pgvector:pg17), `minio`, e o Langfuse
-  auto-hospedado (`langfuse-web`, `langfuse-worker`, `clickhouse`, `redis`; reaproveita o MinIO).
+  a fila), `docling` (docling-serve), `postgres` (pgvector/pgvector:pg17), `s3` (SeaweedFS em dev), e o Langfuse
+  auto-hospedado (`langfuse-web`, `langfuse-worker`, `clickhouse`, `redis`; reaproveita o S3).
   **Provedor do Postgres de produção: decisão do dono do projeto.** O código deve rodar igual em
   container e em Postgres gerenciado (RDS, Cloud SQL, Azure), então:
-  - conexão só por `DATABASE_URL` (com `sslmode=require` em produção) e `DATABASE_URL_ADMIN`
-    separada para migrations e para o portal `/admin`;
+  - conexão só por variáveis (com `sslmode=require` em produção): `DATABASE_URL` (oc_app),
+    `DATABASE_URL_ADMIN` (oc_admin: portal `/admin`, worker, seed) e `DATABASE_URL_MIGRATIONS`
+    (oc_owner, só migrations);
+  - preparação única do banco em `db/bootstrap.sql` (papéis + extensões), rodada por quem
+    administra o Postgres; no container, roda sozinha na criação do volume;
   - migrations não exigem superusuário; extensões usadas: só `vector` e `pgcrypto` (ambas
     disponíveis nos gerenciados);
   - papéis: `oc_owner` (dono das tabelas, roda migrations), `oc_app` (aplicação, sujeito a RLS),
-    `oc_admin` (`BYPASSRLS`, portal admin). Nada depende de acesso ao sistema de arquivos do banco;
+    `oc_admin` (portal admin; vê todos os clientes por **política explícita** `plataforma`, não
+    por `BYPASSRLS`, que exige superusuário e falta em alguns gerenciados). Nada depende de
+    acesso ao sistema de arquivos do banco;
   - pg-boss usa um schema próprio no mesmo banco; backup é responsabilidade do provedor
     (gerenciado) ou de um job de `pg_dump` (container).
 - **RAG em duas fases:** (1) com o condomínio definido, convenção/estatuto/regimento inteiros no
@@ -88,6 +95,8 @@ deve sair das telas (ver decisões abaixo).
   pgvector) com trechos cortados **por artigo/cláusula**. Prevalência: Convenção > Estatuto >
   Regimento > Ata mais recente que altere a regra. Sempre citar o artigo; sem trecho → "não
   encontrei" + encaminhar ao síndico.
+- **Arquivos:** só pela API S3 (bucket `S3_BUCKET`). Em dev, SeaweedFS no Docker Compose (a MinIO
+  parou de publicar imagens Docker em 2025); em produção, S3/R2 ou outro compatível.
 - **Ingestão/OCR:** Docling interno (privacidade/LGPD, estrutura, previsibilidade). Páginas com
   baixa qualidade de OCR vão para o Claude (leitura de imagem). `.doc` antigo não é suportado.
   Áudio do WhatsApp precisa de transcrição externa (Whisper/Deepgram); fotos vão direto ao Claude.
@@ -225,7 +234,7 @@ Fluxos:
     Pagar a fatura em aberto reativa tudo na hora (via `invoice.paid`).
   - D+20 e D+27: e-mail avisando a data da exclusão.
   - D+30: **exclusão automática da conta** — cancela a assinatura no Stripe, desconecta o
-    WhatsApp, apaga moradores, conversas, mensagens, demandas, documentos e arquivos do MinIO.
+    WhatsApp, apaga moradores, conversas, mensagens, demandas, documentos e arquivos do S3.
     **Mantém** faturas e dados fiscais (obrigação contábil) e um registro mínimo do cliente
     anonimizado. Backups expiram no ciclo normal (constar na política de privacidade).
   - No Stripe: retentativas do cartão dentro de 10 dias e, ao fim, marcar a assinatura como
@@ -261,9 +270,17 @@ fim do período, sem reembolso proporcional.
   `configuracoes`, `onboarding`, `admin`, `cobranca`, `db`, `infra`, `design`, `docs`.
 - Nunca entram no commit: `.env*`, `node_modules/`, `.output/`, `.nitro/`, `.tanstack/`,
   `.claude/settings.local.json`.
-- Verificação mínima hoje: `node node_modules/typescript/bin/tsc --noEmit -p .` e `bun run build`.
-  Lint tem ~18 mil erros antigos (Prettier): comparar só erros novos nos arquivos alterados. Ainda
-  não há testes nem migrations; quando existirem, entram na verificação.
+- Verificação: `bun run typecheck`, `bun test` (precisa do banco local: `bun run db:up`) e
+  `bun run build`. O CI (`.github/workflows/ci.yml`) roda tudo isso num banco novo, mais
+  bootstrap, migrations, checagem de migration pendente e seed. Lint tem ~18 mil erros antigos
+  (Prettier): comparar só erros novos nos arquivos alterados.
+- Banco: mudou `src/server/db/schema.ts` → `bun run db:generate` (gera migration nova em
+  `src/server/db/migrations`) → `bun run db:migrate`. SQL que o Drizzle não gera (RLS, funções,
+  views) vai em migration própria: `bunx drizzle-kit generate --custom --name <nome>`. Nunca
+  editar migration já aplicada. Tabela nova de cliente: `tenant_id`, `unique(tenant_id, id)`, FKs
+  compostas com `tenant_id` e entrada na lista de RLS (o teste `tests/rls.test.ts` falha se faltar).
+- Acesso a dados de cliente sempre por `withTenant(tenantId, tx => …)` (`src/server/db`); fora
+  dele a RLS não devolve nada.
 - Prettier só em arquivos novos ou já formatados; não formatar arquivos antigos inteiros.
 
 ## Design system

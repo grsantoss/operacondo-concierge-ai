@@ -1,0 +1,41 @@
+# Ambiente de desenvolvimento. Produção usa o mesmo código com Postgres gerenciado ou container.
+# Subir: bun run db:up   ·   Docling (pesado, só quando for testar ingestão): docker compose --profile ingestao up -d
+name: operacondo-concierge
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: concierge
+      OC_OWNER_PASSWORD: oc_owner_dev
+      OC_APP_PASSWORD: oc_app_dev
+      OC_ADMIN_PASSWORD: oc_admin_dev
+    ports: ["5442:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db:/bootstrap:ro
+      - ./db/docker-init.sh:/docker-entrypoint-initdb.d/10-bootstrap.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d concierge"]
+      interval: 2s
+      retries: 30
+
+  # Armazenamento de arquivos compatível com S3. O MinIO parou de publicar imagens Docker; o código
+  # fala só a API S3, então em produção pode ser S3, R2 ou outro compatível. Sem autenticação: só dev.
+  # O bucket é criado pela aplicação quando o envio de arquivos existir (Fase 1).
+  s3:
+    image: chrislusf/seaweedfs:4.50
+    command: server -dir=/data -s3 -s3.port=8333
+    ports: ["8333:8333"]
+    volumes: [s3data:/data]
+
+  docling:
+    image: quay.io/docling-project/docling-serve:v1.38.2
+    profiles: [ingestao]
+    ports: ["5001:5001"]
+
+volumes:
+  pgdata:
+  s3data:

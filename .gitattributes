@@ -1,0 +1,4 @@
+# Scripts rodam dentro de containers Linux: CRLF quebra o shebang.
+*.sh text eol=lf
+# Migrations: o Drizzle guarda o hash do arquivo; mesma quebra de linha em qualquer máquina.
+*.sql text eol=lf

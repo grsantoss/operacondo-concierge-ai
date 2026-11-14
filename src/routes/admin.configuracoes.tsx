@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { Icon } from "@/components/brand/Icon";
-import { isAdminMaster, setAdminMaster } from "@/lib/admin";
 
 export const Route = createFileRoute("/admin/configuracoes")({
   head: () => ({
@@ -12,7 +11,6 @@ export const Route = createFileRoute("/admin/configuracoes")({
 });
 
 function AdminConfig() {
-  const [master, setMaster] = useState(isAdminMaster());
   const [notify, setNotify] = useState({ churn: true, fatura: true, novoTenant: false });
 
   return (
@@ -23,21 +21,10 @@ function AdminConfig() {
             <Icon name="shield_person" className="text-[20px] text-[var(--color-brand)]" />
             <h2 className="text-base font-bold text-[var(--color-navy)]">Acesso Admin Master</h2>
           </div>
-          <label className="flex items-center gap-3 rounded-lg bg-[var(--color-surface-low)] p-3">
-            <input
-              type="checkbox"
-              checked={master}
-              onChange={(e) => {
-                setMaster(e.target.checked);
-                setAdminMaster(e.target.checked);
-              }}
-              className="accent-[var(--color-brand)]"
-            />
-            <div>
-              <p className="text-sm font-semibold text-[var(--color-navy)]">Meu usuário é Admin Master</p>
-              <p className="text-xs text-[var(--color-on-surface-variant)]">Controla a visibilidade do link "Portal Admin" no menu do usuário.</p>
-            </div>
-          </label>
+          <p className="rounded-lg bg-[var(--color-surface-low)] p-3 text-sm text-[var(--color-navy)]">
+            Quem é Admin Master é definido no cadastro do usuário (papel <code>admin</code>), não por
+            esta tela. Só esses usuários abrem o portal <code>/admin</code> e veem o link no menu.
+          </p>
         </div>
 
         <div className="rounded-2xl border border-[var(--color-outline-variant)] bg-white p-6">

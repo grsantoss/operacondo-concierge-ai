@@ -8,11 +8,21 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
 
 ### Alterado
 
+- **Demandas gravadas no banco**: o kanban, o detalhe e a abertura de demanda pelo painel passam
+  a valer de verdade. Abrir, assumir e resolver ficam na linha do tempo com o nome de quem fez, e
+  o prazo (SLA) sai da prioridade: Crítica 2h, Alta 6h, Normal 24h.
+- **Anexos das demandas guardados no S3**: imagem, vídeo ou PDF de até 20 MB, abertos por um link
+  que vale 15 minutos.
 - **Moradores e condomínios gravados no banco**: cadastro, edição, importação CSV, arquivamento,
   reativação e exclusão passam a valer de verdade (antes sumiam ao recarregar a página) (#48). A
   importação CSV é tudo ou nada: se uma linha falhar, nenhuma é gravada (#48).
 - **Telefone sempre no padrão internacional (E.164)**: aceita "(11) 99999-0000", "11 99999-0000"
   ou "+55 11 99999-0000" e recusa número repetido no mesmo condomínio (#48).
+
+### Removido
+
+- **Filtro e selo de "temperatura" nas demandas**: a urgência é só a prioridade (Crítica, Alta,
+  Normal).
 
 ### Segurança
 

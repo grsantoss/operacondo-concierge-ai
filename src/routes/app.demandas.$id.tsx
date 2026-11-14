@@ -1,4 +1,5 @@
 import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/brand/Icon";
@@ -7,27 +8,25 @@ import {
   CAT_ICON,
   COLUMNS,
   PRIO_CLASS,
-  addAnexos,
-  addMensagem,
-  assumirConversa,
-  getAdjacent,
-  getDemanda,
-  getRelatedDemandas,
-  resolveDemanda,
+  demandaQuery,
+  demandasQuery,
+  relacionadas,
+  useDemandas,
+  useDemandasAcoes,
+  vizinhas,
   type Demanda,
   type Message,
   type TimelineEvent,
 } from "@/data/demandas";
 
 export const Route = createFileRoute("/app/demandas/$id")({
-  loader: ({ params }) => {
-    const demanda = getDemanda(params.id);
+  loader: async ({ params, context: { queryClient } }) => {
+    const [demanda] = await Promise.all([
+      queryClient.ensureQueryData(demandaQuery(params.id)),
+      queryClient.ensureQueryData(demandasQuery),
+    ]);
     if (!demanda) throw notFound();
-    return {
-      demanda,
-      related: getRelatedDemandas(params.id),
-      adjacent: getAdjacent(params.id),
-    };
+    return { demanda };
   },
   head: ({ loaderData }) => ({
     meta: [
@@ -43,24 +42,6 @@ export const Route = createFileRoute("/app/demandas/$id")({
   component: DemandaDetail,
 });
 
-const TEMP_STYLE = {
-  cold: {
-    label: "Fria",
-    class: "bg-primary/10 text-[var(--color-temp-cold)] border-primary/30",
-    dot: "bg-[var(--color-temp-cold)]",
-  },
-  warm: {
-    label: "Morna",
-    class: "bg-amber-50 text-[var(--color-temp-warm)] border-amber-300/60",
-    dot: "bg-[var(--color-temp-warm)]",
-  },
-  hot: {
-    label: "Quente",
-    class: "bg-destructive/10 text-[var(--color-temp-hot)] border-destructive/30",
-    dot: "bg-[var(--color-temp-hot)]",
-  },
-} as const;
-
 const ATTACH_ICON = {
   image: "image",
   pdf: "picture_as_pdf",
@@ -75,18 +56,19 @@ function buildWhatsappUrl(demanda: Demanda): string {
 }
 
 function DemandaDetail() {
-  const { demanda, related, adjacent } = Route.useLoaderData() as {
-    demanda: Demanda;
-    related: Demanda[];
-    adjacent: { prev?: Demanda; next?: Demanda };
-  };
-  const router = useRouter();
+  const { id } = Route.useParams();
+  const inicial = Route.useLoaderData().demanda as Demanda;
+  const demanda = useQuery(demandaQuery(id)).data ?? inicial;
+  const todas = useDemandas();
+  const related = relacionadas(todas, demanda);
+  const adjacent = vizinhas(todas, demanda.id);
+  const acoes = useDemandasAcoes();
+  const [ocupado, setOcupado] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const columnMeta = COLUMNS.find((c) => c.id === demanda.column)!;
-  const temp = TEMP_STYLE[demanda.temperature];
   const isResolved = demanda.column === "resolvidas";
   const assumed = Boolean(demanda.assumedBy);
 
@@ -97,28 +79,32 @@ function DemandaDetail() {
     setTimeout(() => setToast(null), 2400);
   }
 
+  /** Grava no banco; mostra o aviso de sucesso ou a mensagem de erro do servidor. */
+  async function executar(gravar: () => Promise<unknown>, ok: string) {
+    setOcupado(true);
+    try {
+      await gravar();
+      showToast(ok);
+    } catch (err) {
+      showToast((err as Error).message);
+    } finally {
+      setOcupado(false);
+    }
+  }
+
   function handleResolve() {
     if (isResolved) return;
-    resolveDemanda(demanda.id);
-    showToast("Demanda marcada como resolvida");
-    router.invalidate();
+    void executar(() => acoes.resolver(demanda.id), "Demanda marcada como resolvida");
   }
 
   function handleAssumir() {
     if (assumed) return;
-    assumirConversa(demanda.id, "Você");
-    showToast("Você assumiu a conversa");
-    router.invalidate();
+    void executar(() => acoes.assumir(demanda.id), "Você assumiu a demanda");
   }
 
-  function handleSend() {
-    const text = draft.trim();
-    if (!text) return;
-    addMensagem(demanda.id, { from: "sindico", author: "Você", text });
-    setDraft("");
-    router.invalidate();
-    requestAnimationFrame(() => textareaRef.current?.focus());
-  }
+  // ponytail: responder ao morador depende do envio pelo WhatsApp (Fase 2); até lá o campo fica
+  // desligado e o botão do WhatsApp abre a conversa no aparelho do síndico.
+  function handleSend() {}
 
   function handlePickFiles() {
     fileInputRef.current?.click();
@@ -127,10 +113,11 @@ function DemandaDetail() {
   function handleFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files ? Array.from(e.target.files) : [];
     if (files.length === 0) return;
-    addAnexos(demanda.id, files);
-    showToast(`${files.length} ${files.length === 1 ? "anexo adicionado" : "anexos adicionados"}`);
-    router.invalidate();
     if (fileInputRef.current) fileInputRef.current.value = "";
+    void executar(
+      () => acoes.anexar(demanda.id, files),
+      `${files.length} ${files.length === 1 ? "anexo adicionado" : "anexos adicionados"}`,
+    );
   }
 
   return (
@@ -152,7 +139,7 @@ function DemandaDetail() {
           <button
             type="button"
             onClick={handleResolve}
-            disabled={isResolved}
+            disabled={isResolved || ocupado}
             className={`btn-press inline-flex h-10 items-center gap-2 rounded-lg px-4 text-sm font-semibold shadow-soft ${
               isResolved
                 ? "cursor-not-allowed bg-success/10 text-success-strong border border-success/30"
@@ -226,12 +213,6 @@ function DemandaDetail() {
                 <span className={`h-1.5 w-1.5 rounded-full ${columnMeta.accent}`} />
                 {columnMeta.title}
               </span>
-              <span
-                className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${temp.class}`}
-              >
-                <span className={`h-1.5 w-1.5 rounded-full ${temp.dot}`} />
-                Conversa {temp.label}
-              </span>
               {demanda.sla ? (
                 <span className="inline-flex items-center gap-1 rounded-md bg-destructive/10 px-2 py-0.5 text-[11px] font-semibold text-destructive">
                   <Icon name="schedule" className="text-[13px]" /> {demanda.sla}
@@ -280,7 +261,7 @@ function DemandaDetail() {
               <button
                 type="button"
                 onClick={handleAssumir}
-                disabled={assumed}
+                disabled={assumed || ocupado}
                 className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold ${
                   assumed
                     ? "cursor-not-allowed border border-success/30 bg-success/10 text-success-strong"
@@ -288,7 +269,7 @@ function DemandaDetail() {
                 }`}
               >
                 <Icon name={assumed ? "check" : "support_agent"} className="text-[14px]" />
-                {assumed ? `Assumida por ${demanda.assumedBy}` : "Assumir conversa"}
+                {assumed ? `Assumida por ${demanda.assumedBy}` : "Assumir demanda"}
               </button>
             </header>
 
@@ -308,12 +289,14 @@ function DemandaDetail() {
                 type="file"
                 multiple
                 hidden
+                accept="image/*,video/*,application/pdf"
                 onChange={handleFilesSelected}
               />
               <button
                 type="button"
                 onClick={handlePickFiles}
-                title="Anexar arquivo"
+                disabled={ocupado}
+                title="Anexar imagem, vídeo ou PDF (até 20 MB)"
                 className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-[var(--color-on-surface-variant)] hover:bg-white"
               >
                 <Icon name="attach_file" className="text-[18px]" />
@@ -329,13 +312,14 @@ function DemandaDetail() {
                   }
                 }}
                 rows={1}
-                placeholder="Responder ao morador…"
+                disabled
+                placeholder="Responder pelo painel chega com a integração do WhatsApp"
                 className="max-h-40 min-h-[36px] flex-1 resize-none bg-transparent px-2 py-2 text-sm outline-none placeholder:text-[var(--color-on-surface-variant)]"
               />
               <button
                 type="button"
                 onClick={handleSend}
-                disabled={!draft.trim()}
+                disabled
                 className="btn-press btn-press-active inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-[var(--color-brand)] px-3 text-xs font-semibold text-white hover:bg-[var(--color-brand-hover)] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Icon name="send" className="text-[14px]" /> Enviar

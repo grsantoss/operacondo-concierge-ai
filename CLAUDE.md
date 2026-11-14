@@ -11,7 +11,7 @@ Responda sempre em português do Brasil, com acentuação correta.
 
 - **Fase 0 (fundação) feita** (issues #2–#7, `v0.1.0`): Postgres + schema + RLS + login.
 - **Fase 1 em andamento** (issues #8–#14): telas passam dos mocks de `src/data/*.ts` para o banco.
-  Moradores e condomínios já leem e gravam no banco (#8).
+  Moradores e condomínios (#8) e demandas com anexos no S3 (#9) já leem e gravam no banco.
 - Rodar localmente: `cp .env.example .env` → `bun run db:reset` (sobe containers, migrations e
   seed) → `bun run dev`. Login: `sindico@operacondo.local` (cliente Aurora) ou
   `admin@operacondo.local` (Admin Master), senha `SEED_SENHA` (padrão `operacondo123`).
@@ -96,7 +96,8 @@ deve sair das telas (ver decisões abaixo).
   pgvector) com trechos cortados **por artigo/cláusula**. Prevalência: Convenção > Estatuto >
   Regimento > Ata mais recente que altere a regra. Sempre citar o artigo; sem trecho → "não
   encontrei" + encaminhar ao síndico.
-- **Arquivos:** só pela API S3 (bucket `S3_BUCKET`). Em dev, SeaweedFS no Docker Compose (a MinIO
+- **Arquivos:** só pela API S3 (bucket `S3_BUCKET`; `src/server/arquivos.ts`, que cria o bucket na
+  primeira gravação e gera links temporários). Em dev, SeaweedFS no Docker Compose (a MinIO
   parou de publicar imagens Docker em 2025); em produção, S3/R2 ou outro compatível.
 - **Ingestão/OCR:** Docling interno (privacidade/LGPD, estrutura, previsibilidade). Páginas com
   baixa qualidade de OCR vão para o Claude (leitura de imagem). `.doc` antigo não é suportado.

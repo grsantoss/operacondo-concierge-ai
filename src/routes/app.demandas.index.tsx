@@ -5,7 +5,8 @@ import { Icon } from "@/components/brand/Icon";
 import {
   CAT_ICON,
   COLUMNS,
-  DEMANDAS,
+  demandasQuery,
+  useDemandas,
   PRIO_CLASS,
   type Category,
   type ColumnId,
@@ -14,13 +15,13 @@ import {
 } from "@/data/demandas";
 
 export const Route = createFileRoute("/app/demandas/")({
+  loader: ({ context: { queryClient } }) => queryClient.ensureQueryData(demandasQuery),
   head: () => ({ meta: [{ title: "Demandas | OperaCondo Concierge" }] }),
   component: DemandasPage,
 });
 
 type ViewMode = "kanban" | "lista";
 type SortKey = "recentes" | "antigas" | "prioridade" | "titulo";
-type TempFilter = "todas" | "hot" | "warm" | "cold";
 type SlaFilter = "todos" | "com" | "sem";
 
 const CATEGORIAS: Category[] = ["Manutenção", "Segurança", "Limpeza", "Administrativo"];
@@ -34,22 +35,16 @@ const COL_ORDER: Record<ColumnId, number> = {
   resolvidas: 3,
 };
 
-const TEMP_META: Record<
-  Exclude<TempFilter, "todas">,
-  { label: string; dot: string; cls: string }
-> = {
-  hot: { label: "Urgente", dot: "bg-destructive", cls: "bg-destructive/10 text-destructive" },
-  warm: { label: "Atenção", dot: "bg-warning", cls: "bg-amber-50 text-amber-700" },
-  cold: { label: "Tranquilo", dot: "bg-primary", cls: "bg-primary/10 text-primary" },
-};
+/** D-2401 → 2401, para ordenar pelo número. */
+const num = (d: Demanda) => Number(d.id.slice(2));
 
 function DemandasPage() {
+  const DEMANDAS = useDemandas();
   const [view, setView] = useState<ViewMode>("kanban");
   const [query, setQuery] = useState("");
   const [categorias, setCategorias] = useState<Set<Category>>(new Set());
   const [prioridades, setPrioridades] = useState<Set<Priority>>(new Set());
   const [colunas, setColunas] = useState<Set<ColumnId>>(new Set());
-  const [temperatura, setTemperatura] = useState<TempFilter>("todas");
   const [sla, setSla] = useState<SlaFilter>("todos");
   const [comAnexo, setComAnexo] = useState(false);
   const [semResponsavel, setSemResponsavel] = useState(false);
@@ -60,7 +55,6 @@ function DemandasPage() {
     categorias.size +
     prioridades.size +
     colunas.size +
-    (temperatura !== "todas" ? 1 : 0) +
     (sla !== "todos" ? 1 : 0) +
     (comAnexo ? 1 : 0) +
     (semResponsavel ? 1 : 0);
@@ -76,7 +70,6 @@ function DemandasPage() {
     setCategorias(new Set());
     setPrioridades(new Set());
     setColunas(new Set());
-    setTemperatura("todas");
     setSla("todos");
     setComAnexo(false);
     setSemResponsavel(false);
@@ -88,7 +81,6 @@ function DemandasPage() {
       if (categorias.size && !categorias.has(d.category)) return false;
       if (prioridades.size && !prioridades.has(d.priority)) return false;
       if (colunas.size && !colunas.has(d.column)) return false;
-      if (temperatura !== "todas" && d.temperature !== temperatura) return false;
       if (sla === "com" && !d.sla) return false;
       if (sla === "sem" && d.sla) return false;
       if (comAnexo && d.attachments.length === 0) return false;
@@ -103,18 +95,18 @@ function DemandasPage() {
     list = list.slice().sort((a, b) => {
       switch (sort) {
         case "antigas":
-          return COL_ORDER[a.column] - COL_ORDER[b.column] || a.id.localeCompare(b.id);
+          return COL_ORDER[a.column] - COL_ORDER[b.column] || num(a) - num(b);
         case "prioridade":
           return PRIO_ORDER[a.priority] - PRIO_ORDER[b.priority];
         case "titulo":
           return a.title.localeCompare(b.title, "pt-BR");
         case "recentes":
         default:
-          return b.id.localeCompare(a.id);
+          return num(b) - num(a);
       }
     });
     return list;
-  }, [query, categorias, prioridades, colunas, temperatura, sla, comAnexo, semResponsavel, sort]);
+  }, [DEMANDAS, query, categorias, prioridades, colunas, sla, comAnexo, semResponsavel, sort]);
 
   const byColumn: Record<ColumnId, Demanda[]> = {
     novas: [],
@@ -176,8 +168,6 @@ function DemandasPage() {
         togglePrioridade={(p) => toggle(prioridades, p, setPrioridades)}
         colunas={colunas}
         toggleColuna={(c) => toggle(colunas, c, setColunas)}
-        temperatura={temperatura}
-        setTemperatura={setTemperatura}
         sla={sla}
         setSla={setSla}
         comAnexo={comAnexo}
@@ -214,8 +204,6 @@ function FilterBar(props: {
   togglePrioridade: (p: Priority) => void;
   colunas: Set<ColumnId>;
   toggleColuna: (c: ColumnId) => void;
-  temperatura: TempFilter;
-  setTemperatura: (t: TempFilter) => void;
   sla: SlaFilter;
   setSla: (s: SlaFilter) => void;
   comAnexo: boolean;
@@ -354,25 +342,6 @@ function FilterBar(props: {
               >
                 <span className={`h-2 w-2 rounded-full ${col.accent}`} />
                 {col.title}
-              </Chip>
-            ))}
-          </FilterGroup>
-
-          <FilterGroup label="Temperatura" icon="local_fire_department">
-            <Chip
-              active={props.temperatura === "todas"}
-              onClick={() => props.setTemperatura("todas")}
-            >
-              Todas
-            </Chip>
-            {(Object.keys(TEMP_META) as Array<keyof typeof TEMP_META>).map((t) => (
-              <Chip
-                key={t}
-                active={props.temperatura === t}
-                onClick={() => props.setTemperatura(t)}
-              >
-                <span className={`h-2 w-2 rounded-full ${TEMP_META[t].dot}`} />
-                {TEMP_META[t].label}
               </Chip>
             ))}
           </FilterGroup>

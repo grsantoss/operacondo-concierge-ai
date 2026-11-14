@@ -80,7 +80,7 @@ export function EditSupplierModal({ open, supplier, onClose, onSaved }: Props) {
       <form
         onSubmit={submit}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-elevated"
       >
         <header className="flex items-center justify-between border-b border-[var(--color-outline-variant)] px-6 py-4">
           <div className="flex items-center gap-3">
@@ -133,7 +133,7 @@ export function EditSupplierModal({ open, supplier, onClose, onSaved }: Props) {
           </Field>
 
           {error && (
-            <p className="md:col-span-2 flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+            <p className="md:col-span-2 flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm font-semibold text-destructive">
               <Icon name="error" className="text-[16px]" /> {error}
             </p>
           )}
@@ -149,7 +149,7 @@ export function EditSupplierModal({ open, supplier, onClose, onSaved }: Props) {
           </button>
           <button
             type="submit"
-            className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[var(--color-brand-hover)]"
+            className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white shadow-soft hover:bg-[var(--color-brand-hover)]"
           >
             <Icon name="save" className="text-[18px]" /> Salvar
           </button>
@@ -166,7 +166,7 @@ function Field({ label, required, children }: { label: string; required?: boolea
   return (
     <label className="block">
       <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]">
-        {label} {required && <span className="text-red-600">*</span>}
+        {label} {required && <span className="text-destructive">*</span>}
       </span>
       {children}
     </label>

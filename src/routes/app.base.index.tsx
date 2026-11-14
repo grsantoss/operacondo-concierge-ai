@@ -5,7 +5,7 @@ import { Icon } from "@/components/brand/Icon";
 
 export const Route = createFileRoute("/app/base/")({
   head: () => ({
-    meta: [{ title: "Base de Conhecimento | Concierge OperaCondo" }],
+    meta: [{ title: "Base de Conhecimento | OperaCondo Concierge" }],
   }),
   component: BasePage,
 });
@@ -144,7 +144,7 @@ function BasePage() {
           </button>
           <Link
             to="/app/base/enviar"
-            className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[var(--color-brand-hover)]"
+            className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white shadow-soft hover:bg-[var(--color-brand-hover)]"
           >
             <Icon name="upload_file" className="text-[18px]" /> Enviar documento
           </Link>
@@ -197,7 +197,7 @@ function BasePage() {
               key={c.name}
               type="button"
               onClick={() => setFilter((f) => (f === c.name ? null : c.name))}
-              className={`card-elev group rounded-2xl p-4 text-left transition-shadow hover:shadow-md ${active ? "ring-2 ring-[var(--color-brand)]" : ""}`}
+              className={`card-elev group rounded-2xl p-4 text-left transition-shadow hover:shadow-card ${active ? "ring-2 ring-[var(--color-brand)]" : ""}`}
             >
               <div className={`grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br ${c.color} text-white`}>
                 <Icon name={c.icon} className="text-[20px]" filled />
@@ -238,10 +238,10 @@ function BasePage() {
             <div className="relative flex items-center gap-2">
               <span
                 className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                  d.status === "treinado" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
+                  d.status === "treinado" ? "bg-success/10 text-success-strong" : "bg-amber-50 text-amber-700"
                 }`}
               >
-                <span className={`h-1.5 w-1.5 rounded-full ${d.status === "treinado" ? "bg-emerald-500" : "bg-amber-500 animate-pulse"}`} />
+                <span className={`h-1.5 w-1.5 rounded-full ${d.status === "treinado" ? "bg-success" : "bg-warning animate-pulse"}`} />
                 {d.status === "treinado" ? "Treinado" : "Processando"}
               </span>
               <button
@@ -255,7 +255,7 @@ function BasePage() {
               {openMenu === d.id && (
                 <div
                   ref={menuRef}
-                  className="absolute right-0 top-11 z-20 w-52 overflow-hidden rounded-xl border border-[var(--color-outline-variant)] bg-white shadow-lg"
+                  className="absolute right-0 top-11 z-20 w-52 overflow-hidden rounded-xl border border-[var(--color-outline-variant)] bg-white shadow-elevated"
                 >
                   <button
                     type="button"
@@ -277,7 +277,7 @@ function BasePage() {
                       setOpenMenu(null);
                       setConfirmDel(d);
                     }}
-                    className="flex w-full items-center gap-2 border-t border-[var(--color-outline-variant)] px-3 py-2.5 text-left text-sm text-red-600 hover:bg-red-50"
+                    className="flex w-full items-center gap-2 border-t border-[var(--color-outline-variant)] px-3 py-2.5 text-left text-sm text-destructive hover:bg-destructive/10"
                   >
                     <Icon name="delete" className="text-[18px]" /> Remover
                   </button>
@@ -291,11 +291,11 @@ function BasePage() {
       {confirmDel && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={() => setConfirmDel(null)}>
           <div
-            className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl"
+            className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-elevated"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start gap-3">
-              <div className="grid h-10 w-10 place-items-center rounded-xl bg-red-50 text-red-600">
+              <div className="grid h-10 w-10 place-items-center rounded-xl bg-destructive/10 text-destructive">
                 <Icon name="warning" />
               </div>
               <div className="min-w-0">
@@ -316,7 +316,7 @@ function BasePage() {
               <button
                 type="button"
                 onClick={() => handleDelete(confirmDel)}
-                className="btn-press btn-press-active h-9 rounded-lg bg-red-600 px-3 text-sm font-semibold text-white hover:bg-red-700"
+                className="btn-press btn-press-active h-9 rounded-lg bg-destructive px-3 text-sm font-semibold text-white hover:bg-destructive/90"
               >
                 Remover
               </button>
@@ -326,7 +326,7 @@ function BasePage() {
       )}
 
       {toast && (
-        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full bg-[var(--color-navy)] px-4 py-2 text-sm font-medium text-white shadow-lg">
+        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full bg-[var(--color-navy)] px-4 py-2 text-sm font-medium text-white shadow-elevated">
           {toast}
         </div>
       )}

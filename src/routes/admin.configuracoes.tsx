@@ -47,9 +47,9 @@ function AdminConfig() {
           </div>
           <div className="space-y-2">
             {[
-              { k: "churn" as const, label: "Alerta de churn (tenant suspenso ou downgrade)" },
+              { k: "churn" as const, label: "Alerta de churn (cliente suspenso ou downgrade)" },
               { k: "fatura" as const, label: "Cobrança vencida ou falha no Stripe" },
-              { k: "novoTenant" as const, label: "Novo tenant provisionado" },
+              { k: "novoTenant" as const, label: "Novo cliente cadastrado" },
             ].map((x) => (
               <label key={x.k} className="flex items-center gap-3 rounded-lg bg-[var(--color-surface-low)] p-3">
                 <input

@@ -18,7 +18,7 @@ import {
 } from "@/data/moradores";
 
 export const Route = createFileRoute("/app/moradores/")({
-  head: () => ({ meta: [{ title: "Moradores | Concierge OperaCondo" }] }),
+  head: () => ({ meta: [{ title: "Moradores | OperaCondo Concierge" }] }),
   component: MoradoresPage,
 });
 
@@ -110,7 +110,7 @@ function MoradoresPage() {
           </button>
           <button
             onClick={() => setShowNew(true)}
-            className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[var(--color-brand-hover)]"
+            className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white shadow-soft hover:bg-[var(--color-brand-hover)]"
           >
             <Icon name="person_add" className="text-[18px]" /> Novo morador
           </button>
@@ -298,7 +298,7 @@ function MoradoresPage() {
       />
 
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-[var(--color-navy)] px-4 py-3 text-sm font-semibold text-white shadow-lg">
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-[var(--color-navy)] px-4 py-3 text-sm font-semibold text-white shadow-elevated">
           <Icon name="check_circle" className="text-[18px]" filled />
           {toast}
         </div>
@@ -336,8 +336,8 @@ function MoradorRow({ m }: { m: Morador }) {
           <div
             className={`grid h-8 w-8 place-items-center rounded-lg ${
               condo.tipo === "vertical"
-                ? "bg-blue-50 text-blue-700"
-                : "bg-emerald-50 text-emerald-700"
+                ? "bg-primary/10 text-primary"
+                : "bg-success/10 text-success-strong"
             }`}
           >
             <Icon
@@ -437,10 +437,10 @@ function KpiCard({
       : tone === "warn"
         ? "bg-amber-50 text-amber-700"
         : tone === "success"
-          ? "bg-emerald-50 text-emerald-700"
+          ? "bg-success/10 text-success-strong"
           : "bg-[var(--color-navy)]/5 text-[var(--color-navy)]";
   const clickable = onClick
-    ? "cursor-pointer transition hover:-translate-y-0.5 hover:shadow-md"
+    ? "cursor-pointer transition hover:-translate-y-0.5 hover:shadow-card"
     : "";
   return (
     <div

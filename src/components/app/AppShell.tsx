@@ -70,7 +70,7 @@ function UserMenu({
   return (
     <div
       ref={ref}
-      className={`absolute z-50 w-64 overflow-hidden rounded-xl border border-[var(--color-outline-variant)] bg-white shadow-xl ${
+      className={`absolute z-50 w-64 overflow-hidden rounded-xl border border-[var(--color-outline-variant)] bg-white shadow-elevated ${
         align === "right" ? "right-0" : "left-0"
       }`}
     >
@@ -87,7 +87,7 @@ function UserMenu({
           }
           const cls = `flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors ${
             item.danger
-              ? "text-[var(--color-danger)] hover:bg-red-50"
+              ? "text-[var(--color-danger)] hover:bg-destructive/10"
               : "text-[var(--color-on-surface)] hover:bg-[var(--color-surface-mid)]"
           }`;
           const inner = (
@@ -173,7 +173,6 @@ export function AppShell({ title, breadcrumbs, actions, children }: AppShellProp
       : []),
     { divider: true, icon: "", label: "" },
     { icon: "rocket_launch", label: "Onboarding", to: "/onboarding" },
-    { icon: "help", label: "Central de ajuda", onClick: () => window.open("https://docs.lovable.dev", "_blank") },
     { divider: true, icon: "", label: "" },
     { icon: "logout", label: "Sair da aplicação", onClick: handleLogout, danger: true },
   ];
@@ -191,11 +190,11 @@ export function AppShell({ title, breadcrumbs, actions, children }: AppShellProp
       >
         <div className={`flex items-center border-b border-white/10 ${collapsed ? "justify-center px-2 py-4" : "justify-between px-5 py-5"}`}>
           {collapsed ? (
-            <Link to="/app" className="grid h-10 w-10 place-items-center rounded-xl bg-white/10 text-white transition-transform hover:scale-105" title="Concierge OperaCondo">
+            <Link to="/app" className="grid h-10 w-10 place-items-center rounded-xl bg-white/10 text-white transition-transform hover:scale-105" title="OperaCondo Concierge">
               <Icon name="apartment" className="text-[22px]" />
             </Link>
           ) : (
-            <Logo variant="light" subtitle="OperaCondo SaaS • Admin" />
+            <Logo variant="light" subtitle="Painel do síndico" />
           )}
         </div>
         <nav className={`flex-1 overflow-y-auto py-4 space-y-0.5 custom-scrollbar ${collapsed ? "px-2" : "px-3"}`}>

@@ -9,7 +9,7 @@ import { PLANOS, getPlano, type PlanoId } from "@/data/planos";
 
 export const Route = createFileRoute("/admin/usuarios/$id")({
   head: ({ params }) => ({
-    meta: [{ title: `Tenant ${params.id} — Admin Master | OperaCondo` }],
+    meta: [{ title: `Cliente ${params.id} — Admin Master | OperaCondo` }],
   }),
   component: TenantDetail,
 });
@@ -29,9 +29,9 @@ function TenantDetail() {
 
   if (!t) {
     return (
-      <AdminShell title="Tenant não encontrado" breadcrumbs={[{ label: "Admin", to: "/admin" }, { label: "Usuários", to: "/admin/usuarios" }]}>
+      <AdminShell title="Cliente não encontrado" breadcrumbs={[{ label: "Admin", to: "/admin" }, { label: "Usuários", to: "/admin/usuarios" }]}>
         <div className="rounded-2xl border border-[var(--color-outline-variant)] bg-white p-10 text-center">
-          <p className="text-sm text-[var(--color-on-surface-variant)]">Este tenant não existe ou foi removido.</p>
+          <p className="text-sm text-[var(--color-on-surface-variant)]">Este cliente não existe ou foi removido.</p>
           <Link to="/admin/usuarios" className="mt-4 inline-flex text-sm font-semibold text-[var(--color-brand)] hover:underline">
             ← Voltar à lista
           </Link>
@@ -71,14 +71,14 @@ function TenantDetail() {
           </button>
           <button
             onClick={() => setConfirmDelete(true)}
-            className="inline-flex h-10 items-center gap-2 rounded-lg border border-red-200 bg-white px-4 text-sm font-semibold text-red-600 hover:bg-red-50"
+            className="inline-flex h-10 items-center gap-2 rounded-lg border border-destructive/30 bg-white px-4 text-sm font-semibold text-destructive hover:bg-destructive/10"
           >
             <Icon name="delete" className="text-[16px]" /> Excluir
           </button>
         </>
       }
     >
-      <div className="mb-5 flex flex-wrap gap-1 rounded-xl bg-white p-1 shadow-sm">
+      <div className="mb-5 flex flex-wrap gap-1 rounded-xl bg-white p-1 shadow-soft">
         {(
           [
             { id: "perfil" as Tab, label: "Perfil", icon: "business" },
@@ -118,15 +118,15 @@ function TenantDetail() {
           <div className="rounded-2xl border border-[var(--color-outline-variant)] bg-white p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h3 className="text-base font-bold text-[var(--color-navy)]">API Key do tenant</h3>
+                <h3 className="text-base font-bold text-[var(--color-navy)]">Chave de API do cliente</h3>
                 <p className="mt-1 text-sm text-[var(--color-on-surface-variant)]">
-                  Chave única e privada deste tenant. Toda chamada à API OperaCondo autentica com ela e escopo é limitado aos dados deste tenant.
+                  Chave única e privada deste cliente. Toda chamada à API OperaCondo autentica com ela e escopo é limitado aos dados deste cliente.
                 </p>
               </div>
               <span
                 className={`shrink-0 rounded-full px-2 py-1 text-[11px] font-bold ${
                   t.apiStatus === "ativa"
-                    ? "bg-[var(--color-success-soft)] text-[var(--color-success)]"
+                    ? "bg-[var(--color-success-soft)] text-[var(--color-success-strong)]"
                     : "bg-[var(--color-danger-soft)] text-[var(--color-danger)]"
                 }`}
               >
@@ -161,7 +161,7 @@ function TenantDetail() {
               </button>
               <button
                 onClick={() => updateTenant(t.id, { apiStatus: t.apiStatus === "ativa" ? "revogada" : "ativa" })}
-                className="inline-flex h-10 items-center gap-2 rounded-lg border border-red-200 bg-white px-4 text-sm font-semibold text-red-600 hover:bg-red-50"
+                className="inline-flex h-10 items-center gap-2 rounded-lg border border-destructive/30 bg-white px-4 text-sm font-semibold text-destructive hover:bg-destructive/10"
               >
                 <Icon name={t.apiStatus === "ativa" ? "block" : "check"} className="text-[16px]" />
                 {t.apiStatus === "ativa" ? "Revogar" : "Reativar"}
@@ -172,7 +172,7 @@ function TenantDetail() {
           <div className="rounded-2xl border border-[var(--color-outline-variant)] bg-white p-6">
             <h3 className="text-base font-bold text-[var(--color-navy)]">Webhooks</h3>
             <p className="mt-1 text-sm text-[var(--color-on-surface-variant)]">
-              URL que recebe eventos deste tenant (demandas criadas, mensagens IA, cobranças).
+              URL que recebe eventos deste cliente (demandas criadas, mensagens IA, cobranças).
             </p>
             <div className="mt-3 grid gap-3 md:grid-cols-[1fr_auto]">
               <input
@@ -306,7 +306,7 @@ function TenantDetail() {
         open={confirmDelete}
         title={`Excluir ${t.nomeFantasia}?`}
         description="Todos os dados desta conta serão removidos permanentemente."
-        confirmLabel="Excluir tenant"
+        confirmLabel="Excluir cliente"
         requireCheckboxLabel="Entendo que esta ação é irreversível."
         onClose={() => setConfirmDelete(false)}
         onConfirm={() => {
@@ -320,7 +320,7 @@ function TenantDetail() {
         tone="warn"
         icon="sync"
         title="Rotacionar API Key?"
-        description="A chave atual será invalidada. Todas as integrações do tenant precisarão ser atualizadas com a nova chave."
+        description="A chave atual será invalidada. Todas as integrações do cliente precisarão ser atualizadas com a nova chave."
         confirmLabel="Rotacionar"
         onClose={() => setConfirmRotate(false)}
         onConfirm={() => {

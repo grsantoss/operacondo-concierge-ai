@@ -11,7 +11,7 @@ export const Route = createFileRoute("/app/demandas/nova")({
     moradorId: typeof search.moradorId === "string" ? search.moradorId : undefined,
     condominioId: typeof search.condominioId === "string" ? search.condominioId : undefined,
   }),
-  head: () => ({ meta: [{ title: "Nova demanda | Concierge OperaCondo" }] }),
+  head: () => ({ meta: [{ title: "Nova demanda | OperaCondo Concierge" }] }),
   component: NovaDemandaPage,
 });
 
@@ -151,7 +151,7 @@ function NovaDemandaPage() {
           <button
             form="form-nova-demanda"
             type="submit"
-            className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[var(--color-brand-hover)]"
+            className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white shadow-soft hover:bg-[var(--color-brand-hover)]"
           >
             <Icon name="send" className="text-[18px]" /> Abrir demanda
           </button>
@@ -160,7 +160,7 @@ function NovaDemandaPage() {
     >
       {submitted ? (
         <div className="card-elev mx-auto max-w-lg rounded-2xl p-8 text-center">
-          <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-emerald-50 text-emerald-600">
+          <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-success/10 text-success-strong">
             <Icon name="check_circle" className="text-[32px]" filled />
           </div>
           <h2 className="mt-4 text-lg font-bold text-[var(--color-navy)]">
@@ -371,7 +371,7 @@ function NovaDemandaPage() {
               <h3 className="text-sm font-bold text-[var(--color-navy)]">
                 Prévia do card
               </h3>
-              <div className="mt-3 rounded-xl border border-[var(--color-outline-variant)] bg-white p-3.5 shadow-sm">
+              <div className="mt-3 rounded-xl border border-[var(--color-outline-variant)] bg-white p-3.5 shadow-soft">
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-[10px] font-semibold text-[var(--color-on-surface-variant)]">
                     {nextId}
@@ -403,7 +403,7 @@ function NovaDemandaPage() {
                 <p className="mt-2 truncate text-[11px] text-[var(--color-on-surface-variant)]">
                   {form.local || "Local afetado"}
                 </p>
-                <div className="mt-3 inline-flex items-center gap-1 rounded-md bg-red-50 px-1.5 py-0.5 text-[10px] font-semibold text-red-700">
+                <div className="mt-3 inline-flex items-center gap-1 rounded-md bg-destructive/10 px-1.5 py-0.5 text-[10px] font-semibold text-destructive">
                   <Icon name="schedule" className="text-[12px]" />
                   {SLA_POR_PRIORIDADE[form.prioridade]}
                 </div>
@@ -423,21 +423,21 @@ function NovaDemandaPage() {
                 <li className="flex gap-2">
                   <Icon
                     name="check"
-                    className="mt-0.5 text-[14px] text-emerald-600"
+                    className="mt-0.5 text-[14px] text-success-strong"
                   />
                   Descreva sintomas objetivos e horário do ocorrido.
                 </li>
                 <li className="flex gap-2">
                   <Icon
                     name="check"
-                    className="mt-0.5 text-[14px] text-emerald-600"
+                    className="mt-0.5 text-[14px] text-success-strong"
                   />
                   Anexos podem ser enviados após abrir a demanda.
                 </li>
                 <li className="flex gap-2">
                   <Icon
                     name="check"
-                    className="mt-0.5 text-[14px] text-emerald-600"
+                    className="mt-0.5 text-[14px] text-success-strong"
                   />
                   Prioridade "Crítica" aciona plantão de manutenção.
                 </li>
@@ -504,7 +504,7 @@ function Field({
       </div>
       {children}
       {error ? (
-        <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-red-600">
+        <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-destructive">
           <Icon name="error" className="text-[13px]" /> {error}
         </p>
       ) : null}
@@ -515,7 +515,7 @@ function Field({
 function inputClass(err?: string) {
   return `w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-[var(--color-on-surface)] outline-none transition placeholder:text-[var(--color-on-surface-variant)] focus:ring-2 focus:ring-[var(--color-brand)]/30 disabled:cursor-not-allowed disabled:bg-[var(--color-surface-mid)] disabled:text-[var(--color-on-surface-variant)] ${
     err
-      ? "border-red-400 focus:border-red-500"
+      ? "border-destructive/50 focus:border-destructive"
       : "border-[var(--color-outline-variant)] focus:border-[var(--color-brand)]"
   }`;
 }

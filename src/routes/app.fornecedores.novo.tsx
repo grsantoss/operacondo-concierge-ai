@@ -6,7 +6,7 @@ import { Icon } from "@/components/brand/Icon";
 
 export const Route = createFileRoute("/app/fornecedores/novo")({
   head: () => ({
-    meta: [{ title: "Novo fornecedor | Concierge OperaCondo" }],
+    meta: [{ title: "Novo fornecedor | OperaCondo Concierge" }],
   }),
   component: NovoFornecedorPage,
 });
@@ -169,7 +169,7 @@ function NovoFornecedorPage() {
           <button
             form="form-novo-fornecedor"
             type="submit"
-            className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[var(--color-brand-hover)]"
+            className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white shadow-soft hover:bg-[var(--color-brand-hover)]"
           >
             <Icon name="save" className="text-[18px]" /> Salvar fornecedor
           </button>
@@ -178,7 +178,7 @@ function NovoFornecedorPage() {
     >
       {submitted ? (
         <div className="card-elev mx-auto max-w-lg rounded-2xl p-8 text-center">
-          <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-emerald-50 text-emerald-600">
+          <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-success/10 text-success-strong">
             <Icon name="check_circle" className="text-[32px]" filled />
           </div>
           <h2 className="mt-4 text-lg font-bold text-[var(--color-navy)]">
@@ -364,21 +364,21 @@ function NovoFornecedorPage() {
                 <li className="flex gap-2">
                   <Icon
                     name="check"
-                    className="mt-0.5 text-[14px] text-emerald-600"
+                    className="mt-0.5 text-[14px] text-success-strong"
                   />
                   Valide o CNPJ na Receita Federal antes de homologar.
                 </li>
                 <li className="flex gap-2">
                   <Icon
                     name="check"
-                    className="mt-0.5 text-[14px] text-emerald-600"
+                    className="mt-0.5 text-[14px] text-success-strong"
                   />
                   Solicite comprovantes de regularidade (CND) e seguro.
                 </li>
                 <li className="flex gap-2">
                   <Icon
                     name="check"
-                    className="mt-0.5 text-[14px] text-emerald-600"
+                    className="mt-0.5 text-[14px] text-success-strong"
                   />
                   Anexe contrato ou proposta comercial no perfil após salvar.
                 </li>
@@ -466,7 +466,7 @@ function Field({
       </div>
       {children}
       {error ? (
-        <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-red-600">
+        <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-destructive">
           <Icon name="error" className="text-[13px]" /> {error}
         </p>
       ) : null}
@@ -477,7 +477,7 @@ function Field({
 function inputClass(err?: string) {
   return `w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-[var(--color-on-surface)] outline-none transition placeholder:text-[var(--color-on-surface-variant)] focus:ring-2 focus:ring-[var(--color-brand)]/30 ${
     err
-      ? "border-red-400 focus:border-red-500"
+      ? "border-destructive/50 focus:border-destructive"
       : "border-[var(--color-outline-variant)] focus:border-[var(--color-brand)]"
   }`;
 }

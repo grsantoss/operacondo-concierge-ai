@@ -4,7 +4,7 @@ import { Icon } from "@/components/brand/Icon";
 
 export const Route = createFileRoute("/app/")({
   head: () => ({
-    meta: [{ title: "Dashboard | Concierge OperaCondo" }],
+    meta: [{ title: "Dashboard | OperaCondo Concierge" }],
   }),
   component: DashboardPage,
 });
@@ -46,16 +46,16 @@ const METRICS = [
 
 const TONE: Record<string, string> = {
   brand: "bg-[var(--color-info-soft)] text-[var(--color-brand)]",
-  success: "bg-[var(--color-success-soft)] text-[var(--color-success)]",
-  warning: "bg-[var(--color-warning-soft)] text-[var(--color-warning)]",
+  success: "bg-[var(--color-success-soft)] text-[var(--color-success-strong)]",
+  warning: "bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]",
   danger: "bg-[var(--color-danger-soft)] text-[var(--color-danger)]",
 };
 
 const KANBAN_SUMMARY = [
   { col: "Novas", count: 8, color: "bg-[var(--color-brand)]" },
-  { col: "Triagem", count: 5, color: "bg-[var(--color-warning)]" },
+  { col: "Triagem", count: 5, color: "bg-[var(--color-warning-strong)]" },
   { col: "Execução", count: 7, color: "bg-[var(--color-temp-warm)]" },
-  { col: "Resolvidas (24h)", count: 14, color: "bg-[var(--color-success)]" },
+  { col: "Resolvidas (24h)", count: 14, color: "bg-[var(--color-success-strong)]" },
 ];
 
 const RECENT = [
@@ -96,18 +96,18 @@ const RECENT = [
 const TEMP: Record<"cold" | "warm" | "hot", { label: string; cls: string; dot: string }> = {
   cold: {
     label: "Tranquilo",
-    cls: "bg-blue-50 text-blue-700",
-    dot: "bg-blue-500",
+    cls: "bg-primary/10 text-primary",
+    dot: "bg-primary",
   },
   warm: {
     label: "Atenção",
     cls: "bg-amber-50 text-amber-700",
-    dot: "bg-amber-500",
+    dot: "bg-warning",
   },
   hot: {
     label: "Urgente",
-    cls: "bg-red-50 text-red-700",
-    dot: "bg-red-500",
+    cls: "bg-destructive/10 text-destructive",
+    dot: "bg-destructive",
   },
 };
 
@@ -119,7 +119,7 @@ function csvEscape(v: string | number) {
 function exportDashboardCsv() {
   const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
   const lines: string[] = [];
-  lines.push("Concierge OperaCondo — Visão geral do condomínio");
+  lines.push("OperaCondo Concierge — Visão geral do condomínio");
   lines.push(`Gerado em;${new Date().toLocaleString("pt-BR")}`);
   lines.push("");
   lines.push("Métricas principais");
@@ -204,7 +204,7 @@ function DashboardPage() {
             </div>
             <p
               className={`mt-3 inline-flex items-center gap-1 text-xs font-medium ${
-                m.trend === "warn" ? "text-[var(--color-warning)]" : "text-[var(--color-success)]"
+                m.trend === "warn" ? "text-[var(--color-warning-strong)]" : "text-[var(--color-success-strong)]"
               }`}
             >
               <Icon
@@ -269,21 +269,21 @@ function DashboardPage() {
               </span>
             </div>
             <div className="mt-4 flex h-2.5 w-full overflow-hidden rounded-full bg-[var(--color-surface-mid)]">
-              <div className="bg-blue-500" style={{ width: "62%" }} />
-              <div className="bg-amber-500" style={{ width: "28%" }} />
-              <div className="bg-red-500" style={{ width: "10%" }} />
+              <div className="bg-primary" style={{ width: "62%" }} />
+              <div className="bg-warning" style={{ width: "28%" }} />
+              <div className="bg-destructive" style={{ width: "10%" }} />
             </div>
             <div className="mt-3 flex items-center gap-5 text-xs">
               <span className="inline-flex items-center gap-1.5 text-[var(--color-on-surface-variant)]">
-                <span className="h-2 w-2 rounded-full bg-blue-500" />
+                <span className="h-2 w-2 rounded-full bg-primary" />
                 Tranquilas 62%
               </span>
               <span className="inline-flex items-center gap-1.5 text-[var(--color-on-surface-variant)]">
-                <span className="h-2 w-2 rounded-full bg-amber-500" />
+                <span className="h-2 w-2 rounded-full bg-warning" />
                 Atenção 28%
               </span>
               <span className="inline-flex items-center gap-1.5 text-[var(--color-on-surface-variant)]">
-                <span className="h-2 w-2 rounded-full bg-red-500" />
+                <span className="h-2 w-2 rounded-full bg-destructive" />
                 Urgentes 10%
               </span>
             </div>
@@ -372,7 +372,7 @@ function DashboardPage() {
           <Link
             key={c.title}
             to={c.to}
-            className="card-elev group rounded-2xl p-5 transition-shadow hover:shadow-md"
+            className="card-elev group rounded-2xl p-5 transition-shadow hover:shadow-card"
           >
             <div className="flex items-center justify-between">
               <div className="grid h-11 w-11 place-items-center rounded-xl bg-[var(--color-brand-soft)] text-[var(--color-brand)]">

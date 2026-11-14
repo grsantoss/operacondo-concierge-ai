@@ -8,7 +8,7 @@ export const Route = createFileRoute("/admin/ambientes")({
   head: () => ({
     meta: [
       { title: "Ambientes — Admin Master | OperaCondo" },
-      { name: "description", content: "Feature flags globais e overrides por tenant." },
+      { name: "description", content: "Funções liberadas para todos e ajustes por cliente." },
     ],
   }),
   component: AmbientesPage,
@@ -93,7 +93,7 @@ function AmbientesPage() {
           <div className="mb-4 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <Icon name="tune" className="text-[20px] text-[var(--color-brand)]" />
-              <h2 className="text-base font-bold text-[var(--color-navy)]">Overrides por tenant</h2>
+              <h2 className="text-base font-bold text-[var(--color-navy)]">Ajustes por cliente</h2>
             </div>
             <select
               value={tenantId}

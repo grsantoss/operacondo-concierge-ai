@@ -1,41 +1,29 @@
 import { Link } from "@tanstack/react-router";
-import { Icon } from "./Icon";
+import icone from "@/assets/brand/operacondo-icone.png?url";
 
 interface LogoProps {
+  /** light = sobre fundo ink; dark = sobre fundo claro (nomes mantidos das telas atuais) */
   variant?: "light" | "dark";
   subtitle?: string;
   to?: string;
 }
 
+/** Logo OperaCondo (DESIGN.md §2): ícone + "Opera" em primary e "Condo" em ink/branco, seguido do produto. */
 export function Logo({ variant = "dark", subtitle, to = "/app" }: LogoProps) {
-  const isLight = variant === "light";
+  const onInk = variant === "light";
   return (
-    <Link to={to} className="flex items-center gap-3 group">
-      <span
-        className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${
-          isLight
-            ? "bg-white/10 text-white"
-            : "bg-[var(--color-brand)] text-white"
-        } transition-transform group-hover:scale-105`}
-      >
-        <Icon name="apartment" className="text-[22px]" />
-      </span>
+    <Link to={to} className="flex min-w-0 items-center gap-2.5 select-none">
+      <img src={icone} alt="" aria-hidden className="h-7 w-auto shrink-0" />
       <div className="min-w-0">
-        <h1
-          className={`text-[15px] leading-tight tracking-tight ${
-            isLight ? "text-white" : "text-[var(--color-navy)]"
-          }`}
-        >
-          <span className="font-extrabold">Concierge </span>
-          <span className="font-extrabold">Opera</span>
-          <span className="font-light">Condo</span>
-        </h1>
+        <p className="text-[18px] font-semibold leading-none tracking-tight">
+          <span className="text-primary">Opera</span>
+          <span className={onInk ? "text-white" : "text-ink"}>Condo</span>
+          <span className={`ml-1.5 text-[13px] font-medium ${onInk ? "text-ink-muted" : "text-muted-foreground"}`}>
+            Concierge
+          </span>
+        </p>
         {subtitle ? (
-          <p
-            className={`text-[11px] mt-0.5 truncate ${
-              isLight ? "text-white/60" : "text-[var(--color-on-surface-variant)]"
-            }`}
-          >
+          <p className={`mt-1 truncate text-[11px] ${onInk ? "text-ink-muted" : "text-muted-foreground"}`}>
             {subtitle}
           </p>
         ) : null}

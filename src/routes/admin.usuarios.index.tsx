@@ -11,7 +11,7 @@ export const Route = createFileRoute("/admin/usuarios/")({
   head: () => ({
     meta: [
       { title: "Usuários — Admin Master | OperaCondo" },
-      { name: "description", content: "Gestão de tenants: criar, editar, suspender e excluir contas." },
+      { name: "description", content: "Gestão de clientes: criar, editar, suspender e excluir contas." },
     ],
   }),
   component: UsuariosList,
@@ -24,7 +24,7 @@ const STATUS_LABEL: Record<TenantStatus, string> = {
 };
 
 const STATUS_TONE: Record<TenantStatus, string> = {
-  ativo: "bg-[var(--color-success-soft)] text-[var(--color-success)]",
+  ativo: "bg-[var(--color-success-soft)] text-[var(--color-success-strong)]",
   trial: "bg-[var(--color-info-soft)] text-[var(--color-brand)]",
   suspenso: "bg-[var(--color-danger-soft)] text-[var(--color-danger)]",
 };
@@ -59,7 +59,7 @@ function UsuariosList() {
 
   return (
     <AdminShell
-      title="Usuários (tenants)"
+      title="Clientes"
       breadcrumbs={[{ label: "Admin", to: "/admin" }, { label: "Usuários" }]}
       actions={
         <Link
@@ -110,7 +110,7 @@ function UsuariosList() {
           <table className="w-full text-sm">
             <thead className="bg-[var(--color-surface-low)] text-left text-xs uppercase tracking-wider text-[var(--color-on-surface-variant)]">
               <tr>
-                <th className="px-5 py-3">Tenant</th>
+                <th className="px-5 py-3">Cliente</th>
                 <th className="px-5 py-3">Plano</th>
                 <th className="px-5 py-3">MRR</th>
                 <th className="px-5 py-3">Uso</th>
@@ -189,7 +189,7 @@ function UsuariosList() {
                         <button
                           title="Excluir"
                           onClick={() => setToDelete(t.id)}
-                          className="grid h-8 w-8 place-items-center rounded-md text-red-600 hover:bg-red-50"
+                          className="grid h-8 w-8 place-items-center rounded-md text-destructive hover:bg-destructive/10"
                         >
                           <Icon name="delete" className="text-[16px]" />
                         </button>
@@ -201,7 +201,7 @@ function UsuariosList() {
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-5 py-10 text-center text-sm text-[var(--color-on-surface-variant)]">
-                    Nenhum tenant encontrado com os filtros atuais.
+                    Nenhum cliente encontrado com os filtros atuais.
                   </td>
                 </tr>
               )}
@@ -212,9 +212,9 @@ function UsuariosList() {
 
       <ConfirmDialog
         open={!!toDelete}
-        title={`Excluir ${target?.nomeFantasia ?? "tenant"}?`}
+        title={`Excluir ${target?.nomeFantasia ?? "cliente"}?`}
         description="Todos os dados desta conta serão removidos permanentemente, incluindo API Key e histórico de cobranças (mock)."
-        confirmLabel="Excluir tenant"
+        confirmLabel="Excluir cliente"
         requireCheckboxLabel="Entendo que esta ação é irreversível."
         onClose={() => setToDelete(null)}
         onConfirm={() => {

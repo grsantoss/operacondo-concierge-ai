@@ -6,11 +6,11 @@ import { Logo } from "@/components/brand/Logo";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Entrar | Concierge OperaCondo" },
+      { title: "Entrar | OperaCondo Concierge" },
       {
         name: "description",
         content:
-          "Acesse o Concierge OperaCondo — plataforma premium de gestão condominial com inteligência artificial.",
+          "Acesse o OperaCondo Concierge — plataforma premium de gestão condominial com inteligência artificial.",
       },
     ],
   }),
@@ -64,7 +64,7 @@ function LoginPage() {
           <span>v4.1.0-stable</span>
           <span className="h-1 w-1 rounded-full bg-white/40" />
           <span className="inline-flex items-center gap-1">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" />
             Todos os sistemas operacionais
           </span>
         </div>
@@ -152,7 +152,7 @@ function LoginPage() {
 
             <button
               type="submit"
-              className="btn-press btn-press-active w-full rounded-lg bg-[var(--color-brand)] py-3.5 text-sm font-semibold text-white shadow-sm hover:bg-[var(--color-brand-hover)] hover:shadow-md"
+              className="btn-press btn-press-active w-full rounded-lg bg-[var(--color-brand)] py-3.5 text-sm font-semibold text-white shadow-soft hover:bg-[var(--color-brand-hover)] hover:shadow-card"
             >
               Entrar na plataforma
             </button>

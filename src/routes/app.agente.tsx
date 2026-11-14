@@ -5,7 +5,7 @@ import { Icon } from "@/components/brand/Icon";
 
 export const Route = createFileRoute("/app/agente")({
   head: () => ({
-    meta: [{ title: "Monitoramento do Agente | Concierge OperaCondo" }],
+    meta: [{ title: "Monitoramento do Agente | OperaCondo Concierge" }],
   }),
   component: AgentePage,
 });
@@ -31,9 +31,9 @@ interface Msg {
 }
 
 const TEMP_CLS: Record<Temp, { ring: string; bg: string; text: string; dot: string; label: string }> = {
-  cold: { ring: "ring-blue-200", bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500", label: "Tranquilo" },
-  warm: { ring: "ring-amber-200", bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-500", label: "Atenção" },
-  hot: { ring: "ring-red-200", bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500", label: "Urgente" },
+  cold: { ring: "ring-primary/30", bg: "bg-primary/10", text: "text-primary", dot: "bg-primary", label: "Tranquilo" },
+  warm: { ring: "ring-amber-300/60", bg: "bg-amber-50", text: "text-amber-700", dot: "bg-warning", label: "Atenção" },
+  hot: { ring: "ring-destructive/30", bg: "bg-destructive/10", text: "text-destructive", dot: "bg-destructive", label: "Urgente" },
 };
 
 const INITIAL_CONVS: Conv[] = [
@@ -47,7 +47,7 @@ const INITIAL_CONVS: Conv[] = [
 const INITIAL_TRANSCRIPTS: Record<string, Msg[]> = {
   c1: [
     { from: "morador", time: "11:42", text: "Boa tarde! Tem um vazamento embaixo da pia da cozinha." },
-    { from: "ia", time: "11:42", text: "Olá Ana, sou o Concierge OperaCondo 👋 Sinto muito pelo transtorno. Há quanto tempo notou o vazamento?" },
+    { from: "ia", time: "11:42", text: "Olá Ana, sou o OperaCondo Concierge 👋 Sinto muito pelo transtorno. Há quanto tempo notou o vazamento?" },
     { from: "morador", time: "11:43", text: "Faz uns 20 minutos, está pingando bastante." },
     { from: "ia", time: "11:43", text: "Entendi. Vou abrir uma demanda crítica agora e acionar o Sr. Carlos da manutenção. Sugiro fechar o registro de água sob a pia (alavanca azul)." },
     { from: "morador", time: "11:51", text: "Continua pingando, já está molhando o armário!" },
@@ -317,7 +317,7 @@ function AgentePage() {
               return (
                 <div key={i} className={`flex max-w-[80%] flex-col gap-1 ${isMineSide ? "ml-auto items-end" : ""}`}>
                   <div
-                    className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm ${
+                    className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-soft ${
                       isSindico
                         ? "bg-[var(--color-navy)] text-white"
                         : isIA
@@ -374,7 +374,7 @@ function AgentePage() {
 
       {/* Toast */}
       {toast && (
-        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full bg-[var(--color-navy)] px-4 py-2 text-xs font-semibold text-white shadow-lg">
+        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full bg-[var(--color-navy)] px-4 py-2 text-xs font-semibold text-white shadow-elevated">
           {toast}
         </div>
       )}
@@ -456,7 +456,7 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div
-        className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl"
+        className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-elevated"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between">

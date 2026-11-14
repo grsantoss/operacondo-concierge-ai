@@ -35,7 +35,7 @@ export function HomologacoesModal({ open, supplierId, onClose, onHomologado }: P
       onClick={onClose}
     >
       <div
-        className="flex max-h-[85vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="flex max-h-[85vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-elevated"
         onClick={(e) => e.stopPropagation()}
       >
         <header className="flex items-center justify-between border-b border-[var(--color-outline-variant)] px-6 py-4">
@@ -74,12 +74,12 @@ export function HomologacoesModal({ open, supplierId, onClose, onHomologado }: P
                     <button
                       onClick={() => setSelectedId(s.id)}
                       className={`flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-xs font-semibold ${
-                        active ? "bg-white text-[var(--color-navy)] shadow-sm" : "text-[var(--color-on-surface-variant)] hover:bg-white"
+                        active ? "bg-white text-[var(--color-navy)] shadow-soft" : "text-[var(--color-on-surface-variant)] hover:bg-white"
                       }`}
                     >
                       <span
                         className={`h-2 w-2 shrink-0 rounded-full ${
-                          ok ? "bg-emerald-500" : "bg-amber-500"
+                          ok ? "bg-success" : "bg-warning"
                         }`}
                       />
                       <span className="truncate">{s.nome}</span>
@@ -112,12 +112,12 @@ export function HomologacoesModal({ open, supplierId, onClose, onHomologado }: P
                   <span
                     className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
                       supplier.estado === "Homologado"
-                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                        ? "border-success/30 bg-success/10 text-success-strong"
                         : supplier.estado === "Renovação"
-                          ? "border-blue-200 bg-blue-50 text-blue-700"
+                          ? "border-primary/30 bg-primary/10 text-primary"
                           : supplier.estado === "Em análise"
-                            ? "border-amber-200 bg-amber-50 text-amber-700"
-                            : "border-slate-200 bg-slate-100 text-slate-600"
+                            ? "border-amber-300/60 bg-amber-50 text-amber-700"
+                            : "border-border bg-muted text-muted-foreground"
                     }`}
                   >
                     {supplier.estado}
@@ -144,7 +144,7 @@ export function HomologacoesModal({ open, supplierId, onClose, onHomologado }: P
                               {c.label}
                             </p>
                             {c.obrigatorio && (
-                              <span className="rounded-full bg-red-50 px-1.5 py-0.5 text-[9px] font-bold uppercase text-red-700">
+                              <span className="rounded-full bg-destructive/10 px-1.5 py-0.5 text-[9px] font-bold uppercase text-destructive">
                                 Obrigatório
                               </span>
                             )}
@@ -174,7 +174,7 @@ export function HomologacoesModal({ open, supplierId, onClose, onHomologado }: P
                       homologarSupplier(supplier.id);
                       onHomologado?.(supplier.nome);
                     }}
-                    className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-success-strong px-4 text-sm font-semibold text-white shadow-soft hover:bg-success-strong/90 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Icon name="verified" className="text-[18px]" /> Marcar como homologado
                   </button>

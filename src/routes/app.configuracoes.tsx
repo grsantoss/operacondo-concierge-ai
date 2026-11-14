@@ -2,12 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/brand/Icon";
-import { applyTheme, getStoredTheme, type ThemeMode } from "@/lib/theme";
 
 export const Route = createFileRoute("/app/configuracoes")({
   head: () => ({
     meta: [
-      { title: "Configurações | Concierge OperaCondo" },
+      { title: "Configurações | OperaCondo Concierge" },
       {
         name: "description",
         content:
@@ -40,7 +39,7 @@ const TABS: TabDef[] = [
   { id: "agente", label: "Agente IA", icon: "smart_toy", hint: "Tom, escopo e limites" },
   { id: "notificacoes", label: "Notificações", icon: "notifications", hint: "Alertas e canais" },
   { id: "integracoes", label: "Integrações", icon: "hub", hint: "WhatsApp, e-mail, ERP" },
-  { id: "aparencia", label: "Aparência", icon: "palette", hint: "Tema e densidade" },
+  { id: "aparencia", label: "Aparência", icon: "palette", hint: "Densidade e idioma" },
   { id: "seguranca", label: "Segurança", icon: "lock", hint: "Senha e sessões" },
 ];
 
@@ -128,7 +127,7 @@ function ConfiguracoesPage() {
 
       {toast ? (
         <div className="pointer-events-none fixed bottom-6 left-1/2 z-50 -translate-x-1/2">
-          <div className="pointer-events-auto flex items-center gap-2 rounded-full bg-[var(--color-navy-deep)] px-4 py-2 text-sm font-medium text-white shadow-lg">
+          <div className="pointer-events-auto flex items-center gap-2 rounded-full bg-[var(--color-navy-deep)] px-4 py-2 text-sm font-medium text-white shadow-elevated">
             <Icon name="check_circle" className="text-[18px]" />
             {toast}
           </div>
@@ -545,13 +544,12 @@ function CorporativoPanel({ onSave }: { onSave: () => void }) {
 
 function AgentePanel({ onSave }: { onSave: () => void }) {
   const [tom, setTom] = useState<"Formal" | "Cordial" | "Casual">("Cordial");
-  const [autonomia, setAutonomia] = useState(60);
   const [assumir, setAssumir] = useState(true);
   const [reservas, setReservas] = useState(true);
   const [orcamentos, setOrcamentos] = useState(false);
   const [horario, setHorario] = useState(true);
   const [assinatura, setAssinatura] = useState(
-    "— Concierge OperaCondo, ao lado de Roberto Silva",
+    "— OperaCondo Concierge, ao lado de Roberto Silva",
   );
 
   return (
@@ -584,19 +582,15 @@ function AgentePanel({ onSave }: { onSave: () => void }) {
               ))}
             </div>
           </Field>
-          <Field
-            label={`Autonomia da IA (${autonomia}%)`}
-            hint="Quanto maior, menos vezes o síndico é consultado."
-          >
-            <input
-              type="range"
-              min={0}
-              max={100}
-              step={5}
-              value={autonomia}
-              onChange={(e) => setAutonomia(Number(e.target.value))}
-              className="w-full accent-[var(--color-brand)]"
-            />
+          <Field label="Quando o síndico é consultado">
+            <p className="flex gap-2 rounded-lg border border-[var(--color-outline-variant)] bg-[var(--color-surface-low)] px-3 py-2 text-xs text-[var(--color-on-surface-variant)]">
+              <Icon name="gavel" className="mt-0.5 text-[14px] text-[var(--color-brand)]" />
+              <span>
+                A IA responde sozinha quando encontra a regra na convenção, estatuto, regimento ou
+                atas, e cita o artigo. Sem base nos documentos, a conversa vai para você com um
+                rascunho de resposta para aprovar.
+              </span>
+            </p>
           </Field>
           <div className="md:col-span-2">
             <Field label="Assinatura padrão nas mensagens">
@@ -880,7 +874,7 @@ function IntegracoesPanel({ onToast }: { onToast: (m: string) => void }) {
               <span
                 className={`hidden shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold md:inline-block ${
                   i.connected
-                    ? "bg-emerald-50 text-emerald-700"
+                    ? "bg-success/10 text-success-strong"
                     : "bg-[var(--color-surface-container)] text-[var(--color-on-surface-variant)]"
                 }`}
               >
@@ -960,7 +954,7 @@ function WhatsAppIntegrationCard({ onToast }: { onToast: (m: string) => void }) 
         <span
           className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
             status === "connected"
-              ? "bg-emerald-50 text-emerald-700"
+              ? "bg-success/10 text-success-strong"
               : status === "testing"
               ? "bg-amber-50 text-amber-700"
               : "bg-[var(--color-surface-container)] text-[var(--color-on-surface-variant)]"
@@ -969,10 +963,10 @@ function WhatsAppIntegrationCard({ onToast }: { onToast: (m: string) => void }) 
           <span
             className={`h-1.5 w-1.5 rounded-full ${
               status === "connected"
-                ? "bg-emerald-500"
+                ? "bg-success"
                 : status === "testing"
-                ? "bg-amber-500 animate-pulse"
-                : "bg-slate-400"
+                ? "bg-warning animate-pulse"
+                : "bg-muted-foreground"
             }`}
           />
           {status === "connected" ? "Conectado" : status === "testing" ? "Testando…" : "Não conectado"}
@@ -1038,14 +1032,8 @@ function WhatsAppIntegrationCard({ onToast }: { onToast: (m: string) => void }) 
 }
 
 function AparenciaPanel({ onSave }: { onSave: () => void }) {
-  const [tema, setTema] = useState<ThemeMode>(() => getStoredTheme());
   const [densidade, setDensidade] = useState<"confortavel" | "compacto">("confortavel");
   const [idioma, setIdioma] = useState("pt-BR");
-
-  const handleTheme = (id: ThemeMode) => {
-    setTema(id);
-    applyTheme(id);
-  };
 
   return (
     <form
@@ -1055,34 +1043,7 @@ function AparenciaPanel({ onSave }: { onSave: () => void }) {
       }}
     >
       <Card title="Aparência" footer={<PrimaryBtn type="submit">Salvar</PrimaryBtn>}>
-        <Field label="Tema">
-          <div className="grid grid-cols-3 gap-2">
-            {(
-              [
-                { id: "claro", label: "Claro", icon: "light_mode" },
-                { id: "escuro", label: "Escuro", icon: "dark_mode" },
-                { id: "auto", label: "Sistema", icon: "contrast" },
-              ] as const
-            ).map((op) => (
-              <button
-                key={op.id}
-                type="button"
-                onClick={() => handleTheme(op.id)}
-                className={`flex flex-col items-center gap-1 rounded-xl border px-3 py-4 text-sm font-medium transition ${
-                  tema === op.id
-                    ? "border-[var(--color-brand)] bg-[var(--color-brand)]/10 text-[var(--color-brand)]"
-                    : "border-[var(--color-outline-variant)] bg-[var(--color-surface-elev)] text-[var(--color-on-surface)]"
-                }`}
-              >
-                <Icon name={op.icon} className="text-[22px]" />
-                {op.label}
-              </button>
-            ))}
-          </div>
-        </Field>
-
-
-        <div className="mt-4 grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2">
           <Field label="Densidade">
             <select
               className={inputCls}
@@ -1216,17 +1177,17 @@ function SegurancaPanel({ onToast }: { onToast: (m: string) => void }) {
       </Card>
 
       <Card title="Zona de risco">
-        <div className="flex items-center justify-between gap-4 rounded-lg border border-red-200 bg-red-50 p-4">
+        <div className="flex items-center justify-between gap-4 rounded-lg border border-destructive/30 bg-destructive/10 p-4">
           <div>
-            <p className="text-sm font-semibold text-red-700">Excluir conta</p>
-            <p className="text-xs text-red-600/80">
+            <p className="text-sm font-semibold text-destructive">Excluir conta</p>
+            <p className="text-xs text-destructive/80">
               Remove seu acesso permanentemente. Os dados do condomínio permanecem.
             </p>
           </div>
           <button
             type="button"
             onClick={() => onToast("Fale com o suporte para excluir a conta")}
-            className="shrink-0 rounded-lg bg-red-600 px-3 py-2 text-xs font-semibold text-white hover:bg-red-700"
+            className="shrink-0 rounded-lg bg-destructive px-3 py-2 text-xs font-semibold text-white hover:bg-destructive/90"
           >
             Excluir
           </button>

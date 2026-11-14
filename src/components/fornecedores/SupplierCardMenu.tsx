@@ -33,7 +33,7 @@ export function SupplierCardMenu({ actions }: { actions: MenuAction[] }) {
         <Icon name="more_horiz" className="text-[18px]" />
       </button>
       {open && (
-        <div className="absolute right-0 z-20 mt-1 w-56 overflow-hidden rounded-xl border border-[var(--color-outline-variant)] bg-white py-1 shadow-lg">
+        <div className="absolute right-0 z-20 mt-1 w-56 overflow-hidden rounded-xl border border-[var(--color-outline-variant)] bg-white py-1 shadow-elevated">
           {actions.map((a, i) => (
             <div key={i}>
               {a.divider && <div className="my-1 h-px bg-[var(--color-outline-variant)]" />}
@@ -45,7 +45,7 @@ export function SupplierCardMenu({ actions }: { actions: MenuAction[] }) {
                 }}
                 className={`flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold hover:bg-[var(--color-surface-low)] ${
                   a.tone === "danger"
-                    ? "text-red-600"
+                    ? "text-destructive"
                     : "text-[var(--color-navy)]"
                 }`}
               >

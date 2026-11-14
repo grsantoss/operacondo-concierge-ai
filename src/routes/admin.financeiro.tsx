@@ -43,7 +43,7 @@ function FinanceiroPage() {
   const inadimplencia = filtered.filter((f) => f.status === "past_due").reduce((a, f) => a + f.valor, 0);
 
   const exportCSV = () => {
-    const header = ["ID", "Tenant", "Período", "Valor", "Método", "Status", "Emissão", "Vencimento", "Stripe ID"];
+    const header = ["ID", "Cliente", "Período", "Valor", "Método", "Status", "Emissão", "Vencimento", "Stripe ID"];
     const rows = filtered.map((f) => {
       const t = tenants.find((x) => x.id === f.tenantId);
       return [
@@ -110,7 +110,7 @@ function FinanceiroPage() {
           onChange={(e) => setTenantId(e.target.value)}
           className="h-10 rounded-lg border border-[var(--color-outline-variant)] bg-white px-3 text-sm outline-none"
         >
-          <option value="todos">Todos os tenants</option>
+          <option value="todos">Todos os clientes</option>
           {tenants.map((t) => (
             <option key={t.id} value={t.id}>
               {t.nomeFantasia}
@@ -124,7 +124,7 @@ function FinanceiroPage() {
           <table className="w-full text-sm">
             <thead className="bg-[var(--color-surface-low)] text-left text-xs uppercase text-[var(--color-on-surface-variant)]">
               <tr>
-                <th className="px-5 py-3">Tenant</th>
+                <th className="px-5 py-3">Cliente</th>
                 <th className="px-5 py-3">Período</th>
                 <th className="px-5 py-3">Valor</th>
                 <th className="px-5 py-3">Método</th>
@@ -154,7 +154,7 @@ function FinanceiroPage() {
                           <button
                             title="Marcar como paga"
                             onClick={() => updateFaturaStatus(f.id, "paid")}
-                            className="grid h-8 w-8 place-items-center rounded-md text-[var(--color-success)] hover:bg-[var(--color-success-soft)]"
+                            className="grid h-8 w-8 place-items-center rounded-md text-[var(--color-success-strong)] hover:bg-[var(--color-success-soft)]"
                           >
                             <Icon name="check" className="text-[16px]" />
                           </button>
@@ -172,7 +172,7 @@ function FinanceiroPage() {
                           <button
                             title="Estornar"
                             onClick={() => updateFaturaStatus(f.id, "refunded")}
-                            className="grid h-8 w-8 place-items-center rounded-md text-[var(--color-warning)] hover:bg-[var(--color-warning-soft)]"
+                            className="grid h-8 w-8 place-items-center rounded-md text-[var(--color-warning-strong)] hover:bg-[var(--color-warning-soft)]"
                           >
                             <Icon name="undo" className="text-[16px]" />
                           </button>
@@ -209,7 +209,7 @@ function FinanceiroPage() {
 function KpiCard({ label, value, icon, tone }: { label: string; value: string; icon: string; tone: "brand" | "success" | "danger" }) {
   const cls =
     tone === "success"
-      ? "bg-[var(--color-success-soft)] text-[var(--color-success)]"
+      ? "bg-[var(--color-success-soft)] text-[var(--color-success-strong)]"
       : tone === "danger"
         ? "bg-[var(--color-danger-soft)] text-[var(--color-danger)]"
         : "bg-[var(--color-info-soft)] text-[var(--color-brand)]";

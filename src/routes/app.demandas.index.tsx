@@ -14,7 +14,7 @@ import {
 } from "@/data/demandas";
 
 export const Route = createFileRoute("/app/demandas/")({
-  head: () => ({ meta: [{ title: "Demandas | Concierge OperaCondo" }] }),
+  head: () => ({ meta: [{ title: "Demandas | OperaCondo Concierge" }] }),
   component: DemandasPage,
 });
 
@@ -38,9 +38,9 @@ const TEMP_META: Record<
   Exclude<TempFilter, "todas">,
   { label: string; dot: string; cls: string }
 > = {
-  hot: { label: "Urgente", dot: "bg-red-500", cls: "bg-red-50 text-red-700" },
-  warm: { label: "Atenção", dot: "bg-amber-500", cls: "bg-amber-50 text-amber-700" },
-  cold: { label: "Tranquilo", dot: "bg-blue-500", cls: "bg-blue-50 text-blue-700" },
+  hot: { label: "Urgente", dot: "bg-destructive", cls: "bg-destructive/10 text-destructive" },
+  warm: { label: "Atenção", dot: "bg-warning", cls: "bg-amber-50 text-amber-700" },
+  cold: { label: "Tranquilo", dot: "bg-primary", cls: "bg-primary/10 text-primary" },
 };
 
 function DemandasPage() {
@@ -159,7 +159,7 @@ function DemandasPage() {
           <Link
             to="/app/demandas/nova"
             search={{ moradorId: undefined, condominioId: undefined }}
-            className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[var(--color-brand-hover)]"
+            className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white shadow-soft hover:bg-[var(--color-brand-hover)]"
           >
             <Icon name="add" className="text-[18px]" />
             Nova demanda
@@ -232,7 +232,7 @@ function FilterBar(props: {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="mb-5 rounded-2xl border border-[var(--color-outline-variant)] bg-white shadow-sm">
+    <div className="mb-5 rounded-2xl border border-[var(--color-outline-variant)] bg-white shadow-soft">
       {/* Top row */}
       <div className="flex flex-wrap items-center gap-2 p-3">
         <label className="relative flex min-w-[240px] flex-1 items-center">
@@ -534,7 +534,7 @@ function KanbanView({ byColumn }: { byColumn: Record<ColumnId, Demanda[]> }) {
                   to="/app/demandas/$id"
                   params={{ id: c.id }}
                   preload="intent"
-                  className="group block rounded-xl border border-[var(--color-outline-variant)] bg-white p-3.5 shadow-sm transition hover:-translate-y-0.5 hover:border-[var(--color-brand)] hover:shadow-md"
+                  className="group block rounded-xl border border-[var(--color-outline-variant)] bg-white p-3.5 shadow-soft transition hover:-translate-y-0.5 hover:border-[var(--color-brand)] hover:shadow-card"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-mono font-semibold text-[var(--color-on-surface-variant)]">
@@ -575,13 +575,13 @@ function KanbanView({ byColumn }: { byColumn: Record<ColumnId, Demanda[]> }) {
                   {c.sla || c.assigned ? (
                     <div className="mt-2 flex items-center gap-2 text-[10px]">
                       {c.sla ? (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-red-50 px-1.5 py-0.5 font-semibold text-red-700">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-destructive/10 px-1.5 py-0.5 font-semibold text-destructive">
                           <Icon name="schedule" className="text-[12px]" />
                           {c.sla}
                         </span>
                       ) : null}
                       {c.assigned ? (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-1.5 py-0.5 font-semibold text-blue-700">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 font-semibold text-primary">
                           <Icon name="person" className="text-[12px]" />
                           {c.assigned}
                         </span>
@@ -606,7 +606,7 @@ function KanbanView({ byColumn }: { byColumn: Record<ColumnId, Demanda[]> }) {
 function ListaView({ items }: { items: Demanda[] }) {
   const colOf = (id: ColumnId) => COLUMNS.find((c) => c.id === id)!;
   return (
-    <div className="overflow-hidden rounded-2xl border border-[var(--color-outline-variant)] bg-white shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-[var(--color-outline-variant)] bg-white shadow-soft">
       <div className="hidden grid-cols-[110px_minmax(0,2.2fr)_140px_minmax(0,1.4fr)_120px_minmax(0,1fr)_100px] gap-3 border-b border-[var(--color-outline-variant)] bg-[var(--color-surface-mid)] px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-[var(--color-on-surface-variant)] md:grid">
         <span>ID</span>
         <span>Demanda</span>

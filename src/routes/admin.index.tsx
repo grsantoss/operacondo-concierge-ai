@@ -8,7 +8,7 @@ export const Route = createFileRoute("/admin/")({
   head: () => ({
     meta: [
       { title: "Admin Master — Dashboard | OperaCondo" },
-      { name: "description", content: "Visão executiva multi-tenant: MRR, tenants ativos e cobranças." },
+      { name: "description", content: "Visão executiva: MRR, clientes ativos e cobranças." },
     ],
   }),
   component: AdminDashboard,
@@ -29,9 +29,9 @@ function AdminDashboard() {
   const kpis = [
     { label: "MRR", value: formatBRL(mrr), delta: "+12% vs mês passado", icon: "trending_up", tone: "brand" },
     { label: "ARR projetado", value: formatBRL(arr), delta: "Baseado em ativos", icon: "insights", tone: "success" },
-    { label: "Tenants ativos", value: String(ativos), delta: `${trial} trial · ${suspensos} suspensos`, icon: "apartment", tone: "brand" },
+    { label: "Clientes ativos", value: String(ativos), delta: `${trial} trial · ${suspensos} suspensos`, icon: "apartment", tone: "brand" },
     { label: "Churn", value: `${churn.toFixed(1)}%`, delta: "Últimos 30 dias", icon: "trending_down", tone: churn > 5 ? "danger" : "success" },
-    { label: "Ticket médio", value: formatBRL(ticket), delta: "Por tenant ativo", icon: "receipt_long", tone: "brand" },
+    { label: "Ticket médio", value: formatBRL(ticket), delta: "Por cliente ativo", icon: "receipt_long", tone: "brand" },
   ];
 
   const top = [...tenants].sort((a, b) => b.mrr - a.mrr).slice(0, 5);
@@ -61,7 +61,7 @@ function AdminDashboard() {
               <div
                 className={`grid h-9 w-9 place-items-center rounded-lg ${
                   k.tone === "success"
-                    ? "bg-[var(--color-success-soft)] text-[var(--color-success)]"
+                    ? "bg-[var(--color-success-soft)] text-[var(--color-success-strong)]"
                     : k.tone === "danger"
                       ? "bg-[var(--color-danger-soft)] text-[var(--color-danger)]"
                       : "bg-[var(--color-info-soft)] text-[var(--color-brand)]"
@@ -122,7 +122,7 @@ function AdminDashboard() {
           <table className="w-full text-sm">
             <thead className="bg-[var(--color-surface-low)] text-left text-xs uppercase tracking-wider text-[var(--color-on-surface-variant)]">
               <tr>
-                <th className="px-5 py-3">Tenant</th>
+                <th className="px-5 py-3">Cliente</th>
                 <th className="px-5 py-3">Período</th>
                 <th className="px-5 py-3">Valor</th>
                 <th className="px-5 py-3">Método</th>

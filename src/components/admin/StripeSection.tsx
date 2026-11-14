@@ -28,7 +28,7 @@ export function StripeConnectCard() {
             <span
               className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold ${
                 connected
-                  ? "bg-[var(--color-success-soft)] text-[var(--color-success)]"
+                  ? "bg-[var(--color-success-soft)] text-[var(--color-success-strong)]"
                   : "bg-[var(--color-danger-soft)] text-[var(--color-danger)]"
               }`}
             >
@@ -87,7 +87,7 @@ export function StripeConnectCard() {
       </div>
 
       {testMsg && (
-        <p className="mt-3 rounded-lg bg-[var(--color-success-soft)] px-3 py-2 text-xs font-semibold text-[var(--color-success)]">
+        <p className="mt-3 rounded-lg bg-[var(--color-success-soft)] px-3 py-2 text-xs font-semibold text-[var(--color-success-strong)]">
           {testMsg}
         </p>
       )}

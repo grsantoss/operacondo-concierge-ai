@@ -35,7 +35,7 @@ export function FichaFornecedorModal({ open, supplier, onClose, onEdit, onOpenHo
       onClick={onClose}
     >
       <div
-        className="h-full w-full max-w-lg overflow-y-auto bg-white shadow-2xl"
+        className="h-full w-full max-w-lg overflow-y-auto bg-white shadow-elevated"
         onClick={(e) => e.stopPropagation()}
       >
         <header className="sticky top-0 z-10 flex items-center justify-between border-b border-[var(--color-outline-variant)] bg-white px-6 py-4">
@@ -95,7 +95,7 @@ export function FichaFornecedorModal({ open, supplier, onClose, onEdit, onOpenHo
                 <span
                   className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
                     okObrig
-                      ? "bg-emerald-50 text-emerald-700"
+                      ? "bg-success/10 text-success-strong"
                       : "bg-amber-50 text-amber-700"
                   }`}
                 >
@@ -159,7 +159,7 @@ export function FichaFornecedorModal({ open, supplier, onClose, onEdit, onOpenHo
           </button>
           <button
             onClick={onEdit}
-            className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[var(--color-brand-hover)]"
+            className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white shadow-soft hover:bg-[var(--color-brand-hover)]"
           >
             <Icon name="edit" className="text-[18px]" /> Editar
           </button>

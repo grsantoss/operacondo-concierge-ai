@@ -116,14 +116,14 @@ function MoradorDetail() {
           {isInativo ? (
             <button
               onClick={() => setConfirmReactivate(true)}
-              className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700"
+              className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-success-strong px-4 text-sm font-semibold text-white shadow-soft hover:bg-success-strong/90"
             >
               <Icon name="person_check" className="text-[18px]" /> Reativar
             </button>
           ) : (
             <button
               onClick={() => setConfirmDeactivate(true)}
-              className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg border border-red-200 bg-white px-3 text-sm font-semibold text-red-700 hover:bg-red-50"
+              className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg border border-destructive/30 bg-white px-3 text-sm font-semibold text-destructive hover:bg-destructive/10"
             >
               <Icon name="person_off" className="text-[18px]" /> Desativar
             </button>
@@ -261,7 +261,7 @@ function MoradorDetail() {
                   rel="noreferrer"
                   title="Conversar no WhatsApp"
                   aria-label={`Enviar WhatsApp para ${morador.nome}`}
-                  className="flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 py-2.5 text-xs font-semibold text-white hover:bg-emerald-700"
+                  className="flex items-center justify-center gap-1.5 rounded-lg bg-success-strong py-2.5 text-xs font-semibold text-white hover:bg-success-strong/90"
                 >
                   <WhatsAppIcon variant="glyph" className="h-[16px] w-[16px]" /> WhatsApp
                 </a>
@@ -320,7 +320,7 @@ function MoradorDetail() {
                   <li className="flex items-start gap-2">
                     <Icon
                       name="priority_high"
-                      className="mt-0.5 text-[14px] text-red-600"
+                      className="mt-0.5 text-[14px] text-destructive"
                     />
                     <span>
                       {stats.criticos} chamado{stats.criticos > 1 ? "s" : ""} crítico
@@ -381,7 +381,7 @@ function MoradorDetail() {
       />
 
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-[var(--color-navy)] px-4 py-3 text-sm font-semibold text-white shadow-lg">
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-[var(--color-navy)] px-4 py-3 text-sm font-semibold text-white shadow-elevated">
           <Icon name="check_circle" className="text-[18px]" filled />
           {toast}
         </div>
@@ -427,7 +427,7 @@ function KpiCard({
   const toneCls = {
     brand: "bg-[var(--color-brand)]/10 text-[var(--color-brand)]",
     warn: "bg-amber-50 text-amber-700",
-    success: "bg-emerald-50 text-emerald-700",
+    success: "bg-success/10 text-success-strong",
     navy: "bg-[var(--color-navy)]/5 text-[var(--color-navy)]",
   }[tone];
   return (
@@ -510,7 +510,7 @@ function ChamadosList({
             to="/app/demandas/$id"
             params={{ id: c.id }}
             preload="intent"
-            className="group flex items-center gap-3 rounded-xl border border-[var(--color-outline-variant)] bg-white p-3 transition hover:-translate-y-0.5 hover:border-[var(--color-brand)] hover:shadow-sm"
+            className="group flex items-center gap-3 rounded-xl border border-[var(--color-outline-variant)] bg-white p-3 transition hover:-translate-y-0.5 hover:border-[var(--color-brand)] hover:shadow-soft"
           >
             <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[var(--color-surface-mid)] text-[var(--color-navy)]">
               <Icon name={CAT_ICON[c.category]} className="text-[18px]" />
@@ -526,7 +526,7 @@ function ChamadosList({
                   {c.priority}
                 </span>
                 {showResolved && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-1.5 py-0 text-[9px] font-semibold text-emerald-700">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-1.5 py-0 text-[9px] font-semibold text-success-strong">
                     <Icon name="check_circle" className="text-[10px]" filled /> Resolvido
                   </span>
                 )}
@@ -637,7 +637,7 @@ function MoradorError({ error }: ErrorComponentProps) {
   return (
     <AppShell title="Erro">
       <div className="card-elev mx-auto max-w-lg rounded-2xl p-8 text-center">
-        <Icon name="error" className="text-[40px] text-red-600" />
+        <Icon name="error" className="text-[40px] text-destructive" />
         <h2 className="mt-2 text-lg font-bold text-[var(--color-navy)]">
           Não foi possível carregar o morador
         </h2>

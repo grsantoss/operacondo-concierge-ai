@@ -1,0 +1,292 @@
+# OperaCondo Concierge
+
+Concierge com IA para síndicos (moradores ou profissionais, com um ou vários condomínios).
+O agente atende moradores pelo WhatsApp: responde com base em convenção, estatuto, regimento
+interno e atas; classifica demandas por urgência; abre demandas; faz o cadastro do morador
+(com aprovação do síndico); passa a conversa para o síndico quando precisa.
+
+Responda sempre em português do Brasil, com acentuação correta.
+
+## Estado atual (13/11/2026)
+
+- Frontend completo, **dados ainda em mock** em `src/data/*.ts` (stores em memória). Não há backend,
+  banco nem autenticação.
+- Stack: TanStack Start + React 19 + Tailwind 4 + shadcn/ui (`new-york`, `slate`), Nitro com
+  `preset: "node-server"` (`bun run build && bun start` → `.output/server/index.mjs`).
+- **Lovable foi removido** (branch `chore/design-system-sem-lovable`, ainda sem commit). O `main`
+  ainda está conectado ao Lovable: desconectar o GitHub do Lovable antes do merge.
+- Baseline conhecida: `tsc` limpo; `bun run lint` já tinha ~18 mil erros (Prettier) antes das
+  mudanças. Algumas telas vazam na horizontal a 390px (já acontecia no `main`).
+
+## Telas e o que elas viram no produto
+
+| Rota | Papel |
+|---|---|
+| `/app/agente` | Caixa de conversas do WhatsApp: urgência, estado (IA atendendo / Aguardando síndico / Síndico no controle / Resolvido), assumir conversa |
+| `/app/base` e `/app/base/enviar` | Base de conhecimento: coleções + visibilidade (`interno/conselho/moradores/publico`) |
+| `/app/configuracoes` | Config do agente por condomínio (tom, autonomia, escalonamento, limite R$, Z-API/Meta) |
+| `/app/demandas` | Kanban (novas → triagem → execução → resolvidas) |
+| `/app/moradores` | Moradores por condomínio (vertical/horizontal), importação CSV |
+| `/admin/*` | Portal da plataforma: clientes (síndicos), planos, faturas |
+
+Lacunas já identificadas: falta a coleção **Estatuto** em `app.base.enviar.tsx`; telefone precisa
+ser guardado em E.164; `temperature`/`temp` (cold/warm/hot)
+deve sair das telas (ver decisões abaixo).
+
+## Decisões de produto (13/11/2026)
+
+- **Urgência = `priority` (Crítica / Alta / Normal)** em demandas **e** conversas (mesma escala;
+  a conversa assume a maior entre a triagem dela e as demandas abertas). Sai `temp`/`temperature`.
+  Cores: Crítica → destructive, Alta → atenção, Normal → neutro.
+- **Morador desconhecido:** sem integração com sistema externo, o Concierge aprende os números.
+  No 1º contato o agente faz a triagem (condomínio da lista do síndico, unidade, nome, vínculo,
+  aceite LGPD) e **salva o número na hora** como `moradores.cadastro = pendente`; nas próximas
+  vezes já reconhece. Pendente pode: regras com visibilidade `publico` e abrir demanda. Só depois
+  da aprovação do síndico: demandas próprias, regras `moradores`, dados da unidade. Importação CSV
+  entra como aprovado.
+- **Aprovação do síndico = o que não tiver base documental.** Achou trecho (convenção, estatuto,
+  regimento, ata) → responde e cita. Não achou → `aguardando_sindico`, com rascunho marcado
+  "sem base documental" para o síndico aprovar/editar. O controle "Autonomia da IA (%)" já foi
+  trocado por um texto que explica essa regra (`app.configuracoes.tsx`). Abrir demanda é
+  automático; orçamento acima de `limite_aprovacao` vai para aprovação. Fase 2: resposta do
+  síndico vira entrada da base.
+
+## Decisões de arquitetura
+
+- **Sem LangChain/LangGraph.** Um agente só, com ~9 ferramentas, usando o SDK `@anthropic-ai/sdk`
+  (Tool Runner). Sem vários agentes conversando entre si.
+- **Modelos:** Claude Haiku 5.5 atende; Claude Opus 5.5 como conselheiro (advisor tool) nos casos
+  ambíguos. Confirmar o pareamento Haiku 5.5 → Opus 5.5 na API antes de fixar.
+- **WhatsApp:** **um número por síndico/cliente** para todos os condomínios dele. Z-API primeiro.
+  O número identifica o cliente; o telefone do remetente identifica o condomínio:
+  1 condomínio → segue; vários → pergunta qual; desconhecido → lista os condomínios do síndico,
+  pergunta a unidade e cria cadastro pendente. Enquanto o condomínio não estiver definido, o agente
+  não responde nada específico de condomínio.
+- **Banco: Postgres puro (sem Supabase)** + pgvector. Isolamento por linha: toda tabela tem
+  `tenant_id`, RLS filtra por `current_setting('app.tenant_id')` (`SET LOCAL` por transação). A
+  aplicação conecta com um usuário **sem privilégios e que não é dono das tabelas** (dono e
+  superusuário ignoram RLS). Nada de separação de clientes por pasta; só os arquivos usam o caminho
+  `{tenant_id}/{condominio_id}/{colecao}/…`.
+- **Backend:** Drizzle (ORM + migrations), Better Auth, pg-boss (fila, reenvio, agendamento,
+  espera de 5–10 s para agrupar mensagens), LISTEN/NOTIFY + SSE para tempo real, MinIO/S3 para
+  arquivos, Voyage para embeddings.
+- **Containers (Docker Compose):** `web` (telas + API + webhooks), `worker` (mesma imagem, consome
+  a fila), `docling` (docling-serve), `postgres` (pgvector/pgvector:pg17), `minio`, e o Langfuse
+  auto-hospedado (`langfuse-web`, `langfuse-worker`, `clickhouse`, `redis`; reaproveita o MinIO).
+  **Provedor do Postgres de produção: decisão do dono do projeto.** O código deve rodar igual em
+  container e em Postgres gerenciado (RDS, Cloud SQL, Azure), então:
+  - conexão só por `DATABASE_URL` (com `sslmode=require` em produção) e `DATABASE_URL_ADMIN`
+    separada para migrations e para o portal `/admin`;
+  - migrations não exigem superusuário; extensões usadas: só `vector` e `pgcrypto` (ambas
+    disponíveis nos gerenciados);
+  - papéis: `oc_owner` (dono das tabelas, roda migrations), `oc_app` (aplicação, sujeito a RLS),
+    `oc_admin` (`BYPASSRLS`, portal admin). Nada depende de acesso ao sistema de arquivos do banco;
+  - pg-boss usa um schema próprio no mesmo banco; backup é responsabilidade do provedor
+    (gerenciado) ou de um job de `pg_dump` (container).
+- **RAG em duas fases:** (1) com o condomínio definido, convenção/estatuto/regimento inteiros no
+  prompt com cache e citações; (2) quando as atas crescerem, busca híbrida (`tsvector` português +
+  pgvector) com trechos cortados **por artigo/cláusula**. Prevalência: Convenção > Estatuto >
+  Regimento > Ata mais recente que altere a regra. Sempre citar o artigo; sem trecho → "não
+  encontrei" + encaminhar ao síndico.
+- **Ingestão/OCR:** Docling interno (privacidade/LGPD, estrutura, previsibilidade). Páginas com
+  baixa qualidade de OCR vão para o Claude (leitura de imagem). `.doc` antigo não é suportado.
+  Áudio do WhatsApp precisa de transcrição externa (Whisper/Deepgram); fotos vão direto ao Claude.
+- **Urgência:** regras fixas (gás, incêndio, alguém preso no elevador, vazamento) alertam o síndico
+  sem depender da IA.
+- **Observabilidade: Langfuse (IA) + Sentry (erros), instrumentados com OpenTelemetry.**
+  - Langfuse auto-hospedado: rastro de cada conversa (mensagem, trechos achados, ferramentas,
+    resposta, tokens, custo por cliente/condomínio), datasets para `evals/` e notas de qualidade
+    vindas do síndico (rascunho aprovado sem edição / editado / reescrito). Dados ficam no Brasil.
+  - Sentry: erros de frontend e backend, alertas. Remover CPF e telefone dos eventos.
+  - Mascarar CPF e telefone antes de qualquer envio (função de mascaramento do Langfuse,
+    scrubbing do Sentry).
+  - OpenTelemetry desde o início para trocar/somar Datadog depois só por configuração. Datadog fica
+    para quando houver várias máquinas, plantão ou SLA com cliente.
+  - `llm_execucoes` continua sendo a fonte de uso e cobrança (não depender da ferramenta externa).
+  - Indicadores: % resolvido sem síndico, % sem base documental, % rascunho aprovado sem edição,
+    tempo até 1ª resposta, tempo até o síndico ver uma Crítica, custo por conversa e condomínio.
+- **Cobrança: Stripe (conta brasileira, BRL).** Detalhes na seção "Cobrança" abaixo.
+- **Segurança das ferramentas:** toda ferramenta recebe `tenant_id`/`condominio_id` do contexto da
+  conversa, **nunca do modelo**. A IA cadastra morador só como `pendente`; quem aprova é o síndico.
+
+## Estrutura planejada do backend
+
+```
+src/server/
+├── db/            # schema Drizzle, migrations, withTenant(tenantId, fn)
+├── auth/          # Better Auth
+├── queue/         # pg-boss: "mensagem", "ingestao", "alerta"
+├── realtime/      # LISTEN/NOTIFY → SSE /api/eventos
+├── whatsapp/      # webhook.ts (valida, deduplica por provider_msg_id, enfileira, 200), send.ts
+├── pipeline/      # processar, normalizar (áudio/imagem), roteamento, urgencia
+├── agent/         # run.ts, contexto.ts, prompts/skills/*.md, tools/*, guardrails.ts
+├── ingest/        # docling.ts, fallback.ts (Claude), trechos.ts (corte por artigo + embeddings)
+├── billing/       # stripe.ts (cliente), webhook.ts, sync.ts, checkout.ts, portal.ts, limites.ts
+├── observability/ # OpenTelemetry → Langfuse, Sentry, gravação em llm_execucoes
+└── evals/perguntas.jsonl
+scripts/stripe-seed.ts  # cria/atualiza produtos e preços no Stripe por lookup_key (idempotente)
+```
+
+Ferramentas do agente: `buscar_regras`, `definir_condominio`, `identificar_morador`,
+`registrar_cadastro`, `abrir_demanda`, `atualizar_demanda`, `minhas_demandas`, `escalar_sindico`
+(`reservar_area` na fase 2).
+
+Ordem de execução: (1) Postgres + schema + RLS + auth, trocar os mocks; (2) webhook Z-API gravando
+mensagens ao vivo em `/app/agente`, sem IA; (3) agente v1; (4) cadastro com aprovação;
+(5) cobrança Stripe (webhook, espelho no banco, Checkout/Portal, limites do plano) — antes do
+primeiro cliente pagante; (6) atas com busca vetorial, conselheiro Opus, uso por cliente no
+`/admin`. Langfuse + Sentry entram junto com o passo (3).
+
+Tabelas principais (23; detalhes em https://claude.ai/artifact/YS5d6hpjQLmg8XKQ4PH1DM):
+`tenants`, `condominios`, `membros`, `whatsapp_canais`, `unidades`,
+`moradores` (com `cadastro` pendente/aprovado/recusado), `morador_contatos`, `consentimentos`, `conversas`,
+`mensagens`, `demandas`, `demanda_eventos`, `demanda_anexos`, `fornecedores`,
+`fornecedor_documentos`, `documentos`, `documento_trechos`, `agente_config`, `llm_execucoes`,
+`planos`, `assinaturas`, `faturas`, `stripe_eventos`. Uso mensal é uma view (`uso_mensal`), não tabela.
+
+## Cobrança (Stripe)
+
+**O Stripe é a fonte da verdade do dinheiro; o banco é um espelho** atualizado só por webhook.
+Nenhum dado de cartão passa pela aplicação (Checkout e Portal hospedados pelo Stripe).
+
+Meios de pagamento (conta Stripe brasileira, BRL): **cartão** com cobrança automática recorrente e
+**boleto** via fatura (`collection_method = send_invoice`). Pix: a documentação do Stripe é
+contraditória sobre Pix recorrente para conta brasileira; até confirmar com o suporte do Stripe,
+tratar Pix só como pagamento avulso, se a conta liberar.
+
+Banco:
+- `planos`: + `stripe_product_id`, `ativo`, `vendavel` (o plano `trial` não é vendável), limites
+  (`limite_condominios`, `limite_moradores`, `limite_documentos`, `limite_respostas_ia_mes`,
+  `teto_custo_ia_mes`, `usa_conselheiro`). Preços resolvidos pelos `lookup_key`
+  `{plano}_mensal` / `{plano}_anual`, nunca por `price_id` fixo no código.
+- `tenants`: + `stripe_customer_id` (único), `cnpj` (único; vai para o Stripe como `tax_id`
+  `br_cnpj`), `inadimplente_desde`, `suspensao` (`nenhuma | parcial | integral`),
+  `exclusao_prevista_em`, `excluido_em`. `tenants.status` (`trial | ativo | inadimplente |
+  suspenso | cancelado | excluido`) é **derivado** da assinatura e da fatura pelo webhook e pelo
+  job diário, não editado à mão.
+- `assinaturas` (nova): `tenant_id`, `plano_id`, `stripe_subscription_id` (único), `status` (os do
+  Stripe: `trialing, active, past_due, unpaid, canceled, incomplete, incomplete_expired, paused`),
+  `forma_cobranca` (`cartao | boleto`), `periodo_inicio/fim`, `trial_fim`, `cancela_no_fim`,
+  `cancelada_em`.
+- `faturas`: `stripe_invoice_id` (único), `assinatura_id`, `numero`, `status` (os do Stripe:
+  `draft, open, paid, void, uncollectible`; "vencida" = `open` com vencimento passado; estorno vira
+  `valor_estornado`), `valor_total`, `valor_pago`, `vencimento`, `pago_em`, `metodo_pagamento`,
+  `url_fatura` (hosted invoice), `url_pdf`, `nfse_numero`, `nfse_emitida_em`. Os mocks atuais
+  (`past_due`, `refunded`) mudam.
+- `assinaturas`: + `intervalo` (`mensal | anual`), `cartao_fingerprint` (antiabuso do trial).
+- `stripe_eventos` (nova, sem RLS, só `oc_admin`): `event_id` (PK), `tipo`, `recebido_em`,
+  `processado_em`, `erro`, `payload`. Garante idempotência e auditoria.
+- RLS: o síndico lê `assinaturas` e `faturas` do próprio cliente; só o worker (`oc_admin`) escreve.
+
+Webhook `POST /api/stripe/webhook`: corpo cru + verificação de assinatura com
+`STRIPE_WEBHOOK_SECRET` → `INSERT stripe_eventos ON CONFLICT DO NOTHING` → 200 → fila pg-boss
+`stripe`. O worker **busca o objeto atual na API do Stripe** (eventos chegam fora de ordem) e faz
+upsert. Eventos: `checkout.session.completed`, `customer.subscription.created|updated|deleted|
+trial_will_end`, `invoice.finalized|paid|payment_failed|payment_action_required|voided|
+marked_uncollectible`, `charge.refunded`, `customer.updated`.
+
+Fluxos:
+- **Autoatendimento (canal principal, SaaS):** página pública `/planos` (mensal/anual) →
+  `/cadastro` (conta Better Auth + dados do cliente, CNPJ único) → Stripe Checkout
+  (`mode: subscription`, trial de 7 dias, **cartão exigido no trial**) → webhook
+  `checkout.session.completed` ativa o cliente → `/onboarding` (inclui conectar o WhatsApp).
+  Antiabuso: um trial por CNPJ, por número de WhatsApp e por cartão (fingerprint do cartão no
+  Stripe).
+- **Admin Master** (`/admin/usuarios/novo`): cria Customer + Subscription com trial; cartão → envia
+  link do Checkout (`mode: subscription`); boleto → assinatura `send_invoice` com
+  `days_until_due`. Ações no detalhe do cliente: trocar plano (com proration), cobrança avulsa
+  (invoice item + invoice), reenviar fatura, marcar paga fora do Stripe (`paid_out_of_band`),
+  estornar, cancelar. `StripeSection` deixa de ter campos de chave: mostra só modo (teste/produção),
+  conta conectada e último webhook recebido.
+- **Síndico** (`/app/configuracoes`, nova aba "Plano e cobrança"): plano, uso x limites, próxima
+  fatura, histórico (do banco) e botão "Gerenciar pagamento" → sessão do **Customer Portal**
+  (trocar cartão, baixar faturas, cancelar conforme configuração do portal).
+- **Limites do plano** (`billing/limites.ts`, lendo `uso_mensal`): moradores e condomínios
+  bloqueiam o cadastro acima do limite. A unidade cobrada é **resposta da IA** (cada vez que o
+  agente responde), não mensagem recebida; zera no mês do calendário, inclusive no plano anual.
+  Aviso em 80%. **Em 100%, nenhuma chamada ao modelo**: só as regras fixas de urgência repassam ao
+  síndico; as demais mensagens recebem resposta automática fixa ("seu síndico recebeu sua
+  mensagem") e entram no painel como `aguardando_sindico`, com oferta de upgrade ao síndico.
+  Teto técnico extra por cliente: custo em `llm_execucoes` no mês (protege contra conversas
+  longas).
+- **Trial (7 dias, reduzido):** durante `trialing` valem os limites do plano interno `trial`
+  (não vendável), não os do plano escolhido: 1 condomínio, 50 moradores, 5 documentos na base,
+  150 respostas da IA, só Haiku (sem conselheiro Opus). Números ajustáveis na tabela `planos`.
+- **Plano anual: paga 10, leva 12.** Cada plano tem dois preços no Stripe (`{plano}_mensal` e
+  `{plano}_anual`, anual = 10 × mensal, intervalo de 1 ano). Anual pode ser cartão ou boleto
+  único. Cancelamento do anual vale no fim do período, sem reembolso proporcional.
+- **Inadimplência** (contada a partir do vencimento da fatura não paga, guardada em
+  `tenants.inadimplente_desde`; job diário do pg-boss aplica as fases):
+  - D+1 a D+7: tudo funciona, aviso no painel e e-mail.
+  - D+7: **suspensão parcial** — painel só leitura; agente sem IA, responde mensagem fixa e só
+    repassa urgências (regras fixas).
+  - D+10: **suspensão integral (congelado)** — painel bloqueado, só a tela de pagamento abre;
+    agente desligado, apenas resposta automática fixa "atendimento indisponível" (sem IA).
+    Pagar a fatura em aberto reativa tudo na hora (via `invoice.paid`).
+  - D+20 e D+27: e-mail avisando a data da exclusão.
+  - D+30: **exclusão automática da conta** — cancela a assinatura no Stripe, desconecta o
+    WhatsApp, apaga moradores, conversas, mensagens, demandas, documentos e arquivos do MinIO.
+    **Mantém** faturas e dados fiscais (obrigação contábil) e um registro mínimo do cliente
+    anonimizado. Backups expiram no ciclo normal (constar na política de privacidade).
+  - No Stripe: retentativas do cartão dentro de 10 dias e, ao fim, marcar a assinatura como
+    `unpaid` (não cancelar), para que pagar a fatura reative.
+- **NFS-e manual por enquanto:** em `/admin/financeiro`, faturas pagas mostram "nota pendente";
+  o admin registra número e data da nota (`faturas.nfse_numero`, `nfse_emitida_em`).
+
+Configuração: só variáveis de ambiente — `STRIPE_SECRET_KEY` (preferir *restricted key*),
+`STRIPE_WEBHOOK_SECRET`, versão da API fixada no cliente. Chaves de teste em dev/homologação,
+produção só no ambiente de produção; nada de chave no banco nem na tela. Local: `stripe listen
+--forward-to localhost:8080/api/stripe/webhook`. Produtos e preços criados por
+`scripts/stripe-seed.ts`.
+
+O Stripe **não emite NFS-e**. Decidido: emissão manual no início; integração com emissor
+(disparada no `invoice.paid`) depois.
+
+Decisões de cobrança tomadas em 13/11/2026: autoatendimento + Admin Master; trial de 7 dias
+reduzido; sem cobrança extra por uso, com corte rígido em 100%; inadimplência D+7 parcial,
+D+10 integral, D+30 exclusão; NFS-e manual; anual paga 10 leva 12. Também confirmados: cartão
+exigido no trial; limites do trial (1 condomínio, 50 moradores, 5 documentos, 150 respostas da IA,
+só Haiku); unidade de uso = resposta da IA; no congelamento o agente só envia a resposta fixa
+"atendimento indisponível" (sem IA); a exclusão mantém faturas e dados fiscais; anual cancela no
+fim do período, sem reembolso proporcional.
+
+## Entrega e versionamento
+
+- Commit, PR e release pela skill `/create-commit` (global, em `~/.claude/skills/create-commit`).
+  Nunca fazer merge nem push direto na `main`; quem faz o merge é o dono do projeto.
+- `CHANGELOG.md` no formato Keep a Changelog, em português, com a seção `## [Não lançado]`
+  (ainda não existe: a primeira entrega cria o arquivo). A versão só é decidida ao publicar a
+  release; o projeto começa em `0.x` (primeira release `v0.1.0`; ainda não há tags).
+- Escopos de commit: `app`, `agente`, `demandas`, `moradores`, `fornecedores`, `base`,
+  `configuracoes`, `onboarding`, `admin`, `cobranca`, `db`, `infra`, `design`, `docs`.
+- Nunca entram no commit: `.env*`, `node_modules/`, `.output/`, `.nitro/`, `.tanstack/`,
+  `.claude/settings.local.json`.
+- Verificação mínima hoje: `node node_modules/typescript/bin/tsc --noEmit -p .` e `bun run build`.
+  Lint tem ~18 mil erros antigos (Prettier): comparar só erros novos nos arquivos alterados. Ainda
+  não há testes nem migrations; quando existirem, entram na verificação.
+- Prettier só em arquivos novos ou já formatados; não formatar arquivos antigos inteiros.
+
+## Design system
+
+Segue o `DESIGN.md` do OperaCondo Insights (`../operacondo-insights/DESIGN.md`, v1.0). Aplicado:
+
+- `src/styles.css` tem os tokens do Insights. Os nomes antigos (`--color-brand`, `--color-navy`,
+  `--color-on-surface-variant`…) são **apelidos legados**: código novo usa as classes semânticas
+  (`bg-primary`, `text-muted-foreground`, `border-border`, `bg-ink`…). Ao migrar uma tela, apagar o
+  apelido quando o último uso sumir.
+- Correções de contraste já incluídas: `primary-strong` (D1), `success-strong` para verde como
+  texto (D2), `warning-soft` (D5).
+- `src/components/brand/Icon.tsx` é um **adaptador Material → Lucide**. Em código novo, importe o
+  ícone do `lucide-react` direto.
+- Inter via `@fontsource/inter` (sem Google Fonts). Modo escuro desligado.
+- Nome do produto: **OperaCondo Concierge**. Sem jargão na interface ("cliente", não "tenant").
+- Pendências: densidade de texto (12,5–13px) tela a tela; degradês das coleções da Base e dos
+  avatares; logo do `AdminShell`; componentes `src/components/ui/*` do Insights; registrar no
+  `DESIGN.md` os componentes do Concierge (conversa, kanban, escala de urgência, citação de
+  documento, exceção do ícone oficial do WhatsApp), com prefixo `concierge-`.
+
+## Decisões em aberto
+
+- Decisões de cobrança listadas na seção "Cobrança".
+- Pix recorrente no Stripe para conta brasileira: confirmar com o suporte do Stripe.
+- Provedor do Postgres de produção (fica com o dono do projeto).

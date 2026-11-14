@@ -62,11 +62,11 @@ export const STATUS_LABEL: Record<FaturaStatus, string> = {
 };
 
 export const STATUS_TONE: Record<FaturaStatus, string> = {
-  paid: "bg-[var(--color-success-soft)] text-[var(--color-success)]",
+  paid: "bg-[var(--color-success-soft)] text-[var(--color-success-strong)]",
   open: "bg-[var(--color-info-soft)] text-[var(--color-brand)]",
   past_due: "bg-[var(--color-danger-soft)] text-[var(--color-danger)]",
   void: "bg-[var(--color-surface-mid)] text-[var(--color-on-surface-variant)]",
-  refunded: "bg-[var(--color-warning-soft)] text-[var(--color-warning)]",
+  refunded: "bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]",
 };
 
 export function formatBRL(v: number) {

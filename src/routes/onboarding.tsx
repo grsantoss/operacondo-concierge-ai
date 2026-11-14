@@ -6,7 +6,7 @@ import { SelectField } from "@/components/ui/SelectField";
 
 export const Route = createFileRoute("/onboarding")({
   head: () => ({
-    meta: [{ title: "Onboarding | Concierge OperaCondo" }],
+    meta: [{ title: "Onboarding | OperaCondo Concierge" }],
   }),
   component: OnboardingPage,
 });
@@ -144,14 +144,14 @@ function OnboardingPage() {
           {step < TOTAL_STEPS ? (
             <button
               onClick={() => setStep((s) => s + 1)}
-              className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[var(--color-brand-hover)]"
+              className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white shadow-soft hover:bg-[var(--color-brand-hover)]"
             >
               Continuar <Icon name="arrow_forward" className="text-[18px]" />
             </button>
           ) : (
             <button
               onClick={() => navigate({ to: "/app" })}
-              className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700"
+              className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-success-strong px-4 text-sm font-semibold text-white shadow-soft hover:bg-success-strong/90"
             >
               <Icon name="rocket_launch" className="text-[18px]" /> Ativar condomínio
             </button>
@@ -503,7 +503,7 @@ function StepWhatsApp() {
           <span
             className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
               status === "connected"
-                ? "bg-emerald-50 text-emerald-700"
+                ? "bg-success/10 text-success-strong"
                 : status === "testing"
                 ? "bg-amber-50 text-amber-700"
                 : "bg-[var(--color-surface-mid)] text-[var(--color-on-surface-variant)]"
@@ -512,10 +512,10 @@ function StepWhatsApp() {
             <span
               className={`h-1.5 w-1.5 rounded-full ${
                 status === "connected"
-                  ? "bg-emerald-500"
+                  ? "bg-success"
                   : status === "testing"
-                  ? "bg-amber-500 animate-pulse"
-                  : "bg-slate-400"
+                  ? "bg-warning animate-pulse"
+                  : "bg-muted-foreground"
               }`}
             />
             {status === "connected" ? "Conectado" : status === "testing" ? "Testando…" : "Não conectado"}
@@ -620,14 +620,14 @@ function StepRevisao({ onEdit }: { onEdit: (step: number) => void }) {
         ))}
       </div>
 
-      <div className="mt-8 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+      <div className="mt-8 rounded-2xl border border-success/30 bg-success/10 p-5">
         <div className="flex items-start gap-3">
-          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-emerald-600 text-white">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-success-strong text-white">
             <Icon name="verified" filled />
           </div>
           <div>
-            <p className="text-sm font-semibold text-emerald-900">Tudo pronto para ativação</p>
-            <p className="mt-1 text-xs text-emerald-800/80">
+            <p className="text-sm font-semibold text-success-strong">Tudo pronto para ativação</p>
+            <p className="mt-1 text-xs text-success-strong/80">
               Ao ativar, o Concierge começará a responder moradores via WhatsApp em até 5 minutos.
             </p>
           </div>

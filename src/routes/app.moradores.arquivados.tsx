@@ -69,7 +69,7 @@ function ArquivadosPage() {
           <button
             disabled={arquivados.length === 0}
             onClick={() => setPurgeAll(true)}
-            className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-red-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-destructive px-4 text-sm font-semibold text-white shadow-soft hover:bg-destructive/90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Icon name="delete_forever" className="text-[18px]" /> Excluir todos ({arquivados.length})
           </button>
@@ -77,10 +77,10 @@ function ArquivadosPage() {
       }
     >
       {/* Info banner */}
-      <section className="mb-4 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+      <section className="mb-4 flex items-start gap-3 rounded-2xl border border-amber-300/60 bg-amber-50 p-4">
         <Icon name="inventory_2" className="text-[22px] text-amber-700" />
         <div className="text-sm">
-          <p className="font-semibold text-amber-900">
+          <p className="font-semibold text-amber-800">
             Moradores desativados
           </p>
           <p className="mt-0.5 text-xs text-amber-800">
@@ -163,7 +163,7 @@ function ArquivadosPage() {
                     <tr key={m.id} className="bg-white hover:bg-[var(--color-surface-low)]">
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-3">
-                          <div className="grid h-9 w-9 place-items-center rounded-full bg-zinc-200 text-xs font-bold text-zinc-700">
+                          <div className="grid h-9 w-9 place-items-center rounded-full bg-border text-xs font-bold text-muted-foreground">
                             {initials(m.nome)}
                           </div>
                           <div>
@@ -197,7 +197,7 @@ function ArquivadosPage() {
                           <button
                             onClick={() => setToDelete(m)}
                             title="Excluir"
-                            className="inline-flex h-8 items-center gap-1 rounded-lg bg-red-600 px-2.5 text-xs font-semibold text-white hover:bg-red-700"
+                            className="inline-flex h-8 items-center gap-1 rounded-lg bg-destructive px-2.5 text-xs font-semibold text-white hover:bg-destructive/90"
                           >
                             <Icon name="delete" className="text-[14px]" /> Excluir
                           </button>
@@ -264,7 +264,7 @@ function ArquivadosPage() {
       />
 
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-[var(--color-navy)] px-4 py-3 text-sm font-semibold text-white shadow-lg">
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-[var(--color-navy)] px-4 py-3 text-sm font-semibold text-white shadow-elevated">
           <Icon name="check_circle" className="text-[18px]" filled />
           {toast}
         </div>

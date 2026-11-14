@@ -43,11 +43,11 @@ export interface Morador {
 }
 
 export const STATUS_CLS: Record<Status, string> = {
-  Residente: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  Locatário: "bg-blue-50 text-blue-700 border-blue-200",
-  Vago: "bg-slate-100 text-slate-600 border-slate-200",
-  Proprietário: "bg-violet-50 text-violet-700 border-violet-200",
-  Inativo: "bg-zinc-100 text-zinc-600 border-zinc-300",
+  Residente: "bg-success/10 text-success-strong border-success/30",
+  Locatário: "bg-primary/10 text-primary border-primary/30",
+  Vago: "bg-muted text-muted-foreground border-border",
+  Proprietário: "bg-chart-4/10 text-chart-4 border-chart-4/30",
+  Inativo: "bg-muted text-muted-foreground border-border",
 };
 
 export const STATUS_LIST: Status[] = ["Residente", "Locatário", "Proprietário", "Vago"];

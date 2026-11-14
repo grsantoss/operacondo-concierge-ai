@@ -37,14 +37,14 @@ export function ConfirmDialog({
 
   const toneBtn =
     tone === "danger"
-      ? "bg-red-600 hover:bg-red-700"
+      ? "bg-destructive hover:bg-destructive/90"
       : tone === "warn"
-        ? "bg-amber-600 hover:bg-amber-700"
+        ? "bg-warning hover:bg-warning/90"
         : "bg-[var(--color-brand)] hover:bg-[var(--color-brand-hover)]";
 
   const toneIcon =
     tone === "danger"
-      ? "bg-red-50 text-red-600"
+      ? "bg-destructive/10 text-destructive"
       : tone === "warn"
         ? "bg-amber-50 text-amber-700"
         : "bg-[var(--color-brand)]/10 text-[var(--color-brand)]";
@@ -57,7 +57,7 @@ export function ConfirmDialog({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
+        className="w-full max-w-md rounded-2xl bg-white p-6 shadow-elevated"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start gap-3">
@@ -99,7 +99,7 @@ export function ConfirmDialog({
               onConfirm();
             }}
             disabled={disabled}
-            className={`inline-flex h-10 items-center rounded-lg px-4 text-sm font-semibold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-50 ${toneBtn}`}
+            className={`inline-flex h-10 items-center rounded-lg px-4 text-sm font-semibold text-white shadow-soft disabled:cursor-not-allowed disabled:opacity-50 ${toneBtn}`}
           >
             {confirmLabel}
           </button>

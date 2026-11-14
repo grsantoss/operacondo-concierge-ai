@@ -46,17 +46,17 @@ export const Route = createFileRoute("/app/demandas/$id")({
 const TEMP_STYLE = {
   cold: {
     label: "Fria",
-    class: "bg-blue-50 text-[var(--color-temp-cold)] border-blue-200",
+    class: "bg-primary/10 text-[var(--color-temp-cold)] border-primary/30",
     dot: "bg-[var(--color-temp-cold)]",
   },
   warm: {
     label: "Morna",
-    class: "bg-amber-50 text-[var(--color-temp-warm)] border-amber-200",
+    class: "bg-amber-50 text-[var(--color-temp-warm)] border-amber-300/60",
     dot: "bg-[var(--color-temp-warm)]",
   },
   hot: {
     label: "Quente",
-    class: "bg-red-50 text-[var(--color-temp-hot)] border-red-200",
+    class: "bg-destructive/10 text-[var(--color-temp-hot)] border-destructive/30",
     dot: "bg-[var(--color-temp-hot)]",
   },
 } as const;
@@ -153,9 +153,9 @@ function DemandaDetail() {
             type="button"
             onClick={handleResolve}
             disabled={isResolved}
-            className={`btn-press inline-flex h-10 items-center gap-2 rounded-lg px-4 text-sm font-semibold shadow-sm ${
+            className={`btn-press inline-flex h-10 items-center gap-2 rounded-lg px-4 text-sm font-semibold shadow-soft ${
               isResolved
-                ? "cursor-not-allowed bg-emerald-50 text-emerald-700 border border-emerald-200"
+                ? "cursor-not-allowed bg-success/10 text-success-strong border border-success/30"
                 : "btn-press-active bg-[var(--color-brand)] text-white hover:bg-[var(--color-brand-hover)]"
             }`}
           >
@@ -233,7 +233,7 @@ function DemandaDetail() {
                 Conversa {temp.label}
               </span>
               {demanda.sla ? (
-                <span className="inline-flex items-center gap-1 rounded-md bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-700">
+                <span className="inline-flex items-center gap-1 rounded-md bg-destructive/10 px-2 py-0.5 text-[11px] font-semibold text-destructive">
                   <Icon name="schedule" className="text-[13px]" /> {demanda.sla}
                 </span>
               ) : null}
@@ -283,7 +283,7 @@ function DemandaDetail() {
                 disabled={assumed}
                 className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold ${
                   assumed
-                    ? "cursor-not-allowed border border-emerald-200 bg-emerald-50 text-emerald-700"
+                    ? "cursor-not-allowed border border-success/30 bg-success/10 text-success-strong"
                     : "bg-[var(--color-navy)] text-white hover:bg-[var(--color-navy-soft)]"
                 }`}
               >
@@ -407,7 +407,7 @@ function DemandaDetail() {
                 target="_blank"
                 rel="noopener noreferrer"
                 title="Conversar no WhatsApp"
-                className="flex items-center justify-center gap-1.5 rounded-lg bg-[var(--color-success)]/10 py-2 text-xs font-semibold text-[var(--color-success)] hover:bg-[var(--color-success)]/15"
+                className="flex items-center justify-center gap-1.5 rounded-lg bg-[var(--color-success-strong)]/10 py-2 text-xs font-semibold text-[var(--color-success-strong)] hover:bg-[var(--color-success-strong)]/15"
               >
                 <WhatsAppIcon variant="glyph" className="h-[14px] w-[14px]" /> WhatsApp
               </a>
@@ -525,7 +525,7 @@ function DemandaDetail() {
         </aside>
       </div>
       {toast && (
-        <div className="pointer-events-none fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-lg bg-[var(--color-navy)] px-4 py-2 text-sm font-semibold text-white shadow-lg">
+        <div className="pointer-events-none fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-lg bg-[var(--color-navy)] px-4 py-2 text-sm font-semibold text-white shadow-elevated">
           {toast}
         </div>
       )}

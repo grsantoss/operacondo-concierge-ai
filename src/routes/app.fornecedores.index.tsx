@@ -22,15 +22,15 @@ import {
 } from "@/data/fornecedores";
 
 export const Route = createFileRoute("/app/fornecedores/")({
-  head: () => ({ meta: [{ title: "Fornecedores | Concierge OperaCondo" }] }),
+  head: () => ({ meta: [{ title: "Fornecedores | OperaCondo Concierge" }] }),
   component: FornecedoresPage,
 });
 
 const ESTADO_CLS: Record<Estado, string> = {
-  Homologado: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  "Em análise": "bg-amber-50 text-amber-700 border-amber-200",
-  Renovação: "bg-blue-50 text-blue-700 border-blue-200",
-  Inativo: "bg-slate-100 text-slate-600 border-slate-200",
+  Homologado: "bg-success/10 text-success-strong border-success/30",
+  "Em análise": "bg-amber-50 text-amber-700 border-amber-300/60",
+  Renovação: "bg-primary/10 text-primary border-primary/30",
+  Inativo: "bg-muted text-muted-foreground border-border",
 };
 
 function normalize(s: string) {
@@ -112,7 +112,7 @@ function FornecedoresPage() {
           </button>
           <Link
             to="/app/fornecedores/novo"
-            className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[var(--color-brand-hover)]"
+            className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white shadow-soft hover:bg-[var(--color-brand-hover)]"
           >
             <Icon name="add_business" className="text-[18px]" /> Cadastrar fornecedor
           </Link>
@@ -121,10 +121,10 @@ function FornecedoresPage() {
     >
       <section className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
         {([
-          { l: "Homologados", v: counts.Homologado, i: "verified", t: "text-emerald-700 bg-emerald-50" },
+          { l: "Homologados", v: counts.Homologado, i: "verified", t: "text-success-strong bg-success/10" },
           { l: "Em análise", v: counts["Em análise"], i: "pending", t: "text-amber-700 bg-amber-50" },
-          { l: "Renovação", v: counts.Renovação, i: "autorenew", t: "text-blue-700 bg-blue-50" },
-          { l: "Categorias", v: categorias.length, i: "category", t: "text-violet-700 bg-violet-50" },
+          { l: "Renovação", v: counts.Renovação, i: "autorenew", t: "text-primary bg-primary/10" },
+          { l: "Categorias", v: categorias.length, i: "category", t: "text-chart-4 bg-chart-4/10" },
         ]).map((s) => (
           <div key={s.l} className="card-elev rounded-xl p-4">
             <div className={`inline-grid h-9 w-9 place-items-center rounded-lg ${s.t}`}>
@@ -235,7 +235,7 @@ function FornecedoresPage() {
       />
 
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-[var(--color-navy)] px-4 py-3 text-sm font-semibold text-white shadow-lg">
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-[var(--color-navy)] px-4 py-3 text-sm font-semibold text-white shadow-elevated">
           <Icon name="check_circle" className="text-[18px]" filled />
           {toast}
         </div>
@@ -258,7 +258,7 @@ function SupplierCard({ s, onFicha, onEdit, onHomologar, onArquivar, onCopyCnpj,
   const waMsg = `Olá ${s.nome.split(" ")[0]}, aqui é do condomínio OperaCondo sobre serviços da categoria ${s.categoria}...`;
   const waHref = whatsappUrl(s.contato, waMsg);
   return (
-    <article className="card-elev group rounded-2xl p-5 transition-shadow hover:shadow-md">
+    <article className="card-elev group rounded-2xl p-5 transition-shadow hover:shadow-card">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-[var(--color-navy)] text-white">
@@ -282,7 +282,7 @@ function SupplierCard({ s, onFicha, onEdit, onHomologar, onArquivar, onCopyCnpj,
         <div>
           <p className="text-[10px] uppercase tracking-wider text-[var(--color-on-surface-variant)]">Rating</p>
           <p className="mt-0.5 inline-flex items-center gap-1 text-sm font-bold text-[var(--color-navy)]">
-            <Icon name="star" className="text-[14px] text-amber-500" filled />
+            <Icon name="star" className="text-[14px] text-warning" filled />
             {s.rating.toFixed(1)}
           </p>
         </div>

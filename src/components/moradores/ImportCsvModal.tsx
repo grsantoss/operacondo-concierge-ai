@@ -73,7 +73,7 @@ export function ImportCsvModal({
       onClick={onClose}
     >
       <div
-        className="max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-elevated"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -146,7 +146,7 @@ export function ImportCsvModal({
                   }}
                 />
                 {parseError && (
-                  <p className="mt-3 text-xs text-red-600">Erro: {parseError}</p>
+                  <p className="mt-3 text-xs text-destructive">Erro: {parseError}</p>
                 )}
               </div>
 
@@ -214,14 +214,14 @@ export function ImportCsvModal({
                 <SummaryPill
                   label="Válidos"
                   value={result.valid.length}
-                  tone="bg-emerald-50 text-emerald-700"
+                  tone="bg-success/10 text-success-strong"
                 />
                 <SummaryPill
                   label="Com erro"
                   value={result.errors.length}
                   tone={
                     result.errors.length
-                      ? "bg-red-50 text-red-700"
+                      ? "bg-destructive/10 text-destructive"
                       : "bg-[var(--color-surface-mid)] text-[var(--color-on-surface-variant)]"
                   }
                 />
@@ -264,11 +264,11 @@ export function ImportCsvModal({
               )}
 
               {result.errors.length > 0 && (
-                <div className="mb-4 rounded-xl border border-red-200 bg-red-50">
-                  <p className="border-b border-red-200 px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-red-700">
+                <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10">
+                  <p className="border-b border-destructive/30 px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-destructive">
                     {result.errors.length} linha(s) com erro — serão ignoradas
                   </p>
-                  <ul className="max-h-40 overflow-y-auto px-3 py-2 text-xs text-red-700">
+                  <ul className="max-h-40 overflow-y-auto px-3 py-2 text-xs text-destructive">
                     {result.errors.slice(0, 20).map((e, i) => (
                       <li key={i}>
                         Linha {e.row}: {e.message}

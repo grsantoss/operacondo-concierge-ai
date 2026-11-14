@@ -9,7 +9,7 @@ import { formatBRL } from "@/data/faturas";
 export const Route = createFileRoute("/admin/usuarios/novo")({
   head: () => ({
     meta: [
-      { title: "Novo tenant — Admin Master | OperaCondo" },
+      { title: "Novo cliente — Admin Master | OperaCondo" },
       { name: "description", content: "Provisiona um novo síndico com plano, API Key e cliente Stripe." },
     ],
   }),
@@ -50,7 +50,7 @@ function NovoTenant() {
   if (created && step === 3) {
     return (
       <AdminShell
-        title="Tenant provisionado"
+        title="Cliente cadastrado"
         breadcrumbs={[
           { label: "Admin", to: "/admin" },
           { label: "Usuários", to: "/admin/usuarios" },
@@ -58,7 +58,7 @@ function NovoTenant() {
         ]}
       >
         <div className="mx-auto max-w-2xl rounded-2xl border border-[var(--color-outline-variant)] bg-white p-8 text-center">
-          <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-full bg-[var(--color-success-soft)] text-[var(--color-success)]">
+          <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-full bg-[var(--color-success-soft)] text-[var(--color-success-strong)]">
             <Icon name="check_circle" className="text-[36px]" />
           </div>
           <h2 className="text-xl font-bold text-[var(--color-navy)]">Conta criada com sucesso</h2>
@@ -67,8 +67,8 @@ function NovoTenant() {
           </p>
 
           <div className="mt-6 space-y-3 text-left">
-            <Credential label="ID do tenant" value={created.id} />
-            <Credential label="API Key (única do tenant)" value={created.apiKey} mono />
+            <Credential label="ID do cliente" value={created.id} />
+            <Credential label="Chave de API (única do cliente)" value={created.apiKey} mono />
             <Credential label="Senha temporária" value={created.senha} />
           </div>
 
@@ -77,7 +77,7 @@ function NovoTenant() {
               onClick={() => navigate({ to: "/admin/usuarios/$id", params: { id: created.id } })}
               className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white hover:bg-[var(--color-brand-hover)]"
             >
-              Abrir tenant
+              Abrir cliente
               <Icon name="arrow_forward" className="text-[16px]" />
             </button>
             <button
@@ -94,7 +94,7 @@ function NovoTenant() {
 
   return (
     <AdminShell
-      title="Novo tenant"
+      title="Novo cliente"
       breadcrumbs={[
         { label: "Admin", to: "/admin" },
         { label: "Usuários", to: "/admin/usuarios" },
@@ -206,7 +206,7 @@ function NovoTenant() {
                   onClick={provision}
                   className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white hover:bg-[var(--color-brand-hover)]"
                 >
-                  Provisionar tenant <Icon name="check" className="text-[16px]" />
+                  Cadastrar cliente <Icon name="check" className="text-[16px]" />
                 </button>
               </div>
             </>

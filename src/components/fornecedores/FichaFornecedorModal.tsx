@@ -1,9 +1,21 @@
+import { useState } from "react";
 import { Icon } from "@/components/brand/Icon";
 import {
   CRITERIOS_HOMOLOGACAO,
   isObrigatoriosOk,
+  useFornecedoresAcoes,
+  type Doc,
   type Supplier,
 } from "@/data/fornecedores";
+
+const TIPOS_DOC: { id: Doc["kind"]; label: string }[] = [
+  { id: "cnpj", label: "Cartão CNPJ" },
+  { id: "contrato", label: "Contrato" },
+  { id: "certidao", label: "Certidão" },
+  { id: "apolice", label: "Apólice de seguro" },
+  { id: "art", label: "ART" },
+  { id: "outro", label: "Outro" },
+];
 
 interface Props {
   open: boolean;
@@ -72,7 +84,13 @@ export function FichaFornecedorModal({ open, supplier, onClose, onEdit, onOpenHo
               <Info label="Serviços" value={String(supplier.ultimos)} />
               <Info label="Rating" value={supplier.rating.toFixed(1)} />
               <Info label="Estado" value={supplier.estado} />
+              {supplier.contatoNome ? <Info label="Contato" value={supplier.contatoNome} /> : null}
             </dl>
+            {supplier.observacoes ? (
+              <p className="mt-2 whitespace-pre-line rounded-xl bg-[var(--color-surface-low)] p-3 text-xs text-[var(--color-on-surface-variant)]">
+                {supplier.observacoes}
+              </p>
+            ) : null}
           </section>
 
           <section>
@@ -125,7 +143,7 @@ export function FichaFornecedorModal({ open, supplier, onClose, onEdit, onOpenHo
                 Nenhum documento anexado.
               </p>
             ) : (
-              <ul className="space-y-2">
+              <ul className="mb-3 space-y-2">
                 {supplier.docs.map((d) => (
                   <li
                     key={d.name}
@@ -143,10 +161,22 @@ export function FichaFornecedorModal({ open, supplier, onClose, onEdit, onOpenHo
                         {d.validUntil ? ` · Válido até ${d.validUntil}` : ""}
                       </p>
                     </div>
+                    {d.url ? (
+                      <a
+                        href={d.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Abrir documento"
+                        className="grid h-8 w-8 place-items-center rounded-lg text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-mid)]"
+                      >
+                        <Icon name="download" className="text-[18px]" />
+                      </a>
+                    ) : null}
                   </li>
                 ))}
               </ul>
             )}
+            <EnviarDocumento fornecedorId={supplier.id} />
           </section>
         </div>
 
@@ -178,6 +208,81 @@ function Info({ label, value, mono }: { label: string; value: string; mono?: boo
       <dd className={`text-sm font-semibold text-[var(--color-navy)] ${mono ? "font-mono" : ""}`}>
         {value}
       </dd>
+    </div>
+  );
+}
+
+/** Envio de documento do fornecedor (PDF ou imagem, até 20 MB) para o S3. */
+function EnviarDocumento({ fornecedorId }: { fornecedorId: string }) {
+  const { enviarDocumento } = useFornecedoresAcoes();
+  const [tipo, setTipo] = useState<Doc["kind"]>("certidao");
+  const [validoAte, setValidoAte] = useState("");
+  const [arquivo, setArquivo] = useState<File | null>(null);
+  const [estado, setEstado] = useState<{ enviando?: boolean; erro?: string; ok?: string }>({});
+
+  async function enviar() {
+    if (!arquivo) return;
+    setEstado({ enviando: true });
+    try {
+      await enviarDocumento(fornecedorId, arquivo, tipo, validoAte || undefined);
+      setEstado({ ok: `${arquivo.name} enviado.` });
+      setArquivo(null);
+      setValidoAte("");
+    } catch (err) {
+      setEstado({ erro: (err as Error).message });
+    }
+  }
+
+  const campo =
+    "h-9 rounded-lg border border-[var(--color-outline-variant)] bg-white px-2 text-xs text-[var(--color-navy)]";
+  return (
+    <div className="rounded-xl border border-dashed border-[var(--color-outline-variant)] p-3">
+      <p className="mb-2 text-xs font-semibold text-[var(--color-navy)]">Enviar documento</p>
+      <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+        <input
+          type="file"
+          aria-label="Arquivo do documento"
+          accept="application/pdf,image/*"
+          onChange={(e) => setArquivo(e.target.files?.[0] ?? null)}
+          className="min-w-0 text-xs file:mr-2 file:rounded-md file:border-0 file:bg-[var(--color-surface-mid)] file:px-2 file:py-1.5 file:text-xs file:font-semibold"
+        />
+        <select
+          aria-label="Tipo do documento"
+          value={tipo}
+          onChange={(e) => setTipo(e.target.value as Doc["kind"])}
+          className={campo}
+        >
+          {TIPOS_DOC.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.label}
+            </option>
+          ))}
+        </select>
+        <label className="flex items-center gap-2 text-xs text-[var(--color-on-surface-variant)]">
+          Válido até
+          <input
+            type="date"
+            value={validoAte}
+            onChange={(e) => setValidoAte(e.target.value)}
+            className={campo}
+          />
+        </label>
+        <button
+          type="button"
+          onClick={enviar}
+          disabled={!arquivo || estado.enviando}
+          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-[var(--color-brand)] px-3 text-xs font-semibold text-white hover:bg-[var(--color-brand-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Icon name="upload" className="text-[16px]" />
+          {estado.enviando ? "Enviando…" : "Enviar"}
+        </button>
+      </div>
+      {estado.erro ? (
+        <p role="alert" className="mt-2 text-xs text-destructive">
+          {estado.erro}
+        </p>
+      ) : null}
+      {estado.ok ? <p className="mt-2 text-xs text-success-strong">{estado.ok}</p> : null}
     </div>
   );
 }

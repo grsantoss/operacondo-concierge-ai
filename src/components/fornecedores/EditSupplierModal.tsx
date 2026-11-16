@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Icon } from "@/components/brand/Icon";
 import {
   CATEGORIAS,
-  updateSupplier,
+  useFornecedoresAcoes,
   type Estado,
   type Supplier,
 } from "@/data/fornecedores";
@@ -29,6 +29,8 @@ type FormState = {
 export function EditSupplierModal({ open, supplier, onClose, onSaved }: Props) {
   const [form, setForm] = useState<FormState | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [salvando, setSalvando] = useState(false);
+  const { updateSupplier } = useFornecedoresAcoes();
 
   useEffect(() => {
     if (open && supplier) {
@@ -51,7 +53,7 @@ export function EditSupplierModal({ open, supplier, onClose, onSaved }: Props) {
     setForm((f) => (f ? { ...f, [key]: value } : f));
   }
 
-  function submit(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault();
     if (!form || !supplier) return;
     if (!form.nome.trim()) return setError("Nome é obrigatório.");
@@ -59,15 +61,22 @@ export function EditSupplierModal({ open, supplier, onClose, onSaved }: Props) {
     const rating = Number(form.rating);
     if (Number.isNaN(rating) || rating < 0 || rating > 5)
       return setError("Rating deve ser entre 0 e 5.");
-    updateSupplier(supplier.id, {
-      nome: form.nome.trim(),
-      categoria: form.categoria,
-      cnpj: form.cnpj.trim(),
-      contato: form.contato.trim(),
-      email: form.email.trim(),
-      estado: form.estado,
-      rating,
-    });
+    setSalvando(true);
+    try {
+      await updateSupplier(supplier.id, {
+        nome: form.nome.trim(),
+        categoria: form.categoria,
+        cnpj: form.cnpj.trim(),
+        contato: form.contato.trim(),
+        email: form.email.trim(),
+        estado: form.estado,
+        rating,
+      });
+    } catch (err) {
+      return setError((err as Error).message);
+    } finally {
+      setSalvando(false);
+    }
     onSaved?.();
     onClose();
   }
@@ -149,6 +158,7 @@ export function EditSupplierModal({ open, supplier, onClose, onSaved }: Props) {
           </button>
           <button
             type="submit"
+            disabled={salvando}
             className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white shadow-soft hover:bg-[var(--color-brand-hover)]"
           >
             <Icon name="save" className="text-[18px]" /> Salvar

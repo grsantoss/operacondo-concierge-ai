@@ -2,9 +2,8 @@ import { useEffect, useState } from "react";
 import { Icon } from "@/components/brand/Icon";
 import {
   CRITERIOS_HOMOLOGACAO,
-  homologarSupplier,
   isObrigatoriosOk,
-  toggleCriterio,
+  useFornecedoresAcoes,
   useSuppliers,
 } from "@/data/fornecedores";
 
@@ -17,6 +16,18 @@ interface Props {
 
 export function HomologacoesModal({ open, supplierId, onClose, onHomologado }: Props) {
   const suppliers = useSuppliers();
+  const { toggleCriterio, homologarSupplier } = useFornecedoresAcoes();
+  const [erro, setErro] = useState<string | null>(null);
+  const tentar = (p: Promise<unknown>) => {
+    setErro(null);
+    return p.then(
+      () => true,
+      (e: Error) => {
+        setErro(e.message);
+        return false;
+      },
+    );
+  };
   const [selectedId, setSelectedId] = useState<string>("");
 
   useEffect(() => {
@@ -135,7 +146,7 @@ export function HomologacoesModal({ open, supplierId, onClose, onHomologado }: P
                         <input
                           type="checkbox"
                           checked={checked}
-                          onChange={() => toggleCriterio(supplier.id, c.id)}
+                          onChange={() => void tentar(toggleCriterio(supplier.id, c.id))}
                           className="mt-1"
                         />
                         <div className="flex-1">
@@ -158,6 +169,11 @@ export function HomologacoesModal({ open, supplierId, onClose, onHomologado }: P
                   })}
                 </ul>
 
+                {erro ? (
+                  <p role="alert" className="mt-4 text-xs text-destructive">
+                    {erro}
+                  </p>
+                ) : null}
                 <div className="mt-5 flex items-center justify-between rounded-xl bg-[var(--color-surface-low)] p-4">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]">
@@ -170,9 +186,8 @@ export function HomologacoesModal({ open, supplierId, onClose, onHomologado }: P
                   </div>
                   <button
                     disabled={!isObrigatoriosOk(supplier)}
-                    onClick={() => {
-                      homologarSupplier(supplier.id);
-                      onHomologado?.(supplier.nome);
+                    onClick={async () => {
+                      if (await tentar(homologarSupplier(supplier.id))) onHomologado?.(supplier.nome);
                     }}
                     className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg bg-success-strong px-4 text-sm font-semibold text-white shadow-soft hover:bg-success-strong/90 disabled:cursor-not-allowed disabled:opacity-50"
                   >

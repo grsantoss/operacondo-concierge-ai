@@ -7,10 +7,11 @@ import { hashPassword } from "better-auth/crypto";
 import { sql } from "drizzle-orm";
 import { DEMANDAS_EXEMPLO as DEMANDAS } from "./dados-exemplo/demandas";
 import { listFaturas } from "../src/data/faturas";
-import { listSuppliers } from "../src/data/fornecedores";
+import { FORNECEDORES_EXEMPLO } from "./dados-exemplo/fornecedores";
 import { CONDOMINIOS, MORADORES_EXEMPLO } from "./dados-exemplo/moradores";
 import { PLANOS } from "../src/data/planos";
 import { listTenants } from "../src/data/tenants";
+import { paraE164 } from "../src/lib/telefone";
 import { dbAdmin, schema as s } from "../src/server/db";
 
 if (process.env.NODE_ENV === "production") throw new Error("seed não roda em produção");
@@ -251,7 +252,7 @@ async function main() {
     Renovação: "renovacao",
     Inativo: "inativo",
   } as const;
-  for (const f of listSuppliers()) {
+  for (const f of FORNECEDORES_EXEMPLO) {
     const [row] = await db
       .insert(s.fornecedores)
       .values({
@@ -261,7 +262,7 @@ async function main() {
         cnpj: so(f.cnpj),
         estado: estado[f.estado],
         rating: f.rating,
-        contato: f.contato,
+        contato: paraE164(f.contato),
         email: f.email,
         criteriosOk: f.homologacao.criteriosOk,
         homologacaoValidaAte: dataBr(f.homologacao.validoAte),

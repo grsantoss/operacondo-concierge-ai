@@ -44,7 +44,7 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   OCR); páginas que ele não lê bem vão para o Claude (só essas páginas). O texto é cortado por
   artigo ou cláusula, para a IA citar o artigo; atas, por assunto. Página ilegível deixa o
   documento em "Revisar" com o motivo, e erro de leitura mostra a causa, com a opção "Ler de
-  novo". Arquivo `.doc` (Word antigo) recebe a orientação de salvar como `.docx` ou PDF.
+  novo". Arquivo `.doc` (Word antigo) recebe a orientação de salvar como `.docx` ou PDF (#66).
 
 ### Corrigido
 

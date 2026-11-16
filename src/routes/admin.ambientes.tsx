@@ -2,9 +2,22 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { Icon } from "@/components/brand/Icon";
-import { useTenants } from "@/data/tenants";
+import { formatBRL } from "@/data/faturas";
+import {
+  planosQuery,
+  usePlanos,
+  useSalvarLimitesPlano,
+  type LimitesPlano,
+  type Plano,
+} from "@/data/planos";
+import { clientesQuery, erroAmigavel, useTenants } from "@/data/tenants";
 
 export const Route = createFileRoute("/admin/ambientes")({
+  loader: ({ context: { queryClient } }) =>
+    Promise.all([
+      queryClient.ensureQueryData(clientesQuery),
+      queryClient.ensureQueryData(planosQuery),
+    ]),
   head: () => ({
     meta: [
       { title: "Ambientes — Admin Master | OperaCondo" },
@@ -34,7 +47,6 @@ function AmbientesPage() {
   const [flags, setFlags] = useState<Flag[]>(GLOBAL_FLAGS_DEFAULT);
   const [tenantId, setTenantId] = useState<string>(tenants[0]?.id ?? "");
   const [overrides, setOverrides] = useState<Record<string, Record<string, boolean>>>({});
-  const [limits, setLimits] = useState({ starter: 200, pro: 800, enterprise: 5000 });
 
   const toggleGlobal = (key: string) =>
     setFlags((fs) => fs.map((f) => (f.key === key ? { ...f, on: !f.on } : f)));
@@ -55,6 +67,7 @@ function AmbientesPage() {
       title="Configuração de ambientes"
       breadcrumbs={[{ label: "Admin", to: "/admin" }, { label: "Ambientes" }]}
     >
+      <PlanosLimites />
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-2xl border border-[var(--color-outline-variant)] bg-white p-6">
           <div className="mb-4 flex items-center gap-2">
@@ -70,23 +83,6 @@ function AmbientesPage() {
             ))}
           </div>
 
-          <div className="mt-6 border-t border-[var(--color-outline-variant)] pt-5">
-            <h3 className="text-sm font-bold text-[var(--color-navy)]">Limites padrão por plano</h3>
-            <p className="mt-1 text-xs text-[var(--color-on-surface-variant)]">Moradores máximos.</p>
-            <div className="mt-3 grid gap-3 md:grid-cols-3">
-              {(["starter", "pro", "enterprise"] as const).map((p) => (
-                <label key={p} className="block">
-                  <span className="mb-1 block text-xs font-semibold capitalize text-[var(--color-navy)]">{p}</span>
-                  <input
-                    type="number"
-                    value={limits[p]}
-                    onChange={(e) => setLimits((s) => ({ ...s, [p]: Number(e.target.value) }))}
-                    className="h-10 w-full rounded-lg border border-[var(--color-outline-variant)] bg-white px-3 text-sm outline-none"
-                  />
-                </label>
-              ))}
-            </div>
-          </div>
         </div>
 
         <div className="rounded-2xl border border-[var(--color-outline-variant)] bg-white p-6">
@@ -151,5 +147,96 @@ function FlagRow({ flag, onToggle, noBg }: { flag: Flag; onToggle: () => void; n
         />
       </button>
     </div>
+  );
+}
+
+const CAMPOS: { k: keyof LimitesPlano; label: string }[] = [
+  { k: "condominios", label: "Condomínios" },
+  { k: "moradores", label: "Moradores" },
+  { k: "documentos", label: "Documentos" },
+  { k: "respostasIaMes", label: "Respostas da IA/mês" },
+];
+
+/** Limites de cada plano, lidos e gravados na tabela `planos`. */
+function PlanosLimites() {
+  const planos = usePlanos();
+  return (
+    <div className="mb-6 rounded-2xl border border-[var(--color-outline-variant)] bg-white">
+      <div className="border-b border-[var(--color-outline-variant)] p-5">
+        <h2 className="text-base font-bold text-[var(--color-navy)]">Planos e limites</h2>
+        <p className="mt-1 text-sm text-[var(--color-on-surface-variant)]">
+          Valem para todos os clientes do plano. O preço é só para exibir: o valor cobrado é o do Stripe.
+        </p>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-[var(--color-surface-low)] text-left text-xs uppercase text-[var(--color-on-surface-variant)]">
+            <tr>
+              <th className="px-5 py-3">Plano</th>
+              {CAMPOS.map((c) => (
+                <th key={c.k} className="px-3 py-3">
+                  {c.label}
+                </th>
+              ))}
+              <th className="px-5 py-3" />
+            </tr>
+          </thead>
+          <tbody>
+            {planos.map((p) => (
+              <PlanoLinha key={p.id} p={p} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function PlanoLinha({ p }: { p: Plano }) {
+  const salvar = useSalvarLimitesPlano();
+  const inicial = { condominios: p.condominios, moradores: p.moradores, documentos: p.documentos, respostasIaMes: p.respostasIaMes };
+  const [l, setL] = useState<LimitesPlano>(inicial);
+  const [msg, setMsg] = useState<string | null>(null);
+  const mudou = CAMPOS.some((c) => l[c.k] !== inicial[c.k]);
+  return (
+    <tr className="border-t border-[var(--color-outline-variant)]">
+      <td className="px-5 py-3">
+        <p className="font-semibold text-[var(--color-navy)]">{p.nome}</p>
+        <p className="text-[11px] text-[var(--color-on-surface-variant)]">
+          {p.vendavel ? `${formatBRL(p.precoMensal)}/mês` : "Interno (trial)"}
+        </p>
+      </td>
+      {CAMPOS.map((c) => (
+        <td key={c.k} className="px-3 py-3">
+          <input
+            type="number"
+            min={0}
+            aria-label={`${c.label} — ${p.nome}`}
+            value={l[c.k]}
+            onChange={(e) => setL((s) => ({ ...s, [c.k]: Number(e.target.value) }))}
+            className="h-9 w-28 rounded-lg border border-[var(--color-outline-variant)] bg-white px-2 text-sm outline-none focus:border-[var(--color-brand)]"
+          />
+        </td>
+      ))}
+      <td className="px-5 py-3 text-right">
+        <button
+          type="button"
+          disabled={!mudou}
+          onClick={async () => {
+            setMsg(null);
+            try {
+              await salvar(p.id, l);
+              setMsg("Salvo");
+            } catch (err) {
+              setMsg(erroAmigavel(err));
+            }
+          }}
+          className="h-9 rounded-lg bg-[var(--color-brand)] px-3 text-xs font-semibold text-white disabled:opacity-40"
+        >
+          Salvar
+        </button>
+        {msg ? <p className="mt-1 text-[11px] text-[var(--color-on-surface-variant)]">{msg}</p> : null}
+      </td>
+    </tr>
   );
 }

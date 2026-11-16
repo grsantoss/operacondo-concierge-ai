@@ -4,16 +4,21 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import { Icon } from "@/components/brand/Icon";
 import { StripeConnectCard } from "@/components/admin/StripeSection";
 import {
-  useFaturas,
-  updateFaturaStatus,
+  faturasQuery,
+  formatBRL,
   STATUS_LABEL,
   STATUS_TONE,
-  formatBRL,
+  useFaturas,
   type FaturaStatus,
 } from "@/data/faturas";
-import { useTenants } from "@/data/tenants";
+import { clientesQuery, useTenants } from "@/data/tenants";
 
 export const Route = createFileRoute("/admin/financeiro")({
+  loader: ({ context: { queryClient } }) =>
+    Promise.all([
+      queryClient.ensureQueryData(clientesQuery),
+      queryClient.ensureQueryData(faturasQuery),
+    ]),
   head: () => ({
     meta: [
       { title: "Financeiro — Admin Master | OperaCondo" },
@@ -141,7 +146,7 @@ function FinanceiroPage() {
                     <td className="px-5 py-3 font-semibold text-[var(--color-navy)]">{t?.nomeFantasia ?? f.tenantId}</td>
                     <td className="px-5 py-3">{f.periodo}</td>
                     <td className="px-5 py-3 font-semibold">{formatBRL(f.valor)}</td>
-                    <td className="px-5 py-3 uppercase text-[11px]">{f.metodo}</td>
+                    <td className="px-5 py-3 text-xs">{f.metodo}</td>
                     <td className="px-5 py-3">{f.vencimento}</td>
                     <td className="px-5 py-3">
                       <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${STATUS_TONE[f.status]}`}>
@@ -150,35 +155,9 @@ function FinanceiroPage() {
                     </td>
                     <td className="px-5 py-3 text-right">
                       <div className="inline-flex items-center gap-1">
-                        {f.status !== "paid" && (
-                          <button
-                            title="Marcar como paga"
-                            onClick={() => updateFaturaStatus(f.id, "paid")}
-                            className="grid h-8 w-8 place-items-center rounded-md text-[var(--color-success-strong)] hover:bg-[var(--color-success-soft)]"
-                          >
-                            <Icon name="check" className="text-[16px]" />
-                          </button>
-                        )}
-                        {(f.status === "open" || f.status === "past_due") && (
-                          <button
-                            title="Reenviar cobrança"
-                            onClick={() => alert("Cobrança reenviada via Stripe (mock).")}
-                            className="grid h-8 w-8 place-items-center rounded-md text-[var(--color-brand)] hover:bg-[var(--color-info-soft)]"
-                          >
-                            <Icon name="send" className="text-[16px]" />
-                          </button>
-                        )}
-                        {f.status === "paid" && (
-                          <button
-                            title="Estornar"
-                            onClick={() => updateFaturaStatus(f.id, "refunded")}
-                            className="grid h-8 w-8 place-items-center rounded-md text-[var(--color-warning-strong)] hover:bg-[var(--color-warning-soft)]"
-                          >
-                            <Icon name="undo" className="text-[16px]" />
-                          </button>
-                        )}
+                        {f.stripeInvoiceId && (
                         <a
-                          href={`https://dashboard.stripe.com/invoices/${f.stripeInvoiceId}`}
+                          href={f.urlFatura || `https://dashboard.stripe.com/invoices/${f.stripeInvoiceId}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           title="Ver no Stripe"
@@ -186,6 +165,7 @@ function FinanceiroPage() {
                         >
                           <Icon name="open_in_new" className="text-[16px]" />
                         </a>
+                        )}
                       </div>
                     </td>
                   </tr>

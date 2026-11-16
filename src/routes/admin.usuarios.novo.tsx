@@ -2,15 +2,16 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { Icon } from "@/components/brand/Icon";
-import { createTenant } from "@/data/tenants";
-import { PLANOS, getPlano, type PlanoId } from "@/data/planos";
 import { formatBRL } from "@/data/faturas";
+import { planosQuery, usePlanos } from "@/data/planos";
+import { erroAmigavel, useClientesAcoes } from "@/data/tenants";
 
 export const Route = createFileRoute("/admin/usuarios/novo")({
+  loader: ({ context: { queryClient } }) => queryClient.ensureQueryData(planosQuery),
   head: () => ({
     meta: [
       { title: "Novo cliente — Admin Master | OperaCondo" },
-      { name: "description", content: "Provisiona um novo síndico com plano, API Key e cliente Stripe." },
+      { name: "description", content: "Cadastra um novo cliente com plano e acesso do síndico." },
     ],
   }),
   component: NovoTenant,
@@ -29,22 +30,26 @@ function NovoTenant() {
     uf: "SP",
     responsavel: "",
   });
-  const [plano, setPlano] = useState<PlanoId>("pro");
-  const [trial, setTrial] = useState(true);
-  const [created, setCreated] = useState<{ id: string; apiKey: string; senha: string } | null>(null);
+  const planos = usePlanos().filter((p) => p.vendavel);
+  const { criar } = useClientesAcoes();
+  const [plano, setPlano] = useState("pro");
+  const [erro, setErro] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  const [created, setCreated] = useState<{ id: string; email: string; senha: string } | null>(null);
 
   const set = (k: keyof typeof dados, v: string) => setDados((s) => ({ ...s, [k]: v }));
 
-  const provision = () => {
-    const p = getPlano(plano);
-    const t = createTenant({
-      ...dados,
-      plano,
-      status: trial ? "trial" : "ativo",
-      mrr: trial ? 0 : p.precoMensal,
-    });
-    setCreated({ id: t.id, apiKey: t.apiKey, senha: `Temp@${Math.random().toString(36).slice(2, 8)}` });
-    setStep(3);
+  const provision = async () => {
+    setErro(null);
+    setEnviando(true);
+    try {
+      setCreated(await criar({ ...dados, planoId: plano }));
+      setStep(3);
+    } catch (err) {
+      setErro(erroAmigavel(err));
+    } finally {
+      setEnviando(false);
+    }
   };
 
   if (created && step === 3) {
@@ -53,7 +58,7 @@ function NovoTenant() {
         title="Cliente cadastrado"
         breadcrumbs={[
           { label: "Admin", to: "/admin" },
-          { label: "Usuários", to: "/admin/usuarios" },
+          { label: "Clientes", to: "/admin/usuarios" },
           { label: "Novo" },
         ]}
       >
@@ -63,13 +68,12 @@ function NovoTenant() {
           </div>
           <h2 className="text-xl font-bold text-[var(--color-navy)]">Conta criada com sucesso</h2>
           <p className="mt-1 text-sm text-[var(--color-on-surface-variant)]">
-            Compartilhe as credenciais abaixo com o síndico. A senha temporária deve ser trocada no primeiro acesso.
+            Envie o acesso abaixo ao síndico. A senha temporária aparece só agora; ele pode trocá-la depois.
           </p>
 
           <div className="mt-6 space-y-3 text-left">
-            <Credential label="ID do cliente" value={created.id} />
-            <Credential label="Chave de API (única do cliente)" value={created.apiKey} mono />
-            <Credential label="Senha temporária" value={created.senha} />
+            <Credential label="E-mail de acesso" value={created.email} />
+            <Credential label="Senha temporária" value={created.senha} mono />
           </div>
 
           <div className="mt-6 flex justify-center gap-2">
@@ -97,7 +101,7 @@ function NovoTenant() {
       title="Novo cliente"
       breadcrumbs={[
         { label: "Admin", to: "/admin" },
-        { label: "Usuários", to: "/admin/usuarios" },
+        { label: "Clientes", to: "/admin/usuarios" },
         { label: "Novo" },
       ]}
     >
@@ -128,7 +132,7 @@ function NovoTenant() {
                 <TextField label="Razão social" value={dados.razaoSocial} onChange={(v) => set("razaoSocial", v)} />
                 <TextField label="Nome fantasia" value={dados.nomeFantasia} onChange={(v) => set("nomeFantasia", v)} />
                 <TextField label="CNPJ" value={dados.cnpj} onChange={(v) => set("cnpj", v)} placeholder="00.000.000/0000-00" />
-                <TextField label="E-mail institucional" value={dados.email} onChange={(v) => set("email", v)} />
+                <TextField label="E-mail do síndico (login)" value={dados.email} onChange={(v) => set("email", v)} />
                 <TextField label="Telefone" value={dados.telefone} onChange={(v) => set("telefone", v)} />
                 <TextField label="Responsável legal" value={dados.responsavel} onChange={(v) => set("responsavel", v)} />
                 <TextField label="Cidade" value={dados.cidade} onChange={(v) => set("cidade", v)} />
@@ -137,7 +141,7 @@ function NovoTenant() {
               <div className="mt-6 flex justify-end">
                 <button
                   onClick={() => setStep(2)}
-                  disabled={!dados.razaoSocial || !dados.nomeFantasia || !dados.email}
+                  disabled={!dados.razaoSocial || !dados.nomeFantasia || !dados.email || !dados.responsavel}
                   className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white hover:bg-[var(--color-brand-hover)] disabled:opacity-50"
                 >
                   Próximo <Icon name="arrow_forward" className="text-[16px]" />
@@ -150,10 +154,10 @@ function NovoTenant() {
             <>
               <h2 className="text-lg font-bold text-[var(--color-navy)]">Plano e limites</h2>
               <p className="mt-1 text-sm text-[var(--color-on-surface-variant)]">
-                Escolha o plano inicial. Você pode alterar depois na página do tenant.
+                Escolha o plano. Dá para trocar depois na página do cliente.
               </p>
               <div className="mt-5 grid gap-3 md:grid-cols-3">
-                {PLANOS.map((p) => {
+                {planos.map((p) => {
                   const sel = p.id === plano;
                   return (
                     <button
@@ -167,17 +171,12 @@ function NovoTenant() {
                     >
                       <div className="flex items-center justify-between">
                         <p className="font-bold text-[var(--color-navy)]">{p.nome}</p>
-                        {p.destaque && (
-                          <span className="rounded-full bg-[var(--color-brand)] px-2 py-0.5 text-[9px] font-bold uppercase text-white">
-                            Popular
-                          </span>
-                        )}
                       </div>
                       <p className="mt-1 text-2xl font-bold text-[var(--color-brand)]">{formatBRL(p.precoMensal)}</p>
                       <p className="text-[11px] text-[var(--color-on-surface-variant)]">/mês</p>
                       <ul className="mt-3 space-y-1 text-xs text-[var(--color-on-surface-variant)]">
                         <li>Até {p.moradores.toLocaleString("pt-BR")} moradores</li>
-                        <li>{p.msgsMes.toLocaleString("pt-BR")} msgs/mês</li>
+                        <li>{p.respostasIaMes.toLocaleString("pt-BR")} respostas da IA/mês</li>
                         <li>{p.condominios} condomínio(s)</li>
                       </ul>
                     </button>
@@ -185,15 +184,18 @@ function NovoTenant() {
                 })}
               </div>
 
-              <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-lg border border-[var(--color-outline-variant)] bg-[var(--color-surface-low)] p-3">
-                <input type="checkbox" checked={trial} onChange={(e) => setTrial(e.target.checked)} className="mt-0.5" />
-                <div>
-                  <p className="text-sm font-semibold text-[var(--color-navy)]">Iniciar em modo Trial (14 dias)</p>
-                  <p className="text-xs text-[var(--color-on-surface-variant)]">
-                    Sem cobrança imediata. Ao final do período, a cobrança automática é ativada no Stripe.
-                  </p>
-                </div>
-              </label>
+              <p className="mt-5 flex items-start gap-3 rounded-lg border border-[var(--color-outline-variant)] bg-[var(--color-surface-low)] p-3 text-xs text-[var(--color-on-surface-variant)]">
+                <Icon name="info" className="mt-0.5 text-[16px] text-[var(--color-brand)]" />
+                <span>
+                  O cliente começa em <strong>trial de 7 dias</strong> com limites reduzidos (1 condomínio,
+                  50 moradores, 150 respostas da IA). A cobrança pelo Stripe entra numa próxima fase.
+                </span>
+              </p>
+              {erro ? (
+                <p role="alert" className="mt-3 text-sm text-destructive">
+                  {erro}
+                </p>
+              ) : null}
 
               <div className="mt-6 flex justify-between">
                 <button
@@ -204,9 +206,10 @@ function NovoTenant() {
                 </button>
                 <button
                   onClick={provision}
-                  className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white hover:bg-[var(--color-brand-hover)]"
+                  disabled={enviando}
+                  className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white hover:bg-[var(--color-brand-hover)] disabled:opacity-60"
                 >
-                  Cadastrar cliente <Icon name="check" className="text-[16px]" />
+                  {enviando ? "Cadastrando…" : "Cadastrar cliente"} <Icon name="check" className="text-[16px]" />
                 </button>
               </div>
             </>

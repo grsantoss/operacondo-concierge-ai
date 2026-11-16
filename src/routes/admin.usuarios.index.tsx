@@ -2,40 +2,32 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { Icon } from "@/components/brand/Icon";
-import { ConfirmDialog } from "@/components/moradores/ConfirmDialog";
-import { useTenants, deleteTenant, updateTenant, type TenantStatus } from "@/data/tenants";
-import { PLANOS, getPlano, type PlanoId } from "@/data/planos";
 import { formatBRL } from "@/data/faturas";
+import { planosQuery, usePlanos } from "@/data/planos";
+import { clientesQuery, STATUS_CLIENTE, useTenants, type TenantStatus } from "@/data/tenants";
 
 export const Route = createFileRoute("/admin/usuarios/")({
+  loader: ({ context: { queryClient } }) =>
+    Promise.all([
+      queryClient.ensureQueryData(clientesQuery),
+      queryClient.ensureQueryData(planosQuery),
+    ]),
   head: () => ({
     meta: [
       { title: "Usuários — Admin Master | OperaCondo" },
-      { name: "description", content: "Gestão de clientes: criar, editar, suspender e excluir contas." },
+      { name: "description", content: "Clientes da plataforma: cadastro, plano, uso e usuários." },
     ],
   }),
   component: UsuariosList,
 });
 
-const STATUS_LABEL: Record<TenantStatus, string> = {
-  ativo: "Ativo",
-  trial: "Trial",
-  suspenso: "Suspenso",
-};
-
-const STATUS_TONE: Record<TenantStatus, string> = {
-  ativo: "bg-[var(--color-success-soft)] text-[var(--color-success-strong)]",
-  trial: "bg-[var(--color-info-soft)] text-[var(--color-brand)]",
-  suspenso: "bg-[var(--color-danger-soft)] text-[var(--color-danger)]",
-};
-
 function UsuariosList() {
   const navigate = useNavigate();
   const tenants = useTenants();
+  const planos = usePlanos();
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<"todos" | TenantStatus>("todos");
-  const [plano, setPlano] = useState<"todos" | PlanoId>("todos");
-  const [toDelete, setToDelete] = useState<string | null>(null);
+  const [plano, setPlano] = useState("todos");
 
   const filtered = useMemo(() => {
     return tenants.filter((t) => {
@@ -55,19 +47,17 @@ function UsuariosList() {
     });
   }, [tenants, q, status, plano]);
 
-  const target = tenants.find((t) => t.id === toDelete);
-
   return (
     <AdminShell
       title="Clientes"
-      breadcrumbs={[{ label: "Admin", to: "/admin" }, { label: "Usuários" }]}
+      breadcrumbs={[{ label: "Admin", to: "/admin" }, { label: "Clientes" }]}
       actions={
         <Link
           to="/admin/usuarios/novo"
           className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white hover:bg-[var(--color-brand-hover)]"
         >
           <Icon name="add" className="text-[18px]" />
-          Novo usuário
+          Novo cliente
         </Link>
       }
     >
@@ -87,17 +77,19 @@ function UsuariosList() {
           className="h-10 rounded-lg border border-[var(--color-outline-variant)] bg-white px-3 text-sm outline-none"
         >
           <option value="todos">Todos os status</option>
-          <option value="ativo">Ativos</option>
-          <option value="trial">Trial</option>
-          <option value="suspenso">Suspensos</option>
+          {Object.entries(STATUS_CLIENTE).map(([id, st]) => (
+            <option key={id} value={id}>
+              {st.label}
+            </option>
+          ))}
         </select>
         <select
           value={plano}
-          onChange={(e) => setPlano(e.target.value as typeof plano)}
+          onChange={(e) => setPlano(e.target.value)}
           className="h-10 rounded-lg border border-[var(--color-outline-variant)] bg-white px-3 text-sm outline-none"
         >
           <option value="todos">Todos os planos</option>
-          {PLANOS.map((p) => (
+          {planos.map((p) => (
             <option key={p.id} value={p.id}>
               {p.nome}
             </option>
@@ -113,15 +105,15 @@ function UsuariosList() {
                 <th className="px-5 py-3">Cliente</th>
                 <th className="px-5 py-3">Plano</th>
                 <th className="px-5 py-3">MRR</th>
-                <th className="px-5 py-3">Uso</th>
+                <th className="px-5 py-3">Respostas da IA no mês</th>
                 <th className="px-5 py-3">Status</th>
                 <th className="px-5 py-3 text-right">Ações</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((t) => {
-                const p = getPlano(t.plano);
-                const pct = Math.min(100, Math.round((t.uso.msgs / p.msgsMes) * 100));
+                const p = planos.find((x) => x.id === t.plano);
+                const pct = p ? Math.min(100, Math.round((t.uso.respostasIa / p.respostasIaMes) * 100)) : 0;
                 return (
                   <tr
                     key={t.id}
@@ -143,7 +135,7 @@ function UsuariosList() {
                     </td>
                     <td className="px-5 py-3">
                       <span className="inline-flex rounded-md bg-[var(--color-surface-mid)] px-2 py-0.5 text-[11px] font-bold text-[var(--color-navy)]">
-                        {p.nome}
+                        {p?.nome ?? "—"}
                       </span>
                     </td>
                     <td className="px-5 py-3 font-semibold text-[var(--color-navy)]">{formatBRL(t.mrr)}</td>
@@ -159,8 +151,8 @@ function UsuariosList() {
                       </div>
                     </td>
                     <td className="px-5 py-3">
-                      <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-bold ${STATUS_TONE[t.status]}`}>
-                        {STATUS_LABEL[t.status]}
+                      <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-bold ${STATUS_CLIENTE[t.status].tone}`}>
+                        {STATUS_CLIENTE[t.status].label}
                       </span>
                     </td>
                     <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()}>
@@ -173,26 +165,6 @@ function UsuariosList() {
                         >
                           <Icon name="edit" className="text-[16px]" />
                         </Link>
-                        <button
-                          title={t.status === "suspenso" ? "Reativar" : "Suspender"}
-                          onClick={() =>
-                            updateTenant(t.id, {
-                              status: t.status === "suspenso" ? "ativo" : "suspenso",
-                              apiStatus: t.status === "suspenso" ? "ativa" : "revogada",
-                              mrr: t.status === "suspenso" ? getPlano(t.plano).precoMensal : 0,
-                            })
-                          }
-                          className="grid h-8 w-8 place-items-center rounded-md text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-mid)]"
-                        >
-                          <Icon name={t.status === "suspenso" ? "play_arrow" : "pause"} className="text-[16px]" />
-                        </button>
-                        <button
-                          title="Excluir"
-                          onClick={() => setToDelete(t.id)}
-                          className="grid h-8 w-8 place-items-center rounded-md text-destructive hover:bg-destructive/10"
-                        >
-                          <Icon name="delete" className="text-[16px]" />
-                        </button>
                       </div>
                     </td>
                   </tr>
@@ -210,18 +182,6 @@ function UsuariosList() {
         </div>
       </div>
 
-      <ConfirmDialog
-        open={!!toDelete}
-        title={`Excluir ${target?.nomeFantasia ?? "cliente"}?`}
-        description="Todos os dados desta conta serão removidos permanentemente, incluindo API Key e histórico de cobranças (mock)."
-        confirmLabel="Excluir cliente"
-        requireCheckboxLabel="Entendo que esta ação é irreversível."
-        onClose={() => setToDelete(null)}
-        onConfirm={() => {
-          if (toDelete) deleteTenant(toDelete);
-          setToDelete(null);
-        }}
-      />
     </AdminShell>
   );
 }

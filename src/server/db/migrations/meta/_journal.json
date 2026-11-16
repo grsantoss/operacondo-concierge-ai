@@ -64,6 +64,13 @@
       "when": 1794864355251,
       "tag": "0008_membro_alerta",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794865655336,
+      "tag": "0009_mensagens_evento_update",
+      "breakpoints": true
     }
   ]
 }

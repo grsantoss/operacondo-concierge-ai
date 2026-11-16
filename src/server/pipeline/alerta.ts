@@ -40,7 +40,9 @@ export async function enviarAlerta(job: JobAlerta): Promise<number> {
       );
     if (!destinos.length) return 0;
     const [ultima] = await tx
-      .select({ texto: s.mensagens.texto })
+      .select({
+        texto: sql<string | null>`coalesce(${s.mensagens.texto}, ${s.mensagens.transcricao})`,
+      })
       .from(s.mensagens)
       .where(and(eq(s.mensagens.conversaId, cv.conversa.id), eq(s.mensagens.direcao, "entrada")))
       .orderBy(desc(s.mensagens.criadoEm))

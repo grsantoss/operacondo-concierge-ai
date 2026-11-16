@@ -16,7 +16,7 @@ Responda sempre em português do Brasil, com acentuação correta.
   "enviado" até a leitura da Fase 3), a configuração do agente por condomínio (#12;
   `agente_config`, ajustes em `opcoes` validados por zod com padrões) e o portal `/admin` (#13;
   `src/lib/admin.functions.ts` com `dbAdmin()`/`oc_admin` e `exigirAdmin()`; Stripe na Fase 6).
-- **Fase 2 (WhatsApp, #15–#20) em andamento**, uma issue por PR. Testes reais (instância Z-API,
+- **Fase 2 (WhatsApp, #15–#20) concluída**, uma issue por PR. Testes reais (instância Z-API,
   transcrição, pagamento) ficam para depois de todas as issues.
 - Rodar localmente: `cp .env.example .env` → `bun run db:reset` (sobe containers, migrations e
   seed) → `bun run dev` (e `bun run worker` para a fila). Login: `sindico@operacondo.local` (cliente Aurora) ou
@@ -88,6 +88,12 @@ temperatura (cold/warm/hot) saiu de todas as telas (#14).
   vazamento → alta), detectada no roteamento → `conversas.prioridade` sobe (nunca desce) → fila
   `alerta` (singleton conversa:regra por 30 min) → `pipeline/alerta.ts` envia ao
   `membros.alerta_e164` de síndicos/admins do condomínio (sem condomínio definido: todos).
+  Mídia: o roteamento devolve as mensagens com mídia → fila `midia` (5 tentativas; a URL da
+  Z-API expira) → `pipeline/midia.ts` baixa para o S3 (`{tenant}/{condominio|sem-condominio}/
+  whatsapp/{conversa}/{mensagem}.ext`, `mensagens.midia_path`) e transcreve áudio por
+  `src/server/whatsapp/transcricao.ts` (`TRANSCRICAO_PROVEDOR` openai|deepgram; vazio = sem
+  transcrição) → `mensagens.transcricao` → regras de urgência. UPDATE em `mensagens` também
+  notifica a tela (migration 0009).
   O número identifica o cliente; o telefone do remetente identifica o condomínio:
   1 condomínio → segue; vários → pergunta qual; desconhecido → lista os condomínios do síndico,
   pergunta a unidade e cria cadastro pendente. Enquanto o condomínio não estiver definido, o agente

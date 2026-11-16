@@ -34,6 +34,16 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   síndico informa o seu número em Configurações → Integrações (ou no onboarding). No painel, o
   menu "Agente IA" fica vermelho em qualquer tela e `/app/agente` destaca as conversas críticas.
   Um alerta por conversa e tipo a cada 30 minutos (#62).
+- **Áudio, foto e documento do WhatsApp**: o arquivo é guardado no S3 e aparece na conversa em
+  `/app/agente` (foto em miniatura, áudio com player, documento como link). Áudio é transcrito
+  quando há provedor configurado (`TRANSCRICAO_PROVEDOR` = `openai` ou `deepgram`, mais
+  `TRANSCRICAO_API_KEY`); sem provedor, o áudio fica só para ouvir. O texto transcrito passa
+  pelas regras de urgência, e o alerta ao síndico mostra a transcrição.
+
+### Corrigido
+
+- **Ordem das mensagens**: a mensagem do morador aparece antes da resposta automática enviada
+  no mesmo instante.
 
 ### Segurança
 

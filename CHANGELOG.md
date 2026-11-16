@@ -33,7 +33,7 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   e avisam pelo WhatsApp pessoal os síndicos do condomínio, sem depender da IA nem do plano. Cada
   síndico informa o seu número em Configurações → Integrações (ou no onboarding). No painel, o
   menu "Agente IA" fica vermelho em qualquer tela e `/app/agente` destaca as conversas críticas.
-  Um alerta por conversa e tipo a cada 30 minutos.
+  Um alerta por conversa e tipo a cada 30 minutos (#62).
 
 ### Segurança
 

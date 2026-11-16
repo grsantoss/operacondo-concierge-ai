@@ -19,7 +19,7 @@ Responda sempre em português do Brasil, com acentuação correta.
 - **Fase 2 (WhatsApp, #15–#20) em andamento**, uma issue por PR. Testes reais (instância Z-API,
   transcrição, pagamento) ficam para depois de todas as issues.
 - Rodar localmente: `cp .env.example .env` → `bun run db:reset` (sobe containers, migrations e
-  seed) → `bun run dev`. Login: `sindico@operacondo.local` (cliente Aurora) ou
+  seed) → `bun run dev` (e `bun run worker` para a fila). Login: `sindico@operacondo.local` (cliente Aurora) ou
   `admin@operacondo.local` (Admin Master), senha `SEED_SENHA` (padrão `operacondo123`).
 - Stack: TanStack Start + React 19 + Tailwind 4 + shadcn/ui (`new-york`, `slate`), Nitro com
   `preset: "node-server"` (`bun run build && bun start` → `.output/server/index.mjs`).
@@ -71,6 +71,12 @@ temperatura (cold/warm/hot) saiu de todas as telas (#14).
   `src/server/whatsapp/zapi.ts` (`ZAPI_URL` troca a base em teste). Conexão pelo componente
   `ConexaoWhatsApp` (onboarding e Integrações). Rotas da Z-API ainda não testadas contra
   instância real: entra no teste de ponta a ponta, junto com banco, onboarding e pagamento.
+  Entrada: `POST /api/whatsapp/zapi/{segredo}` (`src/server/whatsapp/webhook.ts`; segredo cifrado
+  nas credenciais, `webhook_hash` no canal, registrado na Z-API ao verificar, com `APP_URL` https)
+  → `whatsapp_entradas` (dedupe por `canal_id + provider_msg_id`; só oc_admin) → fila `mensagem`
+  (pg-boss em `src/server/queue`, schema `pgboss` criado pela migration, política `stately`,
+  `singletonKey` canal:telefone, 8 s de espera) → worker `src/server/worker.ts` →
+  `src/server/pipeline/processar.ts`.
   O número identifica o cliente; o telefone do remetente identifica o condomínio:
   1 condomínio → segue; vários → pergunta qual; desconhecido → lista os condomínios do síndico,
   pergunta a unidade e cria cadastro pendente. Enquanto o condomínio não estiver definido, o agente

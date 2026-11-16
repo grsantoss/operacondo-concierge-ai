@@ -260,9 +260,40 @@ export const whatsappCanais = pgTable(
     /** Última verificação na Z-API e quando conectou. */
     verificadoEm: ts("verificado_em"),
     conectadoEm: ts("conectado_em"),
+    /** sha256 do segredo da URL do webhook (o segredo fica só cifrado em credenciais_cifradas). */
+    webhookHash: text("webhook_hash").unique(),
     criadoEm: criadoEm(),
   },
   (t) => [unique().on(t.tenantId, t.id), e164("phone_e164")],
+);
+
+/**
+ * Entrada crua do webhook do WhatsApp, antes do roteamento. Deduplica pelo id do provedor e
+ * alimenta a fila `mensagem`. Só o webhook e o worker (oc_admin) acessam.
+ * ponytail: payload guardado sem prazo; apagar os processados após N dias (LGPD) num job diário.
+ */
+export const whatsappEntradas = pgTable(
+  "whatsapp_entradas",
+  {
+    id: id(),
+    tenantId: tenantId(),
+    canalId: uuid("canal_id").notNull(),
+    providerMsgId: text("provider_msg_id").notNull(),
+    /** Telefone de quem enviou, em E.164. */
+    telefone: text("telefone").notNull(),
+    payload: jsonb("payload").notNull(),
+    recebidoEm: ts("recebido_em").notNull().defaultNow(),
+    processadoEm: ts("processado_em"),
+  },
+  (t) => [
+    unique().on(t.canalId, t.providerMsgId),
+    foreignKey({
+      columns: [t.tenantId, t.canalId],
+      foreignColumns: [whatsappCanais.tenantId, whatsappCanais.id],
+    }).onDelete("cascade"),
+    index().on(t.canalId, t.telefone, t.processadoEm),
+    e164("telefone"),
+  ],
 );
 
 /* ------------------------------------------------------- Cobrança (Stripe) */

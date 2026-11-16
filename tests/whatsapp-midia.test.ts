@@ -4,7 +4,10 @@ import { eq } from "drizzle-orm";
 
 // S3 substituído: o CI não tem SeaweedFS. Registra o que seria gravado.
 const gravados: { caminho: string; tamanho: number; tipo: string }[] = [];
+// mock.module vale para o processo todo: mantém o resto do módulo real.
+const real = await import("../src/server/arquivos");
 mock.module("../src/server/arquivos", () => ({
+  ...real,
   gravarArquivo: async (caminho: string, corpo: Uint8Array, tipo: string) => {
     gravados.push({ caminho, tamanho: corpo.byteLength, tipo });
   },

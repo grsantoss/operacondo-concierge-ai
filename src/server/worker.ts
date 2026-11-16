@@ -1,11 +1,12 @@
 /** Worker: consome a fila. Rodar com `bun run worker` (mesmo código e .env do web). */
 import { fila, FILA_MENSAGEM, type JobMensagem } from "@/server/queue";
 import { processarConversa } from "@/server/pipeline/processar";
+import { rotear } from "@/server/pipeline/roteamento";
 
 const boss = await fila();
 await boss.work<JobMensagem>(FILA_MENSAGEM, async (jobs) => {
   for (const job of jobs) {
-    const n = await processarConversa(job.data);
+    const n = await processarConversa(job.data, (entradas) => rotear(job.data, entradas));
     // Sem telefone no log (LGPD).
     console.info(`[mensagem] canal ${job.data.canalId}: ${n} entrada(s) processada(s)`);
   }

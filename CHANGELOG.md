@@ -18,6 +18,11 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   próprio número, enfileira e responde na hora. Mensagens seguidas do mesmo morador são juntadas
   (espera de 8 s) e processadas por um worker (`bun run worker`). Ao verificar o canal, o
   Concierge registra essa URL na Z-API sozinho (precisa de `APP_URL` em https) (#59).
+- **Roteamento das mensagens por condomínio**: o número do canal identifica o cliente e o
+  telefone do morador, o condomínio. Morador de um condomínio só segue direto; de vários, ou número
+  desconhecido, recebe um menu numerado com os condomínios e responde com o número ou o nome. As
+  mensagens passam a ser gravadas na conversa (sem duplicar) e o morador recebe a confirmação de
+  que a administração foi avisada. Sem condomínio definido, nada específico é respondido (#60).
 
 ### Segurança
 

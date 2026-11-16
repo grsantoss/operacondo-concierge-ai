@@ -26,6 +26,8 @@ export function fila(): Promise<PgBoss> {
     await b.start();
     // stately: no máximo 1 job na fila e 1 em execução por chave; o da fila só roda depois do ativo.
     await b.createQueue(FILA_MENSAGEM, { policy: "stately" });
+    // Falha (ex.: Z-API fora do ar) → 3 novas tentativas: 30 s, 60 s, 120 s.
+    await b.updateQueue(FILA_MENSAGEM, { retryLimit: 3, retryDelay: 30, retryBackoff: true });
     return b;
   })().catch((e) => {
     boss = null;

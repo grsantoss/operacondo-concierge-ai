@@ -57,6 +57,13 @@
       "when": 1794862435189,
       "tag": "0007_eventos_tempo_real",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794864355251,
+      "tag": "0008_membro_alerta",
+      "breakpoints": true
     }
   ]
 }

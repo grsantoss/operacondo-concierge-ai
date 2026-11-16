@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { AlertaUrgencia } from "@/components/whatsapp/AlertaUrgencia";
 import { ConexaoWhatsApp } from "@/components/whatsapp/ConexaoWhatsApp";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -990,7 +991,12 @@ function IntegracoesPanel({ onToast }: { onToast: (m: string) => void }) {
 }
 
 function WhatsAppIntegrationCard(_: { onToast: (m: string) => void }) {
-  return <ConexaoWhatsApp />;
+  return (
+    <>
+      <ConexaoWhatsApp />
+      <AlertaUrgencia />
+    </>
+  );
 }
 
 function AparenciaPanel({ onSave }: { onSave: () => void }) {

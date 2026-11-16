@@ -2,6 +2,8 @@ import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   desconectarCanal,
   obterCanal,
+  obterMeuAlerta,
+  salvarMeuAlerta,
   salvarCanal,
   verificarCanal,
   type CanalWhatsApp,
@@ -35,6 +37,24 @@ export function useCanalAcoes() {
     async desconectar() {
       await desconectarCanal();
       await recarregar();
+    },
+  };
+}
+
+export const meuAlertaQuery = queryOptions({
+  queryKey: ["meu-alerta"],
+  queryFn: () => obterMeuAlerta(),
+});
+
+export function useMeuAlerta() {
+  const qc = useQueryClient();
+  const q = useQuery(meuAlertaQuery);
+  return {
+    telefone: q.data?.telefone ?? "",
+    carregando: q.isPending,
+    async salvar(telefone: string) {
+      await salvarMeuAlerta({ data: { telefone } });
+      await qc.invalidateQueries({ queryKey: meuAlertaQuery.queryKey });
     },
   };
 }

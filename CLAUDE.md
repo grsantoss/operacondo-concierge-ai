@@ -12,8 +12,9 @@ Responda sempre em português do Brasil, com acentuação correta.
 - **Fase 0 (fundação) feita** (issues #2–#7, `v0.1.0`): Postgres + schema + RLS + login.
 - **Fase 1 em andamento** (issues #8–#14): telas passam dos mocks de `src/data/*.ts` para o banco.
   Já leem e gravam no banco: moradores e condomínios (#8), demandas com anexos (#9),
-  fornecedores com documentos (#10) e a base de conhecimento (#11; arquivos no S3, status
-  "enviado" até a leitura da Fase 3).
+  fornecedores com documentos (#10), a base de conhecimento (#11; arquivos no S3, status
+  "enviado" até a leitura da Fase 3) e a configuração do agente por condomínio (#12;
+  `agente_config`, ajustes em `opcoes` validados por zod com padrões).
 - Rodar localmente: `cp .env.example .env` → `bun run db:reset` (sobe containers, migrations e
   seed) → `bun run dev`. Login: `sindico@operacondo.local` (cliente Aurora) ou
   `admin@operacondo.local` (Admin Master), senha `SEED_SENHA` (padrão `operacondo123`).

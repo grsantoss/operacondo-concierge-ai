@@ -12,6 +12,9 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
 
 ### Alterado
 
+- **Configuração do agente gravada por condomínio**: tom de voz, assinatura, o que a IA resolve
+  sozinha, regras de reclamações e de manutenção e o limite de aprovação do síndico (R$) passam a
+  ser salvos no banco, um conjunto para cada condomínio (#53).
 - **Fornecedores gravados no banco**: cadastro, edição, checklist de homologação (vale 12 meses),
   arquivamento e envio de documentos (PDF ou imagem, até 20 MB, no S3, com data de validade)
   passam a valer de verdade. CNPJ repetido no mesmo cliente é recusado (#51).

@@ -22,7 +22,7 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   telefone do morador, o condomínio. Morador de um condomínio só segue direto; de vários, ou número
   desconhecido, recebe um menu numerado com os condomínios e responde com o número ou o nome. As
   mensagens passam a ser gravadas na conversa (sem duplicar) e o morador recebe a confirmação de
-  que a administração foi avisada. Sem condomínio definido, nada específico é respondido.
+  que a administração foi avisada. Sem condomínio definido, nada específico é respondido (#60).
 
 ### Segurança
 

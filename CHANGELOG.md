@@ -6,6 +6,19 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
 
 ## [Não lançado]
 
+### Adicionado
+
+- **Conexão do WhatsApp pela Z-API**, no onboarding (passo 4) e em Configurações → Integrações:
+  o síndico informa o número, o Instance ID, o Token e o Client-Token, salva, e o Concierge
+  verifica na Z-API. Sem pareamento, mostra o QR Code (renovado sozinho por alguns instantes);
+  pareado, mostra "Conectado" e avisa se o número pareado for outro ou se o celular estiver sem
+  internet. Também dá para desconectar. Um número por cliente, para todos os condomínios.
+
+### Segurança
+
+- **Tokens da Z-API cifrados no banco** (AES-256-GCM, chave em `CREDENCIAIS_CHAVE`) e nunca
+  devolvidos ao navegador; só o síndico (não o conselho) configura o canal.
+
 ## [0.4.0] - 2026-11-16
 
 ### Adicionado

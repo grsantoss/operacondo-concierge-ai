@@ -25,6 +25,7 @@ jobs:
       BETTER_AUTH_SECRET: ci-segredo-com-pelo-menos-32-caracteres
       BETTER_AUTH_URL: http://localhost:8080
       CPF_PEPPER: ci-pepper
+      CREDENCIAIS_CHAVE: Y2ktY2hhdmUtZGUtMzItYnl0ZXMtcGFyYS10ZXN0ZSE=
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2

@@ -1,4 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { ConexaoWhatsApp } from "@/components/whatsapp/ConexaoWhatsApp";
+import { useCanal } from "@/data/whatsapp";
 import { useState } from "react";
 import { Logo } from "@/components/brand/Logo";
 import { Icon } from "@/components/brand/Icon";
@@ -15,7 +17,7 @@ const STEPS = [
   { n: 1, title: "Configuração do gestor", desc: "Tom de voz e comportamento" },
   { n: 2, title: "Dados do condomínio", desc: "CNPJ, endereço, unidades" },
   { n: 3, title: "Regras específicas", desc: "Silêncio, reclamações e chamados" },
-  { n: 4, title: "Conectar WhatsApp", desc: "Z-API ou API oficial da Meta" },
+  { n: 4, title: "Conectar WhatsApp", desc: "Z-API, com QR Code" },
   { n: 5, title: "Revisão final", desc: "Verificação e ativação" },
 ];
 const TOTAL_STEPS = 5;
@@ -428,164 +430,23 @@ function StepRegras() {
 }
 
 function StepWhatsApp() {
-  const [provider, setProvider] = useState<"zapi" | "meta">("zapi");
-  const [status, setStatus] = useState<"idle" | "testing" | "connected">("idle");
-  const [skipForNow, setSkipForNow] = useState(false);
-
-  function handleTest() {
-    setStatus("testing");
-    window.setTimeout(() => setStatus("connected"), 1200);
-  }
-
   return (
     <>
       <StepHeader
         kicker="Passo 4"
-        title="Conectar o WhatsApp do condomínio"
-        desc="O WhatsApp é o canal principal do Concierge. Você pode conectar via Z-API (rápido, com QR Code) ou pela API oficial da Meta."
+        title="Conectar o WhatsApp"
+        desc="O WhatsApp é o canal principal do Concierge: um número atende todos os seus condomínios. A conexão é pela Z-API, com QR Code."
       />
-
-      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {[
-          {
-            id: "zapi" as const,
-            title: "Z-API",
-            desc: "Integração rápida via QR Code. Ideal para começar.",
-            icon: "qr_code_2",
-          },
-          {
-            id: "meta" as const,
-            title: "WhatsApp Business API (Meta)",
-            desc: "API oficial da Meta. Recomendada para alto volume.",
-            icon: "verified",
-          },
-        ].map((p) => {
-          const active = provider === p.id;
-          return (
-            <button
-              key={p.id}
-              onClick={() => {
-                setProvider(p.id);
-                setStatus("idle");
-              }}
-              className={`flex items-start gap-3 rounded-2xl border p-4 text-left transition ${
-                active
-                  ? "border-[var(--color-brand)] bg-[var(--color-brand-soft)]/40 ring-2 ring-[var(--color-brand)]/20"
-                  : "border-[var(--color-outline-variant)] bg-white hover:border-[var(--color-brand)]/50"
-              }`}
-            >
-              <div
-                className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${
-                  active ? "bg-[var(--color-brand)] text-white" : "bg-[var(--color-surface-mid)] text-[var(--color-navy)]"
-                }`}
-              >
-                <Icon name={p.icon} filled={active} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-[var(--color-navy)]">{p.title}</p>
-                <p className="mt-0.5 text-xs text-[var(--color-on-surface-variant)]">{p.desc}</p>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="card-elev rounded-2xl p-5">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h3 className="text-sm font-semibold text-[var(--color-navy)]">
-              {provider === "zapi" ? "Credenciais Z-API" : "Credenciais Meta Cloud API"}
-            </h3>
-            <p className="text-xs text-[var(--color-on-surface-variant)]">
-              {provider === "zapi"
-                ? "Encontre no painel da Z-API em Instâncias → Sua instância."
-                : "Encontre no Meta for Developers → WhatsApp → API Setup."}
-            </p>
-          </div>
-          <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-              status === "connected"
-                ? "bg-success/10 text-success-strong"
-                : status === "testing"
-                ? "bg-amber-50 text-amber-700"
-                : "bg-[var(--color-surface-mid)] text-[var(--color-on-surface-variant)]"
-            }`}
-          >
-            <span
-              className={`h-1.5 w-1.5 rounded-full ${
-                status === "connected"
-                  ? "bg-success"
-                  : status === "testing"
-                  ? "bg-warning animate-pulse"
-                  : "bg-muted-foreground"
-              }`}
-            />
-            {status === "connected" ? "Conectado" : status === "testing" ? "Testando…" : "Não conectado"}
-          </span>
-        </div>
-
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {provider === "zapi" ? (
-            <>
-              <Field label="Instance ID" value="" />
-              <Field label="Token" value="" />
-              <Field label="Client-Token (opcional)" value="" full />
-            </>
-          ) : (
-            <>
-              <Field label="Phone Number ID" value="" />
-              <Field label="WhatsApp Business Account ID" value="" />
-              <Field label="Access Token permanente" value="" full />
-              <Field label="Webhook Verify Token" value="" full />
-            </>
-          )}
-        </div>
-
-        {provider === "zapi" ? (
-          <div className="mt-4 flex items-center gap-4 rounded-xl border border-dashed border-[var(--color-outline-variant)] bg-[var(--color-surface-low)] p-4">
-            <div className="grid h-24 w-24 shrink-0 place-items-center rounded-lg bg-white text-[var(--color-on-surface-variant)]">
-              <Icon name="qr_code_2" className="text-[48px]" />
-            </div>
-            <div className="text-xs text-[var(--color-on-surface-variant)]">
-              Após salvar as credenciais, o QR Code de pareamento aparecerá aqui. Escaneie com o WhatsApp do condomínio para ativar.
-            </div>
-          </div>
-        ) : null}
-
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={handleTest}
-            className="btn-press inline-flex h-9 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-3 text-xs font-semibold text-white hover:bg-[var(--color-brand-hover)]"
-          >
-            <Icon name="bolt" className="text-[16px]" />
-            {provider === "zapi" ? "Testar conexão" : "Validar credenciais"}
-          </button>
-          <a
-            href={provider === "zapi" ? "https://z-api.io" : "https://developers.facebook.com/docs/whatsapp"}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex h-9 items-center gap-1 rounded-lg border border-[var(--color-outline-variant)] bg-white px-3 text-xs font-semibold text-[var(--color-on-surface)] hover:bg-[var(--color-surface-low)]"
-          >
-            Como obter <Icon name="open_in_new" className="text-[14px]" />
-          </a>
-        </div>
-      </div>
-
-      <div className="mt-5 flex items-center justify-between gap-3 rounded-2xl border border-[var(--color-outline-variant)] bg-white p-4">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-[var(--color-navy)]">Pular por agora</p>
-          <p className="text-xs text-[var(--color-on-surface-variant)]">
-            Você pode conectar depois em Configurações → Integrações.
-          </p>
-        </div>
-        <Toggle on={skipForNow} onChange={setSkipForNow} />
-      </div>
+      <ConexaoWhatsApp />
+      <p className="mt-5 text-xs text-[var(--color-on-surface-variant)]">
+        Pode pular este passo e conectar depois em Configurações → Integrações.
+      </p>
     </>
   );
 }
 
 function StepRevisao({ onEdit }: { onEdit: (step: number) => void }) {
+  const { canal } = useCanal();
   return (
     <>
       <StepHeader
@@ -601,7 +462,12 @@ function StepRevisao({ onEdit }: { onEdit: (step: number) => void }) {
           { t: "Silêncio", v: "22:00 às 08:00", i: "bedtime", step: 3 },
           { t: "Reclamações", v: "IA classifica automaticamente • prioridade Normal", i: "report_problem", step: 3 },
           { t: "Manutenção", v: "Foto obrigatória • aprovação acima de R$ 500", i: "build", step: 3 },
-          { t: "WhatsApp", v: "Z-API — não conectado (pendente)", i: "chat", step: 4 },
+          {
+            t: "WhatsApp",
+            v: canal ? `Z-API ${canal.telefone} — ${canal.status === "conectado" ? "conectado" : "não conectado"}` : "Não configurado (pendente)",
+            i: "chat",
+            step: 4,
+          },
         ].map((r) => (
           <div key={r.t} className="card-elev grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 rounded-2xl p-5">
             <div className="grid h-11 w-11 place-items-center rounded-xl bg-[var(--color-brand-soft)] text-[var(--color-brand)]">

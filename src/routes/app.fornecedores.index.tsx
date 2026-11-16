@@ -14,7 +14,8 @@ import {
   type FiltersState,
 } from "@/components/fornecedores/SuppliersFilters";
 import {
-  arquivarSupplier,
+  fornecedoresQuery,
+  useFornecedoresAcoes,
   useSuppliers,
   whatsappUrl,
   type Estado,
@@ -22,6 +23,7 @@ import {
 } from "@/data/fornecedores";
 
 export const Route = createFileRoute("/app/fornecedores/")({
+  loader: ({ context: { queryClient } }) => queryClient.ensureQueryData(fornecedoresQuery),
   head: () => ({ meta: [{ title: "Fornecedores | OperaCondo Concierge" }] }),
   component: FornecedoresPage,
 });
@@ -39,6 +41,7 @@ function normalize(s: string) {
 
 function FornecedoresPage() {
   const suppliers = useSuppliers();
+  const { arquivarSupplier } = useFornecedoresAcoes();
   const [filters, setFilters] = useState<FiltersState>(INITIAL_FILTERS);
   const [homolOpen, setHomolOpen] = useState(false);
   const [homolSupplierId, setHomolSupplierId] = useState<string | null>(null);
@@ -191,7 +194,8 @@ function FornecedoresPage() {
 
       <FichaFornecedorModal
         open={!!fichaSupplier}
-        supplier={fichaSupplier}
+        // a versão da lista, para mostrar o documento recém-enviado
+        supplier={suppliers.find((x) => x.id === fichaSupplier?.id) ?? fichaSupplier}
         onClose={() => setFichaSupplier(null)}
         onEdit={() => {
           const s = fichaSupplier;
@@ -227,9 +231,12 @@ function FornecedoresPage() {
         tone="warn"
         onConfirm={() => {
           if (!confirmArchive) return;
-          arquivarSupplier(confirmArchive.id);
-          flash(`${confirmArchive.nome} arquivado.`);
+          const f = confirmArchive;
           setConfirmArchive(null);
+          arquivarSupplier(f.id).then(
+            () => flash(`${f.nome} arquivado.`),
+            (e: Error) => flash(e.message),
+          );
         }}
         onClose={() => setConfirmArchive(null)}
       />

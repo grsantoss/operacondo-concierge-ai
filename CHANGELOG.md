@@ -6,6 +6,17 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
 
 ## [Não lançado]
 
+### Alterado
+
+- **Fornecedores gravados no banco**: cadastro, edição, checklist de homologação (vale 12 meses),
+  arquivamento e envio de documentos (PDF ou imagem, até 20 MB, no S3, com data de validade)
+  passam a valer de verdade. CNPJ repetido no mesmo cliente é recusado (#51).
+
+### Corrigido
+
+- **Telefone no cadastro de fornecedor**: "11 98888-7777" era transformado em "+11 (98)…" e
+  recusado. Agora aceita o número com ou sem +55 e guarda no padrão internacional (E.164) (#51).
+
 ## [0.2.0] - 2026-11-14
 
 ### Alterado

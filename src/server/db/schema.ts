@@ -533,8 +533,11 @@ export const fornecedores = pgTable(
     cnpj: text("cnpj"),
     estado: fornecedorEstado("estado").notNull().default("em_analise"),
     rating: numeric("rating", { precision: 2, scale: 1, mode: "number" }),
+    /** Telefone/WhatsApp do fornecedor. */
     contato: text("contato"),
+    contatoNome: text("contato_nome"),
     email: text("email"),
+    observacoes: text("observacoes"),
     /** Critérios de homologação já atendidos (ids de CRITERIOS_HOMOLOGACAO). */
     criteriosOk: text("criterios_ok")
       .array()
@@ -543,7 +546,7 @@ export const fornecedores = pgTable(
     homologacaoValidaAte: date("homologacao_valida_ate"),
     criadoEm: criadoEm(),
   },
-  (t) => [unique().on(t.tenantId, t.id)],
+  (t) => [unique().on(t.tenantId, t.id), unique().on(t.tenantId, t.cnpj)],
 );
 
 export const fornecedorDocumentos = pgTable(

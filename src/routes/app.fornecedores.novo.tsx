@@ -2,6 +2,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { z } from "zod";
 import { AppShell } from "@/components/app/AppShell";
+import { useFornecedoresAcoes } from "@/data/fornecedores";
+import { paraE164 } from "@/lib/telefone";
 import { Icon } from "@/components/brand/Icon";
 
 export const Route = createFileRoute("/app/fornecedores/novo")({
@@ -52,10 +54,7 @@ const schema = z.object({
   telefone: z
     .string()
     .trim()
-    .regex(
-      /^\+?\d{1,3}?\s?\(?\d{2,3}\)?\s?\d{4,5}-?\d{4}$/,
-      "Telefone inválido",
-    ),
+    .refine((v) => paraE164(v) !== null, "Telefone inválido (ex.: 11 99999-0000)"),
   email: z.string().trim().email("E-mail inválido").max(255),
   estado: z.enum(ESTADOS),
   rating: z.coerce.number().min(0).max(5),
@@ -95,23 +94,13 @@ function maskCnpj(v: string) {
     .replace(/(\d{4})(\d)/, "$1-$2");
 }
 
-function maskPhone(v: string) {
-  const d = v.replace(/\D/g, "").slice(0, 13);
-  if (d.length <= 10) {
-    return d
-      .replace(/^(\d{2})(\d)/, "($1) $2")
-      .replace(/(\d{4})(\d)/, "$1-$2");
-  }
-  return d
-    .replace(/^(\d{2})(\d{2})(\d)/, "+$1 ($2) $3")
-    .replace(/(\d{5})(\d)/, "$1-$2");
-}
-
 function NovoFornecedorPage() {
   const navigate = useNavigate();
   const [form, setForm] = useState<FormState>(INITIAL);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [erroEnvio, setErroEnvio] = useState<string | null>(null);
+  const { criarFornecedor } = useFornecedoresAcoes();
 
   const completude = useMemo(() => {
     const required: (keyof FormState)[] = [
@@ -131,7 +120,7 @@ function NovoFornecedorPage() {
     if (errors[key]) setErrors((e) => ({ ...e, [key]: undefined }));
   }
 
-  function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     const parsed = schema.safeParse({
       ...form,
@@ -144,6 +133,24 @@ function NovoFornecedorPage() {
         if (!fieldErrors[k]) fieldErrors[k] = issue.message;
       }
       setErrors(fieldErrors);
+      return;
+    }
+    setErroEnvio(null);
+    const d = parsed.data;
+    try {
+      await criarFornecedor({
+        nome: d.nome,
+        categoria: d.categoria,
+        cnpj: d.cnpj,
+        contato: d.telefone,
+        contatoNome: d.contato,
+        email: d.email,
+        estado: d.estado,
+        rating: d.rating,
+        observacoes: d.observacoes,
+      });
+    } catch (err) {
+      setErroEnvio((err as Error).message);
       return;
     }
     setSubmitted(true);
@@ -196,6 +203,14 @@ function NovoFornecedorPage() {
             noValidate
             className="space-y-5"
           >
+            {erroEnvio ? (
+              <p
+                role="alert"
+                className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+              >
+                {erroEnvio}
+              </p>
+            ) : null}
             <FormSection
               icon="storefront"
               title="Dados da empresa"
@@ -258,7 +273,7 @@ function NovoFornecedorPage() {
                 <Field label="Telefone / WhatsApp" error={errors.telefone}>
                   <input
                     value={form.telefone}
-                    onChange={(e) => set("telefone", maskPhone(e.target.value))}
+                    onChange={(e) => set("telefone", e.target.value)}
                     placeholder="+55 (11) 99999-9999"
                     inputMode="tel"
                     className={inputClass(errors.telefone)}

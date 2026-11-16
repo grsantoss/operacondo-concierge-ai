@@ -7,9 +7,10 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { formatarTelefone, paraE164 } from "@/lib/telefone";
 import { exigirCliente } from "@/server/auth/contexto";
-import { cifrar, decifrar } from "@/server/cripto";
+import { cifrar, decifrar, hashSegredo, novoSegredo } from "@/server/cripto";
 import { schema as s, withTenant, type Tx } from "@/server/db";
 import {
+  configurarWebhookZapi,
   desconectarZapi,
   dispositivoZapi,
   ErroZapi,
@@ -47,14 +48,24 @@ async function lerCanal(tx: Tx) {
   return c ?? null;
 }
 
-function credDe(c: { instanceId: string | null; credenciaisCifradas: string | null }): CredZapi {
+function credDe(c: {
+  instanceId: string | null;
+  credenciaisCifradas: string | null;
+}): CredZapi & { webhookSegredo?: string } {
   if (!c.instanceId || !c.credenciaisCifradas)
     throw new Error("Salve as credenciais da Z-API primeiro.");
-  const { token, clientToken } = JSON.parse(decifrar(c.credenciaisCifradas)) as {
+  const { token, clientToken, webhookSegredo } = JSON.parse(decifrar(c.credenciaisCifradas)) as {
     token: string;
     clientToken?: string;
+    webhookSegredo?: string;
   };
-  return { instanceId: c.instanceId, token, clientToken };
+  return { instanceId: c.instanceId, token, clientToken, webhookSegredo };
+}
+
+/** Endereço público da aplicação; a Z-API só chama HTTPS. */
+function urlPublica(): string | null {
+  const u = (process.env.APP_URL ?? process.env.BETTER_AUTH_URL ?? "").replace(/\/+$/, "");
+  return u.startsWith("https://") ? u : null;
 }
 
 const iso = (d: Date | null) => (d ? d.toISOString() : null);
@@ -102,7 +113,7 @@ export const salvarCanal = createServerFn({ method: "POST" })
     try {
       await withTenant(tenantId, async (tx) => {
         const atual = await lerCanal(tx);
-        let anterior: { token?: string; clientToken?: string } = {};
+        let anterior: { token?: string; clientToken?: string; webhookSegredo?: string } = {};
         if (atual?.credenciaisCifradas) {
           try {
             anterior = JSON.parse(decifrar(atual.credenciaisCifradas));
@@ -117,7 +128,9 @@ export const salvarCanal = createServerFn({ method: "POST" })
           phoneE164,
           provider: "zapi" as const,
           instanceId: data.instanceId,
-          credenciaisCifradas: cifrar(JSON.stringify({ token, clientToken })),
+          credenciaisCifradas: cifrar(
+            JSON.stringify({ token, clientToken, webhookSegredo: anterior.webhookSegredo }),
+          ),
           // credencial nova: precisa verificar de novo
           status: "desconectado" as const,
           conectadoEm: null,
@@ -153,6 +166,7 @@ export const verificarCanal = createServerFn({ method: "POST" }).handler(
           r.aviso = `A instância está pareada com ${formatarTelefone(conectado)}, não com ${formatarTelefone(canal.phoneE164)}. Confira o número.`;
         if (st.smartphoneConnected === false)
           r.aviso ??= "Conectado, mas o celular está sem internet.";
+        r.aviso ??= await registrarWebhook(tenantId, canal.id, cred);
       } else {
         r = { ...r, qrCode: await qrCodeZapi(cred) };
       }
@@ -174,6 +188,42 @@ export const verificarCanal = createServerFn({ method: "POST" }).handler(
     return r;
   },
 );
+
+/**
+ * Gera (uma vez) o segredo da URL do webhook e aponta a Z-API para ela. Devolve um aviso se não
+ * deu para registrar.
+ */
+async function registrarWebhook(
+  tenantId: string,
+  canalId: string,
+  cred: CredZapi & { webhookSegredo?: string },
+): Promise<string | null> {
+  let segredo = cred.webhookSegredo;
+  if (!segredo) {
+    segredo = novoSegredo();
+    const { instanceId: _, ...resto } = { ...cred, webhookSegredo: segredo };
+    await withTenant(tenantId, (tx) =>
+      tx
+        .update(s.whatsappCanais)
+        .set({
+          credenciaisCifradas: cifrar(JSON.stringify(resto)),
+          webhookHash: hashSegredo(segredo!),
+        })
+        .where(eq(s.whatsappCanais.id, canalId)),
+    );
+  }
+  const base = urlPublica();
+  if (!base)
+    return "Conectado, mas as mensagens ainda não chegam: defina APP_URL com o endereço público (https) do Concierge.";
+  try {
+    await configurarWebhookZapi(cred, `${base}/api/whatsapp/zapi/${segredo}`);
+    return null;
+  } catch (err) {
+    return err instanceof ErroZapi
+      ? `Conectado, mas não foi possível registrar o webhook na Z-API: ${err.message}`
+      : "Conectado, mas não foi possível registrar o webhook na Z-API.";
+  }
+}
 
 export const desconectarCanal = createServerFn({ method: "POST" }).handler(async () => {
   const { tenantId } = await exigirGestor();

@@ -4,7 +4,13 @@
  * Formato: "v1.<iv>.<tag>.<dados>" (base64url). O "v1" permite trocar o esquema depois.
  * ponytail: uma chave só; rotação = nova versão "v2" com outra variável e regravação dos canais.
  */
-import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
+
+/** Hash para procurar um segredo sem guardá-lo (ex.: segredo da URL do webhook). */
+export const hashSegredo = (segredo: string) => createHash("sha256").update(segredo).digest("hex");
+
+/** Segredo aleatório para URL (256 bits, base64url). */
+export const novoSegredo = () => randomBytes(32).toString("base64url");
 
 function chave(): Buffer {
   const b64 = process.env.CREDENCIAIS_CHAVE;

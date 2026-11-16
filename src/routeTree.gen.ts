@@ -39,6 +39,7 @@ import { Route as AppFornecedoresNovoRouteImport } from './routes/app.fornecedor
 import { Route as AppMoradoresIndexRouteImport } from './routes/app.moradores.index'
 import { Route as AppMoradoresIdRouteImport } from './routes/app.moradores.$id'
 import { Route as AppMoradoresArquivadosRouteImport } from './routes/app.moradores.arquivados'
+import { Route as ApiWhatsappZapiSegredoRouteImport } from './routes/api/whatsapp/zapi/$segredo'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -190,6 +191,11 @@ const AppMoradoresArquivadosRoute = AppMoradoresArquivadosRouteImport.update({
   path: '/arquivados',
   getParentRoute: () => AppMoradoresRoute,
 } as any)
+const ApiWhatsappZapiSegredoRoute = ApiWhatsappZapiSegredoRouteImport.update({
+  id: '/api/whatsapp/zapi/$segredo',
+  path: '/api/whatsapp/zapi/$segredo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -222,6 +228,7 @@ export interface FileRoutesByFullPath {
   '/app/demandas/': typeof AppDemandasIndexRoute
   '/app/fornecedores/': typeof AppFornecedoresIndexRoute
   '/app/moradores/': typeof AppMoradoresIndexRoute
+  '/api/whatsapp/zapi/$segredo': typeof ApiWhatsappZapiSegredoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -247,6 +254,7 @@ export interface FileRoutesByTo {
   '/app/demandas': typeof AppDemandasIndexRoute
   '/app/fornecedores': typeof AppFornecedoresIndexRoute
   '/app/moradores': typeof AppMoradoresIndexRoute
+  '/api/whatsapp/zapi/$segredo': typeof ApiWhatsappZapiSegredoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -280,6 +288,7 @@ export interface FileRoutesById {
   '/app/demandas/': typeof AppDemandasIndexRoute
   '/app/fornecedores/': typeof AppFornecedoresIndexRoute
   '/app/moradores/': typeof AppMoradoresIndexRoute
+  '/api/whatsapp/zapi/$segredo': typeof ApiWhatsappZapiSegredoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -314,6 +323,7 @@ export interface FileRouteTypes {
     | '/app/demandas/'
     | '/app/fornecedores/'
     | '/app/moradores/'
+    | '/api/whatsapp/zapi/$segredo'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -339,6 +349,7 @@ export interface FileRouteTypes {
     | '/app/demandas'
     | '/app/fornecedores'
     | '/app/moradores'
+    | '/api/whatsapp/zapi/$segredo'
   id:
     | '__root__'
     | '/'
@@ -371,6 +382,7 @@ export interface FileRouteTypes {
     | '/app/demandas/'
     | '/app/fornecedores/'
     | '/app/moradores/'
+    | '/api/whatsapp/zapi/$segredo'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -379,6 +391,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   OnboardingRoute: typeof OnboardingRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiWhatsappZapiSegredoRoute: typeof ApiWhatsappZapiSegredoRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -593,6 +606,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppMoradoresArquivadosRouteImport
       parentRoute: typeof AppMoradoresRoute
     }
+    '/api/whatsapp/zapi/$segredo': {
+      id: '/api/whatsapp/zapi/$segredo'
+      path: '/api/whatsapp/zapi/$segredo'
+      fullPath: '/api/whatsapp/zapi/$segredo'
+      preLoaderRoute: typeof ApiWhatsappZapiSegredoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -717,6 +737,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   OnboardingRoute: OnboardingRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiWhatsappZapiSegredoRoute: ApiWhatsappZapiSegredoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -13,11 +13,18 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   verifica na Z-API. Sem pareamento, mostra o QR Code (renovado sozinho por alguns instantes);
   pareado, mostra "Conectado" e avisa se o número pareado for outro ou se o celular estiver sem
   internet. Também dá para desconectar. Um número por cliente, para todos os condomínios (#58).
+- **Recebimento das mensagens do WhatsApp**: a Z-API entrega cada mensagem em
+  `/api/whatsapp/zapi/{segredo}`, que confere a origem, ignora repetições, grupos e mensagens do
+  próprio número, enfileira e responde na hora. Mensagens seguidas do mesmo morador são juntadas
+  (espera de 8 s) e processadas por um worker (`bun run worker`). Ao verificar o canal, o
+  Concierge registra essa URL na Z-API sozinho (precisa de `APP_URL` em https).
 
 ### Segurança
 
 - **Tokens da Z-API cifrados no banco** (AES-256-GCM, chave em `CREDENCIAIS_CHAVE`) e nunca
   devolvidos ao navegador; só o síndico (não o conselho) configura o canal (#58).
+- **Webhook com segredo por canal**: a Z-API não assina as chamadas, então a URL leva um segredo
+  aleatório (no banco fica só o hash) e a instância do payload precisa ser a do canal.
 
 ## [0.4.0] - 2026-11-16
 

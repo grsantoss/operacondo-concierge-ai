@@ -68,3 +68,7 @@ export const dispositivoZapi = (c: CredZapi) =>
   chamar<{ phone?: string; name?: string; isBusiness?: boolean }>(c, "GET", "device");
 
 export const desconectarZapi = (c: CredZapi) => chamar<unknown>(c, "GET", "disconnect");
+
+/** Aponta o webhook "Ao receber" da instância para a nossa URL. */
+export const configurarWebhookZapi = (c: CredZapi, url: string) =>
+  chamar<{ value?: boolean }>(c, "PUT", "update-webhook-received", { value: url });

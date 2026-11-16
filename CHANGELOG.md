@@ -39,6 +39,12 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   quando há provedor configurado (`TRANSCRICAO_PROVEDOR` = `openai` ou `deepgram`, mais
   `TRANSCRICAO_API_KEY`); sem provedor, o áudio fica só para ouvir. O texto transcrito passa
   pelas regras de urgência, e o alerta ao síndico mostra a transcrição (#63).
+- **Leitura dos documentos da base**: o documento enviado em `/app/base` é lido sozinho e fica
+  "Pronto para a IA", com o número de trechos. PDF, DOCX e imagem passam pelo Docling interno (com
+  OCR); páginas que ele não lê bem vão para o Claude (só essas páginas). O texto é cortado por
+  artigo ou cláusula, para a IA citar o artigo; atas, por assunto. Página ilegível deixa o
+  documento em "Revisar" com o motivo, e erro de leitura mostra a causa, com a opção "Ler de
+  novo". Arquivo `.doc` (Word antigo) recebe a orientação de salvar como `.docx` ou PDF.
 
 ### Corrigido
 

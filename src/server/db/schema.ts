@@ -717,6 +717,8 @@ export const documentos = pgTable(
     revogaDocumentoId: uuid("revoga_documento_id"),
     status: documentoStatus("status").notNull().default("enviado"),
     origemTexto: origemTexto("origem_texto"),
+    /** Erro da leitura ou o que o síndico precisa revisar (páginas ilegíveis). */
+    leituraAviso: text("leitura_aviso"),
     storagePath: text("storage_path").notNull(),
     tamanhoBytes: bigint("tamanho_bytes", { mode: "number" }),
     criadoEm: criadoEm(),

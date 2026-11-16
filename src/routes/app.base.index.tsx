@@ -24,7 +24,7 @@ export const Route = createFileRoute("/app/base/")({
 function BasePage() {
   const navigate = useNavigate();
   const docs = useDocumentos();
-  const { excluir } = useDocumentosAcoes();
+  const { excluir, lerDeNovo } = useDocumentosAcoes();
   const [filter, setFilter] = useState<ColecaoId | null>(null);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -93,7 +93,7 @@ function BasePage() {
               </h2>
               <p className="text-sm text-white/75">
                 {prontos} pronto{prontos === 1 ? "" : "s"} para a IA • {docs.length - prontos}{" "}
-                aguardando leitura (a leitura automática chega na próxima fase)
+                aguardando leitura ou revisão
               </p>
             </div>
           </div>
@@ -167,7 +167,15 @@ function BasePage() {
                 {nomeColecao(d.colecao)} • {d.condominio} • {nomeVisib(d.visibilidade)} • {d.tamanho} •{" "}
                 {d.enviadoEm}
                 {d.vigenteDesde ? ` • vigente desde ${d.vigenteDesde}` : ""}
+                {d.trechos ? ` • ${d.trechos} ${d.trechos === 1 ? "trecho" : "trechos"}` : ""}
               </p>
+              {d.aviso && (d.status === "erro" || d.status === "revisao") ? (
+                <p
+                  className={`mt-1 text-xs ${d.status === "erro" ? "text-destructive" : "text-amber-700"}`}
+                >
+                  {d.aviso}
+                </p>
+              ) : null}
             </div>
             <div className="relative flex items-center gap-2">
               <span
@@ -198,6 +206,23 @@ function BasePage() {
                   >
                     <Icon name="download" className="text-[18px]" /> Abrir arquivo
                   </a>
+                  {d.status === "erro" || d.status === "revisao" ? (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setOpenMenu(null);
+                        try {
+                          await lerDeNovo(d.id);
+                          setToast(`“${d.titulo}” voltou para a fila de leitura.`);
+                        } catch (e) {
+                          setToast((e as Error).message);
+                        }
+                      }}
+                      className="flex w-full items-center gap-2 border-t border-[var(--color-outline-variant)] px-3 py-2.5 text-left text-sm text-[var(--color-navy)] hover:bg-[var(--color-surface-low)]"
+                    >
+                      <Icon name="refresh" className="text-[18px]" /> Ler de novo
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     onClick={() => {

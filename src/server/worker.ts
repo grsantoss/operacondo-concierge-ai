@@ -5,11 +5,14 @@ import {
   fila,
   FILA_ALERTA,
   FILA_MENSAGEM,
+  FILA_INGESTAO,
   FILA_MIDIA,
   type JobAlerta,
   type JobMensagem,
+  type JobIngestao,
   type JobMidia,
 } from "@/server/queue";
+import { ingerirDocumento } from "@/server/ingest";
 import { enviarAlerta } from "@/server/pipeline/alerta";
 import { processarMidia } from "@/server/pipeline/midia";
 import { processarConversa } from "@/server/pipeline/processar";
@@ -38,6 +41,12 @@ await boss.work<JobMidia>(FILA_MIDIA, async (jobs) => {
     console.info(`[midia] mensagem ${job.data.mensagemId} guardada`);
   }
 });
+await boss.work<JobIngestao>(FILA_INGESTAO, async (jobs) => {
+  for (const job of jobs) {
+    await ingerirDocumento(job.data);
+    console.info(`[ingestao] documento ${job.data.documentoId} lido`);
+  }
+});
 await boss.work<JobAlerta>(FILA_ALERTA, async (jobs) => {
   for (const job of jobs) {
     const n = await enviarAlerta(job.data);
@@ -46,7 +55,7 @@ await boss.work<JobAlerta>(FILA_ALERTA, async (jobs) => {
     );
   }
 });
-console.info("[worker] ouvindo as filas:", FILA_MENSAGEM, FILA_MIDIA, FILA_ALERTA);
+console.info("[worker] ouvindo as filas:", FILA_MENSAGEM, FILA_MIDIA, FILA_ALERTA, FILA_INGESTAO);
 
 for (const sinal of ["SIGINT", "SIGTERM"] as const)
   process.on(sinal, async () => {

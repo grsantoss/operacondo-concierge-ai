@@ -16,10 +16,11 @@ Responda sempre em português do Brasil, com acentuação correta.
   "enviado" até a leitura da Fase 3), a configuração do agente por condomínio (#12;
   `agente_config`, ajustes em `opcoes` validados por zod com padrões) e o portal `/admin` (#13;
   `src/lib/admin.functions.ts` com `dbAdmin()`/`oc_admin` e `exigirAdmin()`; Stripe na Fase 6).
-- **Fase 2 (WhatsApp, #15–#20) concluída**, uma issue por PR. Testes reais (instância Z-API,
-  transcrição, pagamento) ficam para depois de todas as issues.
+- **Fase 2 (WhatsApp, #15–#20) concluída**, uma issue por PR. **Fase 3 (#21, leitura dos
+  documentos) em andamento.** Testes reais (instância Z-API, transcrição, pagamento) ficam para
+  depois de todas as issues.
 - Rodar localmente: `cp .env.example .env` → `bun run db:reset` (sobe containers, migrations e
-  seed) → `bun run dev` (e `bun run worker` para a fila). Login: `sindico@operacondo.local` (cliente Aurora) ou
+  seed) → `bun run dev` (e `bun run worker` para a fila; `bun run docling:up` para ler documentos). Login: `sindico@operacondo.local` (cliente Aurora) ou
   `admin@operacondo.local` (Admin Master), senha `SEED_SENHA` (padrão `operacondo123`).
 - Stack: TanStack Start + React 19 + Tailwind 4 + shadcn/ui (`new-york`, `slate`), Nitro com
   `preset: "node-server"` (`bun run build && bun start` → `.output/server/index.mjs`).
@@ -134,6 +135,14 @@ temperatura (cold/warm/hot) saiu de todas as telas (#14).
   parou de publicar imagens Docker em 2025); em produção, S3/R2 ou outro compatível.
 - **Ingestão/OCR:** Docling interno (privacidade/LGPD, estrutura, previsibilidade). Páginas com
   baixa qualidade de OCR vão para o Claude (leitura de imagem). `.doc` antigo não é suportado.
+  Fluxo: `enviarDocumentos` → fila `ingestao` → `src/server/ingest/index.ts` (TXT/MD direto;
+  PDF/DOCX/imagem por `ingest/docling.ts`, `DOCLING_URL`, Markdown por página) →
+  `paginaRuim` (heurística) → `ingest/fallback.ts` (Claude Haiku 5.5, `INGESTAO_MODELO`; só as
+  páginas ruins, recortadas com pdf-lib, lotes de 10; uso em `llm_execucoes`) →
+  `ingest/trechos.ts` (um trecho por artigo/cláusula com o capítulo como contexto; sem artigos,
+  por título e tamanho) → `documento_trechos`. Status: `treinado`; `revisao` (páginas ilegíveis
+  ou sem `ANTHROPIC_API_KEY`); `erro` (motivo em `documentos.leitura_aviso`, a fila tenta de novo).
+  Embeddings (Voyage) ficam para a busca vetorial (Fase 6).
   Áudio do WhatsApp precisa de transcrição externa (Whisper/Deepgram); fotos vão direto ao Claude.
 - **Urgência:** regras fixas (gás, incêndio, alguém preso no elevador, vazamento) alertam o síndico
   sem depender da IA.

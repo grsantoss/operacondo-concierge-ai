@@ -17,14 +17,14 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   `/api/whatsapp/zapi/{segredo}`, que confere a origem, ignora repetições, grupos e mensagens do
   próprio número, enfileira e responde na hora. Mensagens seguidas do mesmo morador são juntadas
   (espera de 8 s) e processadas por um worker (`bun run worker`). Ao verificar o canal, o
-  Concierge registra essa URL na Z-API sozinho (precisa de `APP_URL` em https).
+  Concierge registra essa URL na Z-API sozinho (precisa de `APP_URL` em https) (#59).
 
 ### Segurança
 
 - **Tokens da Z-API cifrados no banco** (AES-256-GCM, chave em `CREDENCIAIS_CHAVE`) e nunca
   devolvidos ao navegador; só o síndico (não o conselho) configura o canal (#58).
 - **Webhook com segredo por canal**: a Z-API não assina as chamadas, então a URL leva um segredo
-  aleatório (no banco fica só o hash) e a instância do payload precisa ser a do canal.
+  aleatório (no banco fica só o hash) e a instância do payload precisa ser a do canal (#59).
 
 ## [0.4.0] - 2026-11-16
 

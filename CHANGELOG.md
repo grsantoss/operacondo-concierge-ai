@@ -17,10 +17,23 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
 
 ### Alterado
 
+- **Urgência no lugar de "temperatura"**: conversas e dashboard usam a mesma escala das demandas
+  (Crítica, Alta, Normal), e a conversa assume a maior urgência entre a triagem dela e as demandas
+  abertas. Saem "Tranquilo", "Atenção" e "Urgente" (#56).
+- **Dashboard com as demandas do banco**: demandas abertas, críticas, em execução, resolvidas, a
+  contagem por coluna do Kanban e a urgência das abertas. Saem os números inventados (resolução da
+  IA, satisfação, variações). As conversas recentes seguem de exemplo até o WhatsApp (#56).
+- **Contador do menu** "Demandas" mostra as demandas abertas de verdade; o de "Agente IA" sai até
+  haver conversas (#56).
 - **Portal `/admin` lendo o banco**: clientes, planos, assinaturas, uso do mês e faturas vêm do
   banco. MRR, receita e faturas vencidas são calculados dos dados reais. Trocar o plano e editar
   os dados do cliente passam a ser salvos (#55).
 - **Uso medido em respostas da IA**, a unidade de cobrança, no lugar de "mensagens" (#55).
+
+### Corrigido
+
+- **Telas no celular (390px)**: cabeçalhos com vários botões, rodapé do onboarding, ficha do
+  morador e painel do Admin Master não vazam mais na horizontal (#56).
 
 ### Removido
 

@@ -109,11 +109,6 @@
   --color-info: var(--primary);
   --color-info-soft: var(--primary-soft);
 
-  /* Escala de urgência (cold/warm/hot) = status Informação / Atenção / Erro */
-  --color-temp-cold: var(--primary);
-  --color-temp-warm: var(--warning-strong);
-  --color-temp-hot: var(--destructive);
-
   --shadow-elev-1: var(--shadow-soft);
   --shadow-elev-2: var(--shadow-card);
   --shadow-elev-3: var(--shadow-elevated);

@@ -2,6 +2,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/brand/Icon";
+import type { Priority } from "@/data/demandas";
+import { maiorPrioridade, URGENCIA } from "@/lib/urgencia";
 
 export const Route = createFileRoute("/app/agente")({
   head: () => ({
@@ -10,7 +12,6 @@ export const Route = createFileRoute("/app/agente")({
   component: AgentePage,
 });
 
-type Temp = "cold" | "warm" | "hot";
 type Status = "IA atendendo" | "Aguardando síndico" | "Síndico no controle" | "Resolvido";
 
 interface Conv {
@@ -18,7 +19,9 @@ interface Conv {
   morador: string;
   unidade: string;
   preview: string;
-  temp: Temp;
+  /** Triagem da própria conversa; a urgência mostrada também considera as demandas abertas. */
+  triagem: Priority;
+  demandasAbertas: Priority[];
   status: Status;
   time: string;
   avatar: string;
@@ -30,18 +33,12 @@ interface Msg {
   text: string;
 }
 
-const TEMP_CLS: Record<Temp, { ring: string; bg: string; text: string; dot: string; label: string }> = {
-  cold: { ring: "ring-primary/30", bg: "bg-primary/10", text: "text-primary", dot: "bg-primary", label: "Tranquilo" },
-  warm: { ring: "ring-amber-300/60", bg: "bg-amber-50", text: "text-amber-700", dot: "bg-warning", label: "Atenção" },
-  hot: { ring: "ring-destructive/30", bg: "bg-destructive/10", text: "text-destructive", dot: "bg-destructive", label: "Urgente" },
-};
-
 const INITIAL_CONVS: Conv[] = [
-  { id: "c1", morador: "Ana Carvalho", unidade: "Apto 1204", preview: "Continua pingando, já está molhando o armário!", temp: "hot", status: "Aguardando síndico", time: "agora", avatar: "AC" },
-  { id: "c2", morador: "Júlia Tavares", unidade: "Apto 506", preview: "O elevador está fazendo aquele barulho de novo.", temp: "warm", status: "IA atendendo", time: "há 6 min", avatar: "JT" },
-  { id: "c3", morador: "Marcelo Reis", unidade: "Apto 802", preview: "Perfeito! Confirmado então para sábado.", temp: "cold", status: "Resolvido", time: "há 22 min", avatar: "MR" },
-  { id: "c4", morador: "Bruno Lima", unidade: "Cob. 02", preview: "Recebi o boleto, obrigado!", temp: "cold", status: "Resolvido", time: "há 1h", avatar: "BL" },
-  { id: "c5", morador: "Camila Duarte", unidade: "Apto 302", preview: "Posso liberar visitante para amanhã 14h?", temp: "cold", status: "IA atendendo", time: "há 1h", avatar: "CD" },
+  { id: "c1", morador: "Ana Carvalho", unidade: "Apto 1204", preview: "Continua pingando, já está molhando o armário!", triagem: "Crítica", demandasAbertas: [], status: "Aguardando síndico", time: "agora", avatar: "AC" },
+  { id: "c2", morador: "Júlia Tavares", unidade: "Apto 506", preview: "O elevador está fazendo aquele barulho de novo.", triagem: "Normal", demandasAbertas: ["Alta"], status: "IA atendendo", time: "há 6 min", avatar: "JT" },
+  { id: "c3", morador: "Marcelo Reis", unidade: "Apto 802", preview: "Perfeito! Confirmado então para sábado.", triagem: "Normal", demandasAbertas: [], status: "Resolvido", time: "há 22 min", avatar: "MR" },
+  { id: "c4", morador: "Bruno Lima", unidade: "Cob. 02", preview: "Recebi o boleto, obrigado!", triagem: "Normal", demandasAbertas: [], status: "Resolvido", time: "há 1h", avatar: "BL" },
+  { id: "c5", morador: "Camila Duarte", unidade: "Apto 302", preview: "Posso liberar visitante para amanhã 14h?", triagem: "Normal", demandasAbertas: [], status: "IA atendendo", time: "há 1h", avatar: "CD" },
 ];
 
 const INITIAL_TRANSCRIPTS: Record<string, Msg[]> = {
@@ -92,7 +89,8 @@ function AgentePage() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const selected = convs.find((c) => c.id === selectedId) ?? convs[0];
-  const t = TEMP_CLS[selected.temp];
+  const urg = maiorPrioridade(selected.triagem, ...selected.demandasAbertas);
+  const t = URGENCIA[urg];
   const messages = transcripts[selected.id] ?? [];
 
   const filtered = useMemo(() => {
@@ -217,7 +215,8 @@ function AgentePage() {
           </div>
           <ul className="max-h-[640px] overflow-y-auto custom-scrollbar">
             {filtered.map((c) => {
-              const tc = TEMP_CLS[c.temp];
+              const prio = maiorPrioridade(c.triagem, ...c.demandasAbertas);
+              const tc = URGENCIA[prio];
               const active = c.id === selected.id;
               return (
                 <li key={c.id}>
@@ -245,7 +244,7 @@ function AgentePage() {
                         className={`mt-2 inline-flex items-center gap-1 rounded-full ${tc.bg} px-2 py-0.5 text-[10px] font-semibold ${tc.text}`}
                       >
                         <span className={`h-1.5 w-1.5 rounded-full ${tc.dot}`} />
-                        {tc.label}
+                        {prio}
                       </span>
                     </div>
                   </button>
@@ -276,7 +275,7 @@ function AgentePage() {
                   <span>•</span>
                   <span className={`inline-flex items-center gap-1 rounded-full ${t.bg} px-2 py-0.5 text-[10px] font-semibold ${t.text}`}>
                     <span className={`h-1.5 w-1.5 rounded-full ${t.dot}`} />
-                    Temperatura: {t.label}
+                    Urgência: {urg}
                   </span>
                 </p>
               </div>

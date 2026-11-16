@@ -137,11 +137,11 @@ export function AdminShell({ title, breadcrumbs, actions, children }: Props) {
               ))}
             </nav>
           ) : null}
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4">
-            <h1 className="truncate text-2xl font-bold tracking-tight text-[var(--color-navy)] lg:text-3xl">
+          <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+            <h1 className="min-w-0 truncate text-2xl font-bold tracking-tight text-[var(--color-navy)] lg:text-3xl">
               {title}
             </h1>
-            {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
+            {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
           </div>
         </div>
 

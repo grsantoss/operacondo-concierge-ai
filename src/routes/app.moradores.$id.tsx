@@ -205,7 +205,7 @@ function MoradorDetail() {
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
         {/* Main content */}
-        <div className="space-y-5">
+        <div className="min-w-0 space-y-5">
           {/* KPIs */}
           <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <KpiCard label="Total de chamados" value={String(stats.total)} icon="assignment" tone="brand" />
@@ -256,7 +256,7 @@ function MoradorDetail() {
         </div>
 
         {/* Sidebar */}
-        <aside className="space-y-5">
+        <aside className="min-w-0 space-y-5">
           <section className="card-elev rounded-2xl p-5">
             <h3 className="text-sm font-bold text-[var(--color-navy)]">
               Ações rápidas

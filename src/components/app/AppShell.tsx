@@ -2,6 +2,7 @@ import { Link, useRouterState, useNavigate, useRouteContext, type LinkProps } fr
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Logo } from "@/components/brand/Logo";
 import { Icon } from "@/components/brand/Icon";
+import { useDemandas } from "@/data/demandas";
 import { authClient } from "@/lib/auth-client";
 
 interface NavItem {
@@ -13,8 +14,8 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { to: "/app", label: "Dashboard", icon: "dashboard" },
-  { to: "/app/demandas", label: "Demandas", icon: "assignment", badge: "12" },
-  { to: "/app/agente", label: "Agente IA", icon: "smart_toy", badge: "3" },
+  { to: "/app/demandas", label: "Demandas", icon: "assignment" },
+  { to: "/app/agente", label: "Agente IA", icon: "smart_toy" },
   { to: "/app/moradores", label: "Moradores", icon: "group" },
   { to: "/app/fornecedores", label: "Fornecedores", icon: "inventory_2" },
   { to: "/app/base", label: "Base de Conhecimento", icon: "menu_book" },
@@ -133,6 +134,11 @@ export function AppShell({ title, breadcrumbs, actions, children }: AppShellProp
   const [topMenu, setTopMenu] = useState(false);
   const [sideMenu, setSideMenu] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  // Demandas abertas de verdade; "Agente IA" ganha contador quando houver conversas (Fase 2).
+  const abertas = useDemandas().filter((d) => d.column !== "resolvidas").length;
+  const nav = NAV.map((i) =>
+    i.to === "/app/demandas" && abertas ? { ...i, badge: String(abertas) } : i,
+  );
 
   useEffect(() => {
     try {
@@ -206,7 +212,7 @@ export function AppShell({ title, breadcrumbs, actions, children }: AppShellProp
               Operação
             </p>
           ) : null}
-          {NAV.map((item) => {
+          {nav.map((item) => {
             const active = isActive(item.to as string);
             return (
               <Link
@@ -442,14 +448,15 @@ export function AppShell({ title, breadcrumbs, actions, children }: AppShellProp
                 ))}
               </nav>
             ) : null}
-            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4">
+            {/* flex-wrap: no celular as ações descem para baixo do título em vez de vazar */}
+            <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
               <div className="min-w-0">
                 <h1 className="truncate text-2xl font-bold tracking-tight text-[var(--color-navy)] lg:text-3xl">
                   {title}
                 </h1>
               </div>
               {actions ? (
-                <div className="flex shrink-0 items-center gap-2">{actions}</div>
+                <div className="flex flex-wrap items-center gap-2">{actions}</div>
               ) : null}
             </div>
           </div>

@@ -123,7 +123,7 @@ function OnboardingPage() {
           {step === 5 ? <StepRevisao onEdit={setStep} /> : null}
         </div>
 
-        <footer className="sticky bottom-0 flex items-center justify-between gap-3 border-t border-[var(--color-outline-variant)] bg-white/90 px-6 py-4 backdrop-blur">
+        <footer className="sticky bottom-0 flex items-center justify-between gap-3 border-t border-[var(--color-outline-variant)] bg-white/90 px-4 py-4 backdrop-blur sm:px-6">
           <button
             onClick={() => setStep((s) => Math.max(1, s - 1))}
             disabled={step === 1}
@@ -133,13 +133,15 @@ function OnboardingPage() {
           </button>
           <div className="flex items-center gap-2 text-xs text-[var(--color-on-surface-variant)]">
             <span className="hidden sm:inline">Progresso</span>
-            <div className="h-1.5 w-32 overflow-hidden rounded-full bg-[var(--color-surface-mid)]">
+            <div className="h-1.5 w-16 overflow-hidden rounded-full bg-[var(--color-surface-mid)] sm:w-32">
               <div
                 className="h-full rounded-full bg-[var(--color-brand)] transition-all"
                 style={{ width: `${(step / TOTAL_STEPS) * 100}%` }}
               />
             </div>
-            <span className="font-semibold text-[var(--color-navy)]">{Math.round((step / TOTAL_STEPS) * 100)}%</span>
+            <span className="hidden font-semibold text-[var(--color-navy)] sm:inline">
+              {Math.round((step / TOTAL_STEPS) * 100)}%
+            </span>
           </div>
           {step < TOTAL_STEPS ? (
             <button

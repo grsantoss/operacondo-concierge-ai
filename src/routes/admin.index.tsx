@@ -1,10 +1,22 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { Icon } from "@/components/brand/Icon";
-import { useTenants } from "@/data/tenants";
-import { useFaturas, STATUS_LABEL, STATUS_TONE, formatBRL } from "@/data/faturas";
+import { clientesQuery, useTenants } from "@/data/tenants";
+import {
+  faturasQuery,
+  formatBRL,
+  STATUS_LABEL,
+  STATUS_TONE,
+  useFaturas,
+  type Fatura,
+} from "@/data/faturas";
 
 export const Route = createFileRoute("/admin/")({
+  loader: ({ context: { queryClient } }) =>
+    Promise.all([
+      queryClient.ensureQueryData(clientesQuery),
+      queryClient.ensureQueryData(faturasQuery),
+    ]),
   head: () => ({
     meta: [
       { title: "Admin Master — Dashboard | OperaCondo" },
@@ -18,19 +30,26 @@ function AdminDashboard() {
   const tenants = useTenants();
   const faturas = useFaturas();
 
-  const mrr = tenants.filter((t) => t.status === "ativo").reduce((a, t) => a + t.mrr, 0);
+  const mrr = tenants.reduce((a, t) => a + t.mrr, 0);
   const arr = mrr * 12;
   const ativos = tenants.filter((t) => t.status === "ativo").length;
   const trial = tenants.filter((t) => t.status === "trial").length;
   const suspensos = tenants.filter((t) => t.status === "suspenso").length;
+  const inadimplentes = tenants.filter((t) => t.status === "inadimplente").length;
+  const vencido = faturas.filter((f) => f.status === "past_due").reduce((a, f) => a + f.valor, 0);
   const ticket = ativos > 0 ? mrr / ativos : 0;
-  const churn = tenants.length > 0 ? (suspensos / tenants.length) * 100 : 0;
 
   const kpis = [
-    { label: "MRR", value: formatBRL(mrr), delta: "+12% vs mês passado", icon: "trending_up", tone: "brand" },
+    { label: "MRR", value: formatBRL(mrr), delta: "Assinaturas pagas e em dia", icon: "trending_up", tone: "brand" },
     { label: "ARR projetado", value: formatBRL(arr), delta: "Baseado em ativos", icon: "insights", tone: "success" },
     { label: "Clientes ativos", value: String(ativos), delta: `${trial} trial · ${suspensos} suspensos`, icon: "apartment", tone: "brand" },
-    { label: "Churn", value: `${churn.toFixed(1)}%`, delta: "Últimos 30 dias", icon: "trending_down", tone: churn > 5 ? "danger" : "success" },
+    {
+      label: "Faturas vencidas",
+      value: formatBRL(vencido),
+      delta: `${inadimplentes} cliente(s) inadimplente(s)`,
+      icon: "warning",
+      tone: vencido > 0 ? "danger" : "success",
+    },
     { label: "Ticket médio", value: formatBRL(ticket), delta: "Por cliente ativo", icon: "receipt_long", tone: "brand" },
   ];
 
@@ -79,10 +98,10 @@ function AdminDashboard() {
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <div className="rounded-2xl border border-[var(--color-outline-variant)] bg-white p-6 lg:col-span-2">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-bold text-[var(--color-navy)]">Receita mensal (últimos 6 meses)</h2>
-            <span className="text-xs text-[var(--color-on-surface-variant)]">mock</span>
+            <h2 className="text-base font-bold text-[var(--color-navy)]">Receita recebida (últimos 6 meses)</h2>
+            <span className="text-xs text-[var(--color-on-surface-variant)]">faturas pagas, por mês de vencimento</span>
           </div>
-          <RevenueChart />
+          <RevenueChart faturas={faturas} />
         </div>
 
         <div className="rounded-2xl border border-[var(--color-outline-variant)] bg-white p-6">
@@ -139,7 +158,7 @@ function AdminDashboard() {
                     </td>
                     <td className="px-5 py-3 text-[var(--color-on-surface-variant)]">{f.periodo}</td>
                     <td className="px-5 py-3 font-semibold text-[var(--color-navy)]">{formatBRL(f.valor)}</td>
-                    <td className="px-5 py-3 uppercase text-[11px] text-[var(--color-on-surface-variant)]">
+                    <td className="px-5 py-3 text-xs text-[var(--color-on-surface-variant)]">
                       {f.metodo}
                     </td>
                     <td className="px-5 py-3">
@@ -158,16 +177,18 @@ function AdminDashboard() {
   );
 }
 
-function RevenueChart() {
-  const data = [
-    { m: "Mar", v: 2100 },
-    { m: "Abr", v: 2400 },
-    { m: "Mai", v: 2700 },
-    { m: "Jun", v: 2900 },
-    { m: "Jul", v: 3200 },
-    { m: "Ago", v: 3297 },
-  ];
-  const max = Math.max(...data.map((d) => d.v));
+function RevenueChart({ faturas }: { faturas: Fatura[] }) {
+  const hoje = new Date();
+  const data = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(hoje.getFullYear(), hoje.getMonth() - 5 + i, 1);
+    const periodo = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const m = d.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "");
+    const v = faturas
+      .filter((f) => f.periodo === periodo && f.status === "paid")
+      .reduce((a, f) => a + f.valor, 0);
+    return { m, v };
+  });
+  const max = Math.max(1, ...data.map((d) => d.v));
   const w = 560;
   const h = 180;
   const pad = 24;

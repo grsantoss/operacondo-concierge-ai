@@ -6,6 +6,28 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
 
 ## [Não lançado]
 
+### Adicionado
+
+- **Cadastro de cliente pelo Admin Master gravado de verdade**: cria o cliente em trial de 7 dias
+  com o plano escolhido e o acesso do síndico, com senha temporária mostrada uma única vez. CNPJ e
+  e-mail repetidos são recusados.
+- **Limites dos planos editáveis** em `/admin/ambientes` (condomínios, moradores, documentos,
+  respostas da IA por mês), gravados na tabela `planos`.
+- **Aba "Usuários" na ficha do cliente**, com quem tem acesso e o papel de cada um.
+
+### Alterado
+
+- **Portal `/admin` lendo o banco**: clientes, planos, assinaturas, uso do mês e faturas vêm do
+  banco. MRR, receita e faturas vencidas são calculados dos dados reais. Trocar o plano e editar
+  os dados do cliente passam a ser salvos.
+- **Uso medido em respostas da IA**, a unidade de cobrança, no lugar de "mensagens".
+
+### Removido
+
+- **Ações simuladas do `/admin`**: chave de API, webhooks e escopos, suspender, excluir, marcar
+  fatura como paga, reenviar e estornar. Status do cliente e cobrança passam a vir do Stripe
+  (Fase 6).
+
 ## [0.3.0] - 2026-11-16
 
 ### Adicionado

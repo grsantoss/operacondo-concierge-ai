@@ -1,21 +1,38 @@
-export type PlanoId = "starter" | "pro" | "enterprise";
+import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
+import { atualizarLimitesPlano, listarPlanos } from "@/lib/admin.functions";
 
+/** Plano da tabela `planos`. Preço só para exibir; o cobrado é o do Stripe. */
 export interface Plano {
-  id: PlanoId;
+  id: string;
   nome: string;
   precoMensal: number;
-  moradores: number;
-  msgsMes: number;
   condominios: number;
-  destaque?: boolean;
+  moradores: number;
+  documentos: number;
+  respostasIaMes: number;
+  usaConselheiro: boolean;
+  /** false = plano interno (trial). */
+  vendavel: boolean;
 }
 
-export const PLANOS: Plano[] = [
-  { id: "starter", nome: "Starter", precoMensal: 299, moradores: 200, msgsMes: 2000, condominios: 1 },
-  { id: "pro", nome: "Pro", precoMensal: 699, moradores: 800, msgsMes: 10000, condominios: 3, destaque: true },
-  { id: "enterprise", nome: "Enterprise", precoMensal: 1899, moradores: 5000, msgsMes: 60000, condominios: 20 },
-];
+export const planosQuery = queryOptions({
+  queryKey: ["admin", "planos"],
+  queryFn: () => listarPlanos(),
+});
 
-export function getPlano(id: PlanoId): Plano {
-  return PLANOS.find((p) => p.id === id) ?? PLANOS[0];
+export function usePlanos(): Plano[] {
+  return useQuery(planosQuery).data ?? [];
+}
+
+export type LimitesPlano = Pick<
+  Plano,
+  "condominios" | "moradores" | "documentos" | "respostasIaMes"
+>;
+
+export function useSalvarLimitesPlano() {
+  const qc = useQueryClient();
+  return async (id: string, l: LimitesPlano) => {
+    await atualizarLimitesPlano({ data: { id, ...l } });
+    await qc.invalidateQueries({ queryKey: ["admin"] });
+  };
 }

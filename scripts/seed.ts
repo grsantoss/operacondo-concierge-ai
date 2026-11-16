@@ -1,16 +1,14 @@
 /**
- * Dados de exemplo para desenvolvimento, a partir dos mocks de src/data. APAGA os dados atuais.
+ * Dados de exemplo para desenvolvimento (scripts/dados-exemplo). APAGA os dados atuais.
  *   bun run db:seed
  * Os mocks não têm cliente: condomínios, moradores, demandas e fornecedores vão para o 1º cliente.
  */
 import { hashPassword } from "better-auth/crypto";
 import { sql } from "drizzle-orm";
+import { CLIENTES_EXEMPLO, FATURAS_EXEMPLO, PLANOS_EXEMPLO } from "./dados-exemplo/admin";
 import { DEMANDAS_EXEMPLO as DEMANDAS } from "./dados-exemplo/demandas";
-import { listFaturas } from "../src/data/faturas";
 import { FORNECEDORES_EXEMPLO } from "./dados-exemplo/fornecedores";
 import { CONDOMINIOS, MORADORES_EXEMPLO } from "./dados-exemplo/moradores";
-import { PLANOS } from "../src/data/planos";
-import { listTenants } from "../src/data/tenants";
 import { paraE164 } from "../src/lib/telefone";
 import { dbAdmin, schema as s } from "../src/server/db";
 
@@ -71,7 +69,7 @@ async function main() {
       usaConselheiro: false,
       vendavel: false,
     },
-    ...PLANOS.map((p) => ({
+    ...PLANOS_EXEMPLO.map((p) => ({
       id: p.id,
       nome: p.nome,
       precoMensal: p.precoMensal,
@@ -88,7 +86,7 @@ async function main() {
   const tenantId = new Map<string, string>();
   const assinaturaId = new Map<string, string>();
   const statusTenant = { ativo: "ativo", trial: "trial", suspenso: "suspenso" } as const;
-  for (const t of listTenants()) {
+  for (const t of CLIENTES_EXEMPLO) {
     const [row] = await db
       .insert(s.tenants)
       .values({
@@ -127,7 +125,7 @@ async function main() {
     refunded: "paid",
   } as const;
   const metodo = { card: "cartao", boleto: "boleto", pix: "pix" } as const;
-  for (const f of listFaturas()) {
+  for (const f of FATURAS_EXEMPLO) {
     const tid = tenantId.get(f.tenantId);
     if (!tid) continue;
     await db.insert(s.faturas).values({
@@ -146,14 +144,14 @@ async function main() {
   }
 
   // Tudo o que é operacional vai para o 1º cliente.
-  const t1 = tenantId.get(listTenants()[0].id)!;
+  const t1 = tenantId.get(CLIENTES_EXEMPLO[0].id)!;
 
   // Usuários: Admin Master e o síndico do 1º cliente.
   const usuarios = [
     { id: "usr_admin", name: "Admin OperaCondo", email: "admin@operacondo.local", role: "admin" },
     {
       id: "usr_sindico",
-      name: listTenants()[0].responsavel,
+      name: CLIENTES_EXEMPLO[0].responsavel,
       email: "sindico@operacondo.local",
       role: "user",
     },
@@ -339,7 +337,7 @@ async function main() {
 
   const [{ n }] = (await db.execute<{ n: number }>(sql`select count(*)::int n from demandas`)).rows;
   console.log(
-    `Seed ok: ${listTenants().length} clientes, ${CONDOMINIOS.length} condomínios, ${moradorId.size} moradores, ${n} demandas.`,
+    `Seed ok: ${CLIENTES_EXEMPLO.length} clientes, ${CONDOMINIOS.length} condomínios, ${moradorId.size} moradores, ${n} demandas.`,
   );
   console.log(`Login: admin@operacondo.local / sindico@operacondo.local — senha: ${senha}`);
 }

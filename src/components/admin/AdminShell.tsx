@@ -10,7 +10,7 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { to: "/admin", label: "Dashboard", icon: "dashboard" },
-  { to: "/admin/usuarios", label: "Usuários", icon: "group" },
+  { to: "/admin/usuarios", label: "Clientes", icon: "group" },
   { to: "/admin/ambientes", label: "Ambientes", icon: "tune" },
   { to: "/admin/financeiro", label: "Financeiro", icon: "payments" },
   { to: "/admin/configuracoes", label: "Configurações", icon: "settings" },

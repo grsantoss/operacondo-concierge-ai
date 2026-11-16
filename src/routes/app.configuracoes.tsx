@@ -1,9 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/brand/Icon";
+import { configAgenteQuery, useSalvarConfigAgente } from "@/data/agente";
+import { condominiosQuery, useCondominios } from "@/data/moradores";
+import type { ConfigAgente } from "@/lib/agente.functions";
 
 export const Route = createFileRoute("/app/configuracoes")({
+  loader: ({ context: { queryClient } }) => queryClient.ensureQueryData(condominiosQuery),
   head: () => ({
     meta: [
       { title: "Configurações | OperaCondo Concierge" },
@@ -108,7 +113,7 @@ function ConfiguracoesPage() {
             {tab === "corporativo" && (
               <CorporativoPanel onSave={() => showToast("Dados corporativos salvos")} />
             )}
-            {tab === "agente" && <AgentePanel onSave={() => showToast("Comportamento da IA atualizado")} />}
+            {tab === "agente" && <AgentePanel onSave={showToast} />}
             {tab === "notificacoes" && (
               <NotificacoesPanel onSave={() => showToast("Preferências de notificação salvas")} />
             )}
@@ -215,6 +220,7 @@ function Toggle({
       <button
         type="button"
         role="switch"
+        aria-label={label}
         aria-checked={checked}
         onClick={() => onChange(!checked)}
         className={`relative h-6 w-11 shrink-0 rounded-full transition ${
@@ -235,16 +241,19 @@ function PrimaryBtn({
   children,
   onClick,
   type = "button",
+  disabled,
 }: {
   children: React.ReactNode;
   onClick?: () => void;
   type?: "button" | "submit";
+  disabled?: boolean;
 }) {
   return (
     <button
       type={type}
       onClick={onClick}
-      className="inline-flex items-center gap-2 rounded-lg bg-[var(--color-navy-deep)] px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+      disabled={disabled}
+      className="inline-flex items-center gap-2 rounded-lg bg-[var(--color-navy-deep)] px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
     >
       {children}
     </button>
@@ -542,42 +551,110 @@ function CorporativoPanel({ onSave }: { onSave: () => void }) {
 }
 
 
-function AgentePanel({ onSave }: { onSave: () => void }) {
-  const [tom, setTom] = useState<"Formal" | "Cordial" | "Casual">("Cordial");
-  const [assumir, setAssumir] = useState(true);
-  const [reservas, setReservas] = useState(true);
-  const [orcamentos, setOrcamentos] = useState(false);
-  const [horario, setHorario] = useState(true);
-  const [assinatura, setAssinatura] = useState(
-    "— OperaCondo Concierge, ao lado de Roberto Silva",
-  );
+function AgentePanel({ onSave }: { onSave: (msg: string) => void }) {
+  const condominios = useCondominios();
+  const [condoId, setCondoId] = useState(condominios[0]?.id ?? "");
+  const { data } = useQuery({ ...configAgenteQuery(condoId), enabled: !!condoId });
+
+  if (!condominios.length)
+    return (
+      <Card title="Agente IA" desc="Cadastre um condomínio para configurar o agente.">
+        <p className="text-sm text-[var(--color-on-surface-variant)]">Nenhum condomínio ainda.</p>
+      </Card>
+    );
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        onSave();
-      }}
-    >
+    <div>
       <Card
-        title="Personalidade"
-        desc="Como o agente se comunica com os moradores."
+        title="Condomínio"
+        desc="Cada condomínio tem a sua configuração do agente."
       >
+        <select
+          aria-label="Condomínio"
+          className={inputCls}
+          value={condoId}
+          onChange={(e) => setCondoId(e.target.value)}
+        >
+          {condominios.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.nome}
+            </option>
+          ))}
+        </select>
+      </Card>
+      {data ? (
+        // key: troca de condomínio recomeça o formulário com os dados dele
+        <AgenteForm key={condoId} condominioId={condoId} inicial={data} onSave={onSave} />
+      ) : (
+        <p className="p-4 text-sm text-[var(--color-on-surface-variant)]">Carregando…</p>
+      )}
+    </div>
+  );
+}
+
+const TONS = [
+  { id: "formal", label: "Formal" },
+  { id: "cordial", label: "Cordial" },
+  { id: "direto", label: "Direto" },
+] as const;
+
+function AgenteForm({
+  condominioId,
+  inicial,
+  onSave,
+}: {
+  condominioId: string;
+  inicial: ConfigAgente;
+  onSave: (msg: string) => void;
+}) {
+  const [cfg, setCfg] = useState(inicial);
+  const [limite, setLimite] = useState(inicial.limiteAprovacao?.toString() ?? "");
+  const [erro, setErro] = useState<string | null>(null);
+  const [salvando, setSalvando] = useState(false);
+  const salvar = useSalvarConfigAgente();
+  const op = cfg.opcoes;
+  const setOp = (patch: Partial<ConfigAgente["opcoes"]>) =>
+    setCfg((c) => ({ ...c, opcoes: { ...c.opcoes, ...patch } }));
+  const setRecl = (patch: Partial<ConfigAgente["opcoes"]["reclamacoes"]>) =>
+    setOp({ reclamacoes: { ...op.reclamacoes, ...patch } });
+  const setMan = (patch: Partial<ConfigAgente["opcoes"]["manutencao"]>) =>
+    setOp({ manutencao: { ...op.manutencao, ...patch } });
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    const n = limite.trim() ? Number(limite.replace(/\./g, "").replace(",", ".")) : null;
+    if (n !== null && (Number.isNaN(n) || n < 0)) return setErro("Limite de aprovação inválido.");
+    setErro(null);
+    setSalvando(true);
+    try {
+      await salvar(condominioId, { ...cfg, limiteAprovacao: n });
+      onSave("Comportamento da IA salvo");
+    } catch (err) {
+      setErro((err as Error).message);
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  return (
+    <form onSubmit={submit}>
+      <Card title="Personalidade" desc="Como o agente se comunica com os moradores.">
         <div className="grid gap-4 md:grid-cols-2">
           <Field label="Tom de voz">
             <div className="flex gap-2">
-              {(["Formal", "Cordial", "Casual"] as const).map((t) => (
+              {TONS.map((t) => (
                 <button
-                  key={t}
+                  key={t.id}
                   type="button"
-                  onClick={() => setTom(t)}
+                  aria-pressed={cfg.tom === t.id}
+                  onClick={() => setCfg((c) => ({ ...c, tom: t.id }))}
                   className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition ${
-                    tom === t
+                    cfg.tom === t.id
                       ? "border-[var(--color-brand)] bg-[var(--color-brand)]/10 text-[var(--color-brand)]"
                       : "border-[var(--color-outline-variant)] bg-white text-[var(--color-on-surface)]"
                   }`}
                 >
-                  {t}
+                  {t.label}
                 </button>
               ))}
             </div>
@@ -596,8 +673,9 @@ function AgentePanel({ onSave }: { onSave: () => void }) {
             <Field label="Assinatura padrão nas mensagens">
               <input
                 className={inputCls}
-                value={assinatura}
-                onChange={(e) => setAssinatura(e.target.value)}
+                maxLength={120}
+                value={op.assinatura}
+                onChange={(e) => setOp({ assinatura: e.target.value })}
               />
             </Field>
           </div>
@@ -605,137 +683,148 @@ function AgentePanel({ onSave }: { onSave: () => void }) {
       </Card>
 
       <Card title="O que a IA pode resolver sozinha">
-
         <Toggle
-          checked={reservas}
-          onChange={setReservas}
+          checked={op.reservas}
+          onChange={(v) => setOp({ reservas: v })}
           label="Confirmar reservas de áreas comuns"
           desc="Dentro da agenda configurada, sem consultar o síndico."
         />
         <Toggle
-          checked={horario}
-          onChange={setHorario}
+          checked={op.horarios}
+          onChange={(v) => setOp({ horarios: v })}
           label="Responder dúvidas sobre horários e regras"
           desc="Baseado na Base de Conhecimento."
         />
         <Toggle
-          checked={orcamentos}
-          onChange={setOrcamentos}
+          checked={op.orcamentos}
+          onChange={(v) => setOp({ orcamentos: v })}
           label="Solicitar orçamentos a fornecedores"
           desc="A IA cota até 3 fornecedores homologados por conta própria."
         />
         <Toggle
-          checked={assumir}
-          onChange={setAssumir}
+          checked={op.escalarAuto}
+          onChange={(v) => setOp({ escalarAuto: v })}
           label="Escalar automaticamente para o síndico"
           desc="Quando um morador demonstra insatisfação ou é urgência."
         />
       </Card>
 
-      <RegrasReclamacoesCard />
-      <RegrasManutencaoCard />
-      <div className="flex justify-end">
-        <PrimaryBtn type="submit">Salvar comportamento</PrimaryBtn>
-      </div>
-    </form>
-  );
-}
+      <Card
+        title="Regras para reclamações"
+        desc="Como a IA registra e classifica reclamações (barulho, vizinhança, áreas comuns)."
+      >
+        <Toggle
+          checked={op.reclamacoes.auto}
+          onChange={(v) => setRecl({ auto: v })}
+          label="IA registra e classifica reclamações automaticamente"
+          desc="Categoriza por tipo e cria a demanda no Kanban."
+        />
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <Field label="Prioridade padrão">
+            <select
+              className={inputCls}
+              value={op.reclamacoes.prioridade}
+              onChange={(e) =>
+                setRecl({ prioridade: e.target.value as ConfigAgente["opcoes"]["reclamacoes"]["prioridade"] })
+              }
+            >
+              <option>Normal</option>
+              <option>Alta</option>
+              <option>Crítica</option>
+            </select>
+          </Field>
+          <Field label="Escalar para o síndico quando">
+            <select
+              className={inputCls}
+              value={op.reclamacoes.escalar}
+              onChange={(e) =>
+                setRecl({ escalar: e.target.value as ConfigAgente["opcoes"]["reclamacoes"]["escalar"] })
+              }
+            >
+              <option value="reincidente">Reincidente (3+ ocorrências)</option>
+              <option value="outro_morador">Envolve outro morador</option>
+              <option value="sempre">Sempre</option>
+            </select>
+          </Field>
+          <div className="md:col-span-2">
+            <Field label="Instruções extras para a IA">
+              <textarea
+                className={`${inputCls} min-h-[88px] resize-y`}
+                maxLength={1000}
+                placeholder="Ex.: barulho após 22h vai direto para triagem."
+                value={op.reclamacoes.instrucoes}
+                onChange={(e) => setRecl({ instrucoes: e.target.value })}
+              />
+            </Field>
+          </div>
+        </div>
+      </Card>
 
-function RegrasReclamacoesCard() {
-  const [auto, setAuto] = useState(true);
-  const [prioridade, setPrioridade] = useState("Normal");
-  const [escalar, setEscalar] = useState("Reincidente (3+ ocorrências)");
-  const [obs, setObs] = useState(
-    "Barulho após 22h vai direto para triagem. Disputas entre moradores só o síndico responde.",
-  );
-  return (
-    <Card
-      title="Regras para reclamações"
-      desc="Como a IA registra e classifica reclamações (barulho, vizinhança, áreas comuns)."
-    >
-      <Toggle
-        checked={auto}
-        onChange={setAuto}
-        label="IA registra e classifica reclamações automaticamente"
-        desc="Categoriza por tipo e cria a demanda no Kanban."
-      />
-      <div className="mt-4 grid gap-4 md:grid-cols-2">
-        <Field label="Prioridade padrão">
-          <select className={inputCls} value={prioridade} onChange={(e) => setPrioridade(e.target.value)}>
-            <option>Normal</option>
-            <option>Alta</option>
-            <option>Crítica</option>
-          </select>
-        </Field>
-        <Field label="Escalar para o síndico quando">
-          <select className={inputCls} value={escalar} onChange={(e) => setEscalar(e.target.value)}>
-            <option>Reincidente (3+ ocorrências)</option>
-            <option>Envolve outro morador</option>
-            <option>Sempre</option>
-          </select>
-        </Field>
-        <div className="md:col-span-2">
-          <Field label="Instruções extras para a IA">
-            <textarea
-              className={`${inputCls} min-h-[88px] resize-y`}
-              value={obs}
-              onChange={(e) => setObs(e.target.value)}
+      <Card
+        title="Abertura de chamado de manutenção"
+        desc="Regras para como a IA abre e encaminha chamados de reparo."
+      >
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="Canal preferencial">
+            <select
+              className={inputCls}
+              value={op.manutencao.canal}
+              onChange={(e) =>
+                setMan({ canal: e.target.value as ConfigAgente["opcoes"]["manutencao"]["canal"] })
+              }
+            >
+              <option value="whatsapp">WhatsApp</option>
+              <option value="portal">Portal do morador</option>
+              <option value="ambos">Ambos</option>
+            </select>
+          </Field>
+          <Field label="Aprovação do síndico acima de (R$)">
+            <input
+              className={inputCls}
+              inputMode="decimal"
+              placeholder="Sem limite"
+              value={limite}
+              onChange={(e) => setLimite(e.target.value)}
             />
           </Field>
         </div>
-      </div>
-    </Card>
-  );
-}
-
-function RegrasManutencaoCard() {
-  const [canal, setCanal] = useState("WhatsApp");
-  const [limite, setLimite] = useState("500");
-  const [foto, setFoto] = useState(true);
-  const [aprovacao, setAprovacao] = useState(true);
-  const [obs, setObs] = useState(
-    "Elétrica → sempre ElétricaPro. Hidráulica → registrar foto do local. Elevadores → chamado imediato para Otis.",
-  );
-  return (
-    <Card
-      title="Abertura de chamado de manutenção"
-      desc="Regras para como a IA abre e encaminha chamados de reparo."
-    >
-      <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Canal preferencial">
-          <select className={inputCls} value={canal} onChange={(e) => setCanal(e.target.value)}>
-            <option>WhatsApp</option>
-            <option>Portal do morador</option>
-            <option>Ambos</option>
-          </select>
-        </Field>
-        <Field label="Aprovação do síndico acima de (R$)">
-          <input className={inputCls} value={limite} onChange={(e) => setLimite(e.target.value)} />
-        </Field>
-      </div>
-      <div className="mt-2">
-        <Toggle
-          checked={foto}
-          onChange={setFoto}
-          label="Exigir foto ou vídeo do problema"
-          desc="A IA pede a mídia antes de abrir o chamado."
-        />
-        <Toggle
-          checked={aprovacao}
-          onChange={setAprovacao}
-          label="Aprovação do síndico para orçamentos acima do limite"
-        />
-      </div>
-      <div className="mt-4">
-        <Field label="Instruções por especialidade">
-          <textarea
-            className={`${inputCls} min-h-[88px] resize-y`}
-            value={obs}
-            onChange={(e) => setObs(e.target.value)}
+        <div className="mt-2">
+          <Toggle
+            checked={op.manutencao.exigirFoto}
+            onChange={(v) => setMan({ exigirFoto: v })}
+            label="Exigir foto ou vídeo do problema"
+            desc="A IA pede a mídia antes de abrir o chamado."
           />
-        </Field>
+          <Toggle
+            checked={op.manutencao.aprovarAcimaLimite}
+            onChange={(v) => setMan({ aprovarAcimaLimite: v })}
+            label="Aprovação do síndico para orçamentos acima do limite"
+          />
+        </div>
+        <div className="mt-4">
+          <Field label="Instruções por especialidade">
+            <textarea
+              className={`${inputCls} min-h-[88px] resize-y`}
+              maxLength={1000}
+              placeholder="Ex.: hidráulica → pedir foto do local; elevadores → chamado imediato."
+              value={op.manutencao.instrucoes}
+              onChange={(e) => setMan({ instrucoes: e.target.value })}
+            />
+          </Field>
+        </div>
+      </Card>
+
+      <div className="flex items-center justify-end gap-3">
+        {erro ? (
+          <p role="alert" className="text-sm text-destructive">
+            {erro}
+          </p>
+        ) : null}
+        <PrimaryBtn type="submit" disabled={salvando}>
+          {salvando ? "Salvando…" : "Salvar comportamento"}
+        </PrimaryBtn>
       </div>
-    </Card>
+    </form>
   );
 }
 

@@ -252,9 +252,14 @@ export const whatsappCanais = pgTable(
     tenantId: tenantId().unique(),
     phoneE164: text("phone_e164").notNull().unique(),
     provider: whatsappProvider("provider").notNull(),
-    /** Referência ao segredo (nome no cofre/variável), nunca o token em texto. */
-    credenciaisRef: text("credenciais_ref"),
+    /** Z-API: id da instância (não é segredo). */
+    instanceId: text("instance_id"),
+    /** Token e Client-Token cifrados (AES-256-GCM, chave em CREDENCIAIS_CHAVE). Nunca em texto. */
+    credenciaisCifradas: text("credenciais_cifradas"),
     status: canalStatus("status").notNull().default("desconectado"),
+    /** Última verificação na Z-API e quando conectou. */
+    verificadoEm: ts("verificado_em"),
+    conectadoEm: ts("conectado_em"),
     criadoEm: criadoEm(),
   },
   (t) => [unique().on(t.tenantId, t.id), e164("phone_e164")],

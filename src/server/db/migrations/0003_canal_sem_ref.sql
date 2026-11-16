@@ -1,0 +1,1 @@
+ALTER TABLE "whatsapp_canais" DROP COLUMN "credenciais_ref";

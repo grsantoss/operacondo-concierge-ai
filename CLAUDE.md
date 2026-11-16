@@ -16,6 +16,8 @@ Responda sempre em português do Brasil, com acentuação correta.
   "enviado" até a leitura da Fase 3), a configuração do agente por condomínio (#12;
   `agente_config`, ajustes em `opcoes` validados por zod com padrões) e o portal `/admin` (#13;
   `src/lib/admin.functions.ts` com `dbAdmin()`/`oc_admin` e `exigirAdmin()`; Stripe na Fase 6).
+- **Fase 2 (WhatsApp, #15–#20) em andamento**, uma issue por PR. Testes reais (instância Z-API,
+  transcrição, pagamento) ficam para depois de todas as issues.
 - Rodar localmente: `cp .env.example .env` → `bun run db:reset` (sobe containers, migrations e
   seed) → `bun run dev`. Login: `sindico@operacondo.local` (cliente Aurora) ou
   `admin@operacondo.local` (Admin Master), senha `SEED_SENHA` (padrão `operacondo123`).
@@ -64,6 +66,11 @@ temperatura (cold/warm/hot) saiu de todas as telas (#14).
 - **Modelos:** Claude Haiku 5.5 atende; Claude Opus 5.5 como conselheiro (advisor tool) nos casos
   ambíguos. Confirmar o pareamento Haiku 5.5 → Opus 5.5 na API antes de fixar.
 - **WhatsApp:** **um número por síndico/cliente** para todos os condomínios dele. Z-API primeiro.
+  Credenciais em `whatsapp_canais` (`instance_id` + `credenciais_cifradas`, AES-256-GCM em
+  `src/server/cripto.ts`, chave `CREDENCIAIS_CHAVE`); cliente da Z-API em
+  `src/server/whatsapp/zapi.ts` (`ZAPI_URL` troca a base em teste). Conexão pelo componente
+  `ConexaoWhatsApp` (onboarding e Integrações). Rotas da Z-API ainda não testadas contra
+  instância real: entra no teste de ponta a ponta, junto com banco, onboarding e pagamento.
   O número identifica o cliente; o telefone do remetente identifica o condomínio:
   1 condomínio → segue; vários → pergunta qual; desconhecido → lista os condomínios do síndico,
   pergunta a unidade e cria cadastro pendente. Enquanto o condomínio não estiver definido, o agente

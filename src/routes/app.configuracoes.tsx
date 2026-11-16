@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { ConexaoWhatsApp } from "@/components/whatsapp/ConexaoWhatsApp";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
@@ -988,136 +989,8 @@ function IntegracoesPanel({ onToast }: { onToast: (m: string) => void }) {
   );
 }
 
-function WhatsAppIntegrationCard({ onToast }: { onToast: (m: string) => void }) {
-  const [provider, setProvider] = useState<"zapi" | "meta">("zapi");
-  const [status, setStatus] = useState<"idle" | "testing" | "connected">("connected");
-  const [instanceId, setInstanceId] = useState("3AB1C-INSTANCIA");
-  const [zapiToken, setZapiToken] = useState("••••••••••••");
-  const [clientToken, setClientToken] = useState("");
-  const [phoneId, setPhoneId] = useState("");
-  const [wabaId, setWabaId] = useState("");
-  const [metaToken, setMetaToken] = useState("");
-  const [verifyToken, setVerifyToken] = useState("");
-
-  function test() {
-    setStatus("testing");
-    onToast("Testando conexão…");
-    window.setTimeout(() => {
-      setStatus("connected");
-      onToast("WhatsApp conectado");
-    }, 1200);
-  }
-
-  function disconnect() {
-    setStatus("idle");
-    onToast("WhatsApp desconectado");
-  }
-
-  return (
-    <Card
-      title="WhatsApp"
-      desc="Canal principal do Concierge. Conecte via Z-API ou API oficial da Meta."
-    >
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div className="flex gap-2">
-          {(
-            [
-              { id: "zapi", label: "Z-API" },
-              { id: "meta", label: "Meta Cloud API" },
-            ] as const
-          ).map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => setProvider(p.id)}
-              className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
-                provider === p.id
-                  ? "border-[var(--color-brand)] bg-[var(--color-brand)]/10 text-[var(--color-brand)]"
-                  : "border-[var(--color-outline-variant)] bg-white text-[var(--color-on-surface)]"
-              }`}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
-        <span
-          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-            status === "connected"
-              ? "bg-success/10 text-success-strong"
-              : status === "testing"
-              ? "bg-amber-50 text-amber-700"
-              : "bg-[var(--color-surface-container)] text-[var(--color-on-surface-variant)]"
-          }`}
-        >
-          <span
-            className={`h-1.5 w-1.5 rounded-full ${
-              status === "connected"
-                ? "bg-success"
-                : status === "testing"
-                ? "bg-warning animate-pulse"
-                : "bg-muted-foreground"
-            }`}
-          />
-          {status === "connected" ? "Conectado" : status === "testing" ? "Testando…" : "Não conectado"}
-        </span>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        {provider === "zapi" ? (
-          <>
-            <Field label="Instance ID">
-              <input className={inputCls} value={instanceId} onChange={(e) => setInstanceId(e.target.value)} />
-            </Field>
-            <Field label="Token">
-              <input className={inputCls} value={zapiToken} onChange={(e) => setZapiToken(e.target.value)} />
-            </Field>
-            <div className="md:col-span-2">
-              <Field label="Client-Token (opcional)" hint="Obrigatório em contas com segurança avançada.">
-                <input className={inputCls} value={clientToken} onChange={(e) => setClientToken(e.target.value)} />
-              </Field>
-            </div>
-          </>
-        ) : (
-          <>
-            <Field label="Phone Number ID">
-              <input className={inputCls} value={phoneId} onChange={(e) => setPhoneId(e.target.value)} />
-            </Field>
-            <Field label="WhatsApp Business Account ID">
-              <input className={inputCls} value={wabaId} onChange={(e) => setWabaId(e.target.value)} />
-            </Field>
-            <div className="md:col-span-2">
-              <Field label="Access Token permanente">
-                <input className={inputCls} value={metaToken} onChange={(e) => setMetaToken(e.target.value)} />
-              </Field>
-            </div>
-            <div className="md:col-span-2">
-              <Field label="Webhook Verify Token">
-                <input className={inputCls} value={verifyToken} onChange={(e) => setVerifyToken(e.target.value)} />
-              </Field>
-            </div>
-          </>
-        )}
-      </div>
-
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <PrimaryBtn onClick={test}>
-          <Icon name="bolt" className="text-[16px]" />
-          {provider === "zapi" ? "Testar conexão" : "Validar credenciais"}
-        </PrimaryBtn>
-        <GhostBtn onClick={disconnect}>
-          <Icon name="link_off" className="text-[16px]" /> Desconectar
-        </GhostBtn>
-        <a
-          href={provider === "zapi" ? "https://z-api.io" : "https://developers.facebook.com/docs/whatsapp"}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-outline-variant)] bg-white px-3 py-2 text-xs font-semibold text-[var(--color-on-surface)] hover:bg-[var(--color-surface-container)]"
-        >
-          Como obter <Icon name="open_in_new" className="text-[14px]" />
-        </a>
-      </div>
-    </Card>
-  );
+function WhatsAppIntegrationCard(_: { onToast: (m: string) => void }) {
+  return <ConexaoWhatsApp />;
 }
 
 function AparenciaPanel({ onSave }: { onSave: () => void }) {

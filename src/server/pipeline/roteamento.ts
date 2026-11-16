@@ -8,7 +8,8 @@
  */
 import { and, asc, desc, eq, isNull, ne, sql } from "drizzle-orm";
 import { schema as s, withTenant } from "@/server/db";
-import type { JobMensagem } from "@/server/queue";
+import type { JobAlerta, JobMensagem } from "@/server/queue";
+import { detectarUrgencia } from "@/server/pipeline/regras-urgencia";
 import { normalizarZapi } from "@/server/whatsapp/normalizar";
 import { enviarNaConversa } from "@/server/whatsapp/send";
 
@@ -47,8 +48,9 @@ export const menuCondominios = (opcoes: { nome: string }[]) =>
 export const avisoEncaminhado = (nome: string) =>
   `Obrigado! Sua mensagem foi encaminhada à administração do ${nome}. A resposta chega por aqui.`;
 
-export async function rotear(job: JobMensagem, entradas: Entrada[]) {
-  await withTenant(job.tenantId, async (tx) => {
+/** Devolve o alerta a enfileirar (regra fixa de urgência), se houver. */
+export async function rotear(job: JobMensagem, entradas: Entrada[]): Promise<JobAlerta | null> {
+  return withTenant(job.tenantId, async (tx) => {
     // Condomínios em que o número está cadastrado (morador ativo, não recusado).
     const vinculos: Opcao[] = await tx
       .select({
@@ -110,7 +112,23 @@ export async function rotear(job: JobMensagem, entradas: Entrada[]) {
       .set({ ultimaMsgEm: sql`now()` })
       .where(eq(s.conversas.id, conversa.id));
 
-    if (conversa.condominioId) return;
+    // Regras fixas de urgência: independem da IA, do plano e do condomínio estar definido.
+    const regra = msgs.map((m) => detectarUrgencia(m.texto)).find(Boolean) ?? null;
+    const alerta: JobAlerta | null = regra
+      ? { tenantId: job.tenantId, conversaId: conversa.id, regra: regra.id }
+      : null;
+    if (regra)
+      await tx
+        .update(s.conversas)
+        .set({
+          // Só sobe (a ordem do enum é normal < alta < critica).
+          prioridade: sql`greatest(${s.conversas.prioridade}, ${regra.prioridade}::prioridade)`,
+          // Urgência não fica com a IA: vai para o síndico.
+          estado: sql`case when ${s.conversas.estado} = 'ia' then 'aguardando_sindico'::conversa_estado else ${s.conversas.estado} end`,
+        })
+        .where(eq(s.conversas.id, conversa.id));
+
+    if (conversa.condominioId) return alerta;
 
     // Opções: os condomínios do número; desconhecido → todos os do cliente.
     const opcoes: Opcao[] = vinculos.length
@@ -129,7 +147,7 @@ export async function rotear(job: JobMensagem, entradas: Entrada[]) {
         .update(s.conversas)
         .set({ estado: "aguardando_sindico" })
         .where(eq(s.conversas.id, conversa.id));
-      return;
+      return alerta;
     }
 
     let escolhido = opcoes.length === 1 ? opcoes[0]! : null;
@@ -139,7 +157,7 @@ export async function rotear(job: JobMensagem, entradas: Entrada[]) {
     }
     if (!escolhido) {
       await enviarNaConversa(tx, conversa, menuCondominios(opcoes), "sistema");
-      return;
+      return alerta;
     }
 
     // ponytail: sem agente ainda, toda conversa com condomínio vai para o síndico; na Fase 3
@@ -153,5 +171,6 @@ export async function rotear(job: JobMensagem, entradas: Entrada[]) {
       })
       .where(eq(s.conversas.id, conversa.id));
     await enviarNaConversa(tx, conversa, avisoEncaminhado(escolhido.nome), "sistema");
+    return alerta;
   });
 }

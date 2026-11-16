@@ -240,9 +240,16 @@ export const membros = pgTable(
       .array()
       .notNull()
       .default(sql`'{}'::uuid[]`),
+    /** WhatsApp pessoal para alertas de urgência (regras fixas). Vazio = só o painel. */
+    alertaE164: text("alerta_e164"),
     criadoEm: criadoEm(),
   },
-  (t) => [unique().on(t.tenantId, t.id), unique().on(t.tenantId, t.userId), index().on(t.userId)],
+  (t) => [
+    unique().on(t.tenantId, t.id),
+    unique().on(t.tenantId, t.userId),
+    index().on(t.userId),
+    e164("alerta_e164"),
+  ],
 );
 
 export const whatsappCanais = pgTable(

@@ -15,6 +15,17 @@ export interface JobMensagem {
   telefone: string;
 }
 
+/** Fila "alerta": aviso de urgência (regras fixas) aos síndicos, fora da fila de mensagens. */
+export const FILA_ALERTA = "alerta";
+/** Um alerta por conversa e regra a cada 30 min (o morador costuma repetir). */
+const ALERTA_INTERVALO_S = 30 * 60;
+
+export interface JobAlerta {
+  tenantId: string;
+  conversaId: string;
+  regra: "gas" | "incendio" | "elevador" | "vazamento";
+}
+
 let boss: Promise<PgBoss> | null = null;
 
 export function fila(): Promise<PgBoss> {
@@ -28,6 +39,9 @@ export function fila(): Promise<PgBoss> {
     await b.createQueue(FILA_MENSAGEM, { policy: "stately" });
     // Falha (ex.: Z-API fora do ar) → 3 novas tentativas: 30 s, 60 s, 120 s.
     await b.updateQueue(FILA_MENSAGEM, { retryLimit: 3, retryDelay: 30, retryBackoff: true });
+    await b.createQueue(FILA_ALERTA);
+    // Urgência: tenta logo de novo (5 vezes, a partir de 5 s).
+    await b.updateQueue(FILA_ALERTA, { retryLimit: 5, retryDelay: 5, retryBackoff: true });
     return b;
   })().catch((e) => {
     boss = null;
@@ -42,5 +56,13 @@ export async function enfileirarMensagem(job: JobMensagem) {
   await b.send(FILA_MENSAGEM, job, {
     singletonKey: `${job.canalId}:${job.telefone}`,
     startAfter: AGRUPAR_SEGUNDOS,
+  });
+}
+
+export async function enfileirarAlerta(job: JobAlerta) {
+  const b = await fila();
+  await b.send(FILA_ALERTA, job, {
+    singletonKey: `${job.conversaId}:${job.regra}`,
+    singletonSeconds: ALERTA_INTERVALO_S,
   });
 }

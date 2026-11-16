@@ -84,6 +84,10 @@ temperatura (cold/warm/hot) saiu de todas as telas (#14).
   (só ids) em `conversas`, `mensagens` e `demandas` → `src/server/realtime` (um LISTEN por
   processo) → SSE `GET /api/eventos` (filtra pelo cliente da sessão) → `useConversasAoVivo()`
   invalida as queries. Tela: `src/lib/conversas.functions.ts` + `src/data/conversas.ts`.
+  Urgência fixa: `src/server/pipeline/regras-urgencia.ts` (gás, incêndio, elevador → crítica;
+  vazamento → alta), detectada no roteamento → `conversas.prioridade` sobe (nunca desce) → fila
+  `alerta` (singleton conversa:regra por 30 min) → `pipeline/alerta.ts` envia ao
+  `membros.alerta_e164` de síndicos/admins do condomínio (sem condomínio definido: todos).
   O número identifica o cliente; o telefone do remetente identifica o condomínio:
   1 condomínio → segue; vários → pergunta qual; desconhecido → lista os condomínios do síndico,
   pergunta a unidade e cria cadastro pendente. Enquanto o condomínio não estiver definido, o agente

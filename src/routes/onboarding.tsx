@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { AlertaUrgencia } from "@/components/whatsapp/AlertaUrgencia";
 import { ConexaoWhatsApp } from "@/components/whatsapp/ConexaoWhatsApp";
 import { useCanal } from "@/data/whatsapp";
 import { useState } from "react";
@@ -438,6 +439,7 @@ function StepWhatsApp() {
         desc="O WhatsApp é o canal principal do Concierge: um número atende todos os seus condomínios. A conexão é pela Z-API, com QR Code."
       />
       <ConexaoWhatsApp />
+      <AlertaUrgencia />
       <p className="mt-5 text-xs text-[var(--color-on-surface-variant)]">
         Pode pular este passo e conectar depois em Configurações → Integrações.
       </p>

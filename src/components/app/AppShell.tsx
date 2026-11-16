@@ -2,6 +2,7 @@ import { Link, useRouterState, useNavigate, useRouteContext, type LinkProps } fr
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Logo } from "@/components/brand/Logo";
 import { Icon } from "@/components/brand/Icon";
+import { useConversas, useConversasAoVivo } from "@/data/conversas";
 import { useDemandas } from "@/data/demandas";
 import { authClient } from "@/lib/auth-client";
 
@@ -10,6 +11,8 @@ interface NavItem {
   label: string;
   icon: string;
   badge?: string;
+  /** Badge vermelho: há conversa Crítica aberta. */
+  alerta?: boolean;
 }
 
 const NAV: NavItem[] = [
@@ -134,10 +137,19 @@ export function AppShell({ title, breadcrumbs, actions, children }: AppShellProp
   const [topMenu, setTopMenu] = useState(false);
   const [sideMenu, setSideMenu] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  // Demandas abertas de verdade; "Agente IA" ganha contador quando houver conversas (Fase 2).
+  // Demandas abertas; conversas que esperam o síndico (vermelho se houver Crítica aberta).
+  // As conversas ficam ao vivo em todas as telas do painel.
+  useConversasAoVivo();
   const abertas = useDemandas().filter((d) => d.column !== "resolvidas").length;
+  const convs = (useConversas().data ?? []).filter((c) => c.estado !== "resolvida");
+  const esperando = convs.filter((c) => c.estado === "aguardando_sindico").length;
+  const critica = convs.some((c) => c.urgencia === "Crítica");
   const nav = NAV.map((i) =>
-    i.to === "/app/demandas" && abertas ? { ...i, badge: String(abertas) } : i,
+    i.to === "/app/demandas" && abertas
+      ? { ...i, badge: String(abertas) }
+      : i.to === "/app/agente" && (esperando || critica)
+        ? { ...i, badge: critica ? `! ${esperando || ""}`.trim() : String(esperando), alerta: critica }
+        : i,
   );
 
   useEffect(() => {
@@ -235,7 +247,9 @@ export function AppShell({ title, breadcrumbs, actions, children }: AppShellProp
                     className="text-[20px] shrink-0"
                   />
                   {collapsed && item.badge ? (
-                    <span className="absolute -right-1.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-[var(--color-brand)] px-1 text-[9px] font-bold text-white">
+                    <span
+                      className={`absolute -right-1.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[9px] font-bold text-white ${item.alerta ? "bg-destructive" : "bg-[var(--color-brand)]"}`}
+                    >
                       {item.badge}
                     </span>
                   ) : null}
@@ -245,10 +259,13 @@ export function AppShell({ title, breadcrumbs, actions, children }: AppShellProp
                     <span className="flex-1 truncate">{item.label}</span>
                     {item.badge ? (
                       <span
+                        title={item.alerta ? "Há conversa com urgência Crítica" : undefined}
                         className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                          active
-                            ? "bg-white text-[var(--color-navy-deep)]"
-                            : "bg-white/15 text-white"
+                          item.alerta
+                            ? "bg-destructive text-white"
+                            : active
+                              ? "bg-white text-[var(--color-navy-deep)]"
+                              : "bg-white/15 text-white"
                         }`}
                       >
                         {item.badge}

@@ -7,7 +7,6 @@ import {
   ESTADO_LABEL,
   useConversaAcoes,
   useConversas,
-  useConversasAoVivo,
   useMensagens,
   type ConversaResumo,
 } from "@/data/conversas";
@@ -56,7 +55,6 @@ function erroTexto(err: unknown) {
 
 function AgentePage() {
   const navigate = useNavigate();
-  useConversasAoVivo();
   const { data: convs = [] } = useConversas();
   const acoes = useConversaAcoes();
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -66,6 +64,7 @@ function AgentePage() {
   const [toast, setToast] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const criticas = convs.filter((c) => c.urgencia === "Crítica" && c.estado !== "resolvida");
   const selected = convs.find((c) => c.id === selectedId) ?? convs[0] ?? null;
   const { data: messages = [] } = useMensagens(selected?.id ?? null);
 
@@ -137,6 +136,32 @@ function AgentePage() {
           </div>
         ))}
       </section>
+
+      {criticas.length ? (
+        <section
+          role="alert"
+          className="mb-5 rounded-2xl border border-destructive/30 bg-destructive/10 p-4"
+        >
+          <p className="flex items-center gap-2 text-sm font-semibold text-destructive">
+            <Icon name="warning" className="text-[18px]" />
+            {criticas.length === 1
+              ? "1 conversa com urgência Crítica"
+              : `${criticas.length} conversas com urgência Crítica`}
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {criticas.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => setSelectedId(c.id)}
+                className="rounded-full border border-destructive/30 bg-white px-3 py-1 text-xs font-semibold text-destructive hover:bg-destructive/10"
+              >
+                {c.nome}
+                {c.condominio ? ` • ${c.condominio}` : ""}
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {!selected ? (
         <div className="card-elev rounded-2xl p-8 text-center">

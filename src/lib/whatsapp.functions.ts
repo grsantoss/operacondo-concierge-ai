@@ -229,3 +229,25 @@ export const desconectarCanal = createServerFn({ method: "POST" }).handler(async
       .where(eq(s.whatsappCanais.id, canal.id)),
   );
 });
+
+/** WhatsApp pessoal do usuário logado para receber os alertas de urgência. */
+export const obterMeuAlerta = createServerFn({ method: "GET" }).handler(
+  async (): Promise<{ telefone: string }> => {
+    const { tenantId, membroId } = await exigirGestor();
+    const [m] = await withTenant(tenantId, (tx) =>
+      tx.select({ fone: s.membros.alertaE164 }).from(s.membros).where(eq(s.membros.id, membroId!)),
+    );
+    return { telefone: m?.fone ? formatarTelefone(m.fone) : "" };
+  },
+);
+
+export const salvarMeuAlerta = createServerFn({ method: "POST" })
+  .inputValidator(z.object({ telefone: z.string().trim().max(30) }))
+  .handler(async ({ data }) => {
+    const { tenantId, membroId } = await exigirGestor();
+    const fone = data.telefone ? paraE164(data.telefone) : null;
+    if (data.telefone && !fone) throw new Error("Número inválido. Use DDD + número.");
+    await withTenant(tenantId, (tx) =>
+      tx.update(s.membros).set({ alertaE164: fone }).where(eq(s.membros.id, membroId!)),
+    );
+  });

@@ -38,12 +38,12 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   `/app/agente` (foto em miniatura, áudio com player, documento como link). Áudio é transcrito
   quando há provedor configurado (`TRANSCRICAO_PROVEDOR` = `openai` ou `deepgram`, mais
   `TRANSCRICAO_API_KEY`); sem provedor, o áudio fica só para ouvir. O texto transcrito passa
-  pelas regras de urgência, e o alerta ao síndico mostra a transcrição.
+  pelas regras de urgência, e o alerta ao síndico mostra a transcrição (#63).
 
 ### Corrigido
 
 - **Ordem das mensagens**: a mensagem do morador aparece antes da resposta automática enviada
-  no mesmo instante.
+  no mesmo instante (#63).
 
 ### Segurança
 

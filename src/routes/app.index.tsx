@@ -1,48 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/brand/Icon";
+import { COLUMNS, demandasQuery, useDemandas, type Demanda, type Priority } from "@/data/demandas";
+import { URGENCIA } from "@/lib/urgencia";
 
 export const Route = createFileRoute("/app/")({
+  loader: ({ context: { queryClient } }) => queryClient.ensureQueryData(demandasQuery),
   head: () => ({
     meta: [{ title: "Dashboard | OperaCondo Concierge" }],
   }),
   component: DashboardPage,
 });
-
-const METRICS = [
-  {
-    label: "Demandas Abertas",
-    value: "23",
-    delta: "+4 hoje",
-    trend: "up",
-    icon: "assignment",
-    tone: "brand",
-  },
-  {
-    label: "Resolução IA",
-    value: "94%",
-    delta: "+2.1% vs. semana",
-    trend: "up",
-    icon: "smart_toy",
-    tone: "success",
-  },
-  {
-    label: "SLA Crítico",
-    value: "3",
-    delta: "Atenção necessária",
-    trend: "warn",
-    icon: "priority_high",
-    tone: "warning",
-  },
-  {
-    label: "Satisfação",
-    value: "4.8",
-    delta: "★ em 312 avaliações",
-    trend: "up",
-    icon: "sentiment_very_satisfied",
-    tone: "brand",
-  },
-];
 
 const TONE: Record<string, string> = {
   brand: "bg-[var(--color-info-soft)] text-[var(--color-brand)]",
@@ -51,19 +19,13 @@ const TONE: Record<string, string> = {
   danger: "bg-[var(--color-danger-soft)] text-[var(--color-danger)]",
 };
 
-const KANBAN_SUMMARY = [
-  { col: "Novas", count: 8, color: "bg-[var(--color-brand)]" },
-  { col: "Triagem", count: 5, color: "bg-[var(--color-warning-strong)]" },
-  { col: "Execução", count: 7, color: "bg-[var(--color-temp-warm)]" },
-  { col: "Resolvidas (24h)", count: 14, color: "bg-[var(--color-success-strong)]" },
-];
-
-const RECENT = [
+// ponytail: conversas de exemplo até o WhatsApp (Fase 2); depois vêm de `conversas`.
+const RECENT: { morador: string; unit: string; msg: string; prioridade: Priority; time: string; avatar: string }[] = [
   {
     morador: "Ana Carvalho",
     unit: "Apto 1204",
     msg: "Vazamento sob a pia da cozinha. Está pingando bastante.",
-    temp: "hot" as const,
+    prioridade: "Crítica",
     time: "há 4 min",
     avatar: "AC",
   },
@@ -71,7 +33,7 @@ const RECENT = [
     morador: "Marcelo Reis",
     unit: "Apto 802",
     msg: "Posso reservar o salão para sábado às 19h?",
-    temp: "cold" as const,
+    prioridade: "Normal",
     time: "há 18 min",
     avatar: "MR",
   },
@@ -79,80 +41,60 @@ const RECENT = [
     morador: "Júlia Tavares",
     unit: "Apto 506",
     msg: "Elevador social fazendo barulho ao subir.",
-    temp: "warm" as const,
+    prioridade: "Alta",
     time: "há 42 min",
     avatar: "JT",
   },
-  {
-    morador: "Bruno Lima",
-    unit: "Cobertura 02",
-    msg: "Boleto de outubro já está disponível?",
-    temp: "cold" as const,
-    time: "há 1h",
-    avatar: "BL",
-  },
 ];
 
-const TEMP: Record<"cold" | "warm" | "hot", { label: string; cls: string; dot: string }> = {
-  cold: {
-    label: "Tranquilo",
-    cls: "bg-primary/10 text-primary",
-    dot: "bg-primary",
-  },
-  warm: {
-    label: "Atenção",
-    cls: "bg-amber-50 text-amber-700",
-    dot: "bg-warning",
-  },
-  hot: {
-    label: "Urgente",
-    cls: "bg-destructive/10 text-destructive",
-    dot: "bg-destructive",
-  },
-};
+const PRIORIDADES: Priority[] = ["Crítica", "Alta", "Normal"];
+
+/** Números do painel, calculados das demandas do banco. */
+function resumo(demandas: Demanda[]) {
+  const abertas = demandas.filter((d) => d.column !== "resolvidas");
+  const porColuna = (c: string) => demandas.filter((d) => d.column === c).length;
+  const porPrioridade = Object.fromEntries(
+    PRIORIDADES.map((p) => [p, abertas.filter((d) => d.priority === p).length]),
+  ) as Record<Priority, number>;
+  return {
+    metricas: [
+      { label: "Demandas abertas", value: abertas.length, icon: "assignment", tone: "brand" },
+      {
+        label: "Críticas abertas",
+        value: porPrioridade["Crítica"],
+        icon: "priority_high",
+        tone: porPrioridade["Crítica"] > 0 ? "danger" : "success",
+      },
+      { label: "Em execução", value: porColuna("execucao"), icon: "build", tone: "warning" },
+      { label: "Resolvidas", value: porColuna("resolvidas"), icon: "task_alt", tone: "success" },
+    ],
+    kanban: COLUMNS.map((c) => ({ col: c.title, count: porColuna(c.id), color: c.accent })),
+    porPrioridade,
+    abertas: abertas.length,
+  };
+}
 
 function csvEscape(v: string | number) {
   const s = String(v);
   return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-function exportDashboardCsv() {
+function exportDashboardCsv(r: ReturnType<typeof resumo>) {
   const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
   const lines: string[] = [];
   lines.push("OperaCondo Concierge — Visão geral do condomínio");
   lines.push(`Gerado em;${new Date().toLocaleString("pt-BR")}`);
   lines.push("");
-  lines.push("Métricas principais");
-  lines.push(["Indicador", "Valor", "Variação"].map(csvEscape).join(";"));
-  for (const m of METRICS) {
-    lines.push([m.label, m.value, m.delta].map(csvEscape).join(";"));
-  }
+  lines.push(["Indicador", "Valor"].map(csvEscape).join(";"));
+  for (const m of r.metricas) lines.push([m.label, m.value].map(csvEscape).join(";"));
   lines.push("");
-  lines.push("Fluxo de demandas (Kanban — últimas 24h)");
+  lines.push("Demandas por coluna");
   lines.push(["Coluna", "Quantidade"].map(csvEscape).join(";"));
-  for (const k of KANBAN_SUMMARY) {
-    lines.push([k.col, k.count].map(csvEscape).join(";"));
-  }
+  for (const k of r.kanban) lines.push([k.col, k.count].map(csvEscape).join(";"));
   lines.push("");
-  lines.push("Temperatura das conversas");
-  lines.push(["Categoria", "Percentual"].map(csvEscape).join(";"));
-  lines.push(["Tranquilas", "62%"].map(csvEscape).join(";"));
-  lines.push(["Atenção", "28%"].map(csvEscape).join(";"));
-  lines.push(["Urgentes", "10%"].map(csvEscape).join(";"));
-  lines.push("");
-  lines.push("Conversas recentes");
-  lines.push(
-    ["Morador", "Unidade", "Mensagem", "Temperatura", "Quando"]
-      .map(csvEscape)
-      .join(";"),
-  );
-  for (const r of RECENT) {
-    lines.push(
-      [r.morador, r.unit, r.msg, TEMP[r.temp].label, r.time]
-        .map(csvEscape)
-        .join(";"),
-    );
-  }
+  lines.push("Urgência das demandas abertas");
+  lines.push(["Urgência", "Quantidade"].map(csvEscape).join(";"));
+  for (const p of PRIORIDADES) lines.push([p, r.porPrioridade[p]].map(csvEscape).join(";"));
 
   const csv = "\uFEFF" + lines.join("\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -167,6 +109,7 @@ function exportDashboardCsv() {
 }
 
 function DashboardPage() {
+  const r = resumo(useDemandas());
   return (
     <AppShell
       title="Visão geral do condomínio"
@@ -174,7 +117,7 @@ function DashboardPage() {
       actions={
         <button
           type="button"
-          onClick={exportDashboardCsv}
+          onClick={() => exportDashboardCsv(r)}
           className="btn-press btn-press-active inline-flex h-10 items-center gap-2 rounded-lg border border-[var(--color-outline-variant)] bg-white px-4 text-sm font-semibold text-[var(--color-on-surface)] hover:bg-[var(--color-surface-low)]"
         >
           <Icon name="download" className="text-[18px]" />
@@ -184,7 +127,7 @@ function DashboardPage() {
     >
       {/* Metrics */}
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {METRICS.map((m) => (
+        {r.metricas.map((m) => (
           <div
             key={m.label}
             className="card-elev rounded-2xl p-5"
@@ -202,17 +145,6 @@ function DashboardPage() {
                 <Icon name={m.icon} className="text-[22px]" />
               </div>
             </div>
-            <p
-              className={`mt-3 inline-flex items-center gap-1 text-xs font-medium ${
-                m.trend === "warn" ? "text-[var(--color-warning-strong)]" : "text-[var(--color-success-strong)]"
-              }`}
-            >
-              <Icon
-                name={m.trend === "warn" ? "warning" : "trending_up"}
-                className="text-[14px]"
-              />
-              {m.delta}
-            </p>
           </div>
         ))}
       </section>
@@ -226,7 +158,7 @@ function DashboardPage() {
                 Fluxo de Demandas
               </h2>
               <p className="text-xs text-[var(--color-on-surface-variant)]">
-                Snapshot do Kanban — últimas 24h
+                Demandas por coluna do Kanban
               </p>
             </div>
             <Link
@@ -238,7 +170,7 @@ function DashboardPage() {
             </Link>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {KANBAN_SUMMARY.map((k) => (
+            {r.kanban.map((k) => (
               <div
                 key={k.col}
                 className="rounded-xl border border-[var(--color-outline-variant)] bg-[var(--color-surface-low)] p-4"
@@ -255,37 +187,28 @@ function DashboardPage() {
           </div>
 
           <div className="mt-6 rounded-xl border border-[var(--color-outline-variant)] p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold text-[var(--color-navy)]">
-                  Temperatura geral das conversas
-                </p>
-                <p className="text-xs text-[var(--color-on-surface-variant)]">
-                  Análise de sentimento em tempo real
-                </p>
-              </div>
-              <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
-                Estável
-              </span>
-            </div>
+            <p className="text-sm font-semibold text-[var(--color-navy)]">Urgência das demandas abertas</p>
+            <p className="text-xs text-[var(--color-on-surface-variant)]">
+              {r.abertas} {r.abertas === 1 ? "demanda aberta" : "demandas abertas"}
+            </p>
             <div className="mt-4 flex h-2.5 w-full overflow-hidden rounded-full bg-[var(--color-surface-mid)]">
-              <div className="bg-primary" style={{ width: "62%" }} />
-              <div className="bg-warning" style={{ width: "28%" }} />
-              <div className="bg-destructive" style={{ width: "10%" }} />
+              {PRIORIDADES.map((p) =>
+                r.porPrioridade[p] ? (
+                  <div
+                    key={p}
+                    className={URGENCIA[p].dot}
+                    style={{ width: `${(r.porPrioridade[p] / r.abertas) * 100}%` }}
+                  />
+                ) : null,
+              )}
             </div>
-            <div className="mt-3 flex items-center gap-5 text-xs">
-              <span className="inline-flex items-center gap-1.5 text-[var(--color-on-surface-variant)]">
-                <span className="h-2 w-2 rounded-full bg-primary" />
-                Tranquilas 62%
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-[var(--color-on-surface-variant)]">
-                <span className="h-2 w-2 rounded-full bg-warning" />
-                Atenção 28%
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-[var(--color-on-surface-variant)]">
-                <span className="h-2 w-2 rounded-full bg-destructive" />
-                Urgentes 10%
-              </span>
+            <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs">
+              {PRIORIDADES.map((p) => (
+                <span key={p} className="inline-flex items-center gap-1.5 text-[var(--color-on-surface-variant)]">
+                  <span className={`h-2 w-2 rounded-full ${URGENCIA[p].dot}`} />
+                  {p} {r.porPrioridade[p]}
+                </span>
+              ))}
             </div>
           </div>
         </div>
@@ -297,45 +220,45 @@ function DashboardPage() {
                 Conversas recentes
               </h2>
               <p className="text-xs text-[var(--color-on-surface-variant)]">
-                Acompanhe a IA em ação
+                Exemplo — as conversas reais chegam com o WhatsApp
               </p>
             </div>
             <Link
               to="/app/agente"
-              className="text-xs font-semibold text-[var(--color-brand)] hover:underline"
+              className="shrink-0 whitespace-nowrap text-xs font-semibold text-[var(--color-brand)] hover:underline"
             >
               Ver todas
             </Link>
           </div>
           <ul className="space-y-3">
-            {RECENT.map((r) => (
+            {RECENT.map((c) => (
               <li
-                key={r.morador}
+                key={c.morador}
                 className="group flex gap-3 rounded-xl border border-transparent p-2.5 hover:border-[var(--color-outline-variant)] hover:bg-[var(--color-surface-low)]"
               >
                 <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[var(--color-navy)] text-xs font-bold text-white">
-                  {r.avatar}
+                  {c.avatar}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <p className="truncate text-sm font-semibold text-[var(--color-navy)]">
-                      {r.morador}
+                      {c.morador}
                       <span className="ml-2 text-xs font-normal text-[var(--color-on-surface-variant)]">
-                        {r.unit}
+                        {c.unit}
                       </span>
                     </p>
                     <span className="shrink-0 text-[10px] text-[var(--color-on-surface-variant)]">
-                      {r.time}
+                      {c.time}
                     </span>
                   </div>
                   <p className="mt-0.5 line-clamp-2 text-xs text-[var(--color-on-surface-variant)]">
-                    {r.msg}
+                    {c.msg}
                   </p>
                   <span
-                    className={`mt-1.5 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold ${TEMP[r.temp].cls}`}
+                    className={`mt-1.5 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold ${URGENCIA[c.prioridade].bg} ${URGENCIA[c.prioridade].text}`}
                   >
-                    <span className={`h-1.5 w-1.5 rounded-full ${TEMP[r.temp].dot}`} />
-                    {TEMP[r.temp].label}
+                    <span className={`h-1.5 w-1.5 rounded-full ${URGENCIA[c.prioridade].dot}`} />
+                    {c.prioridade}
                   </span>
                 </div>
               </li>

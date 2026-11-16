@@ -60,13 +60,13 @@ export interface Demanda {
 export const COLUMNS: { id: ColumnId; title: string; accent: string }[] = [
   { id: "novas", title: "Novas", accent: "bg-[var(--color-brand)]" },
   { id: "triagem", title: "Triagem", accent: "bg-[var(--color-warning-strong)]" },
-  { id: "execucao", title: "Em execução", accent: "bg-[var(--color-temp-warm)]" },
+  { id: "execucao", title: "Em execução", accent: "bg-warning" },
   { id: "resolvidas", title: "Resolvidas", accent: "bg-[var(--color-success-strong)]" },
 ];
 
 export const PRIO_CLASS: Record<Priority, string> = {
   Crítica: "bg-destructive/10 text-destructive border-destructive/30",
-  Alta: "bg-amber-50 text-amber-700 border-amber-300/60",
+  Alta: "bg-warning-soft text-warning-strong border-warning/40",
   Normal: "bg-muted text-muted-foreground border-border",
 };
 

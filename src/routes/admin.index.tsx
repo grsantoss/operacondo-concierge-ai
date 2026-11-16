@@ -96,8 +96,8 @@ function AdminDashboard() {
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
-        <div className="rounded-2xl border border-[var(--color-outline-variant)] bg-white p-6 lg:col-span-2">
-          <div className="mb-4 flex items-center justify-between">
+        <div className="min-w-0 rounded-2xl border border-[var(--color-outline-variant)] bg-white p-6 lg:col-span-2">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
             <h2 className="text-base font-bold text-[var(--color-navy)]">Receita recebida (últimos 6 meses)</h2>
             <span className="text-xs text-[var(--color-on-surface-variant)]">faturas pagas, por mês de vencimento</span>
           </div>

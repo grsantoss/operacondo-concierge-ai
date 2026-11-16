@@ -10,7 +10,7 @@ Responda sempre em português do Brasil, com acentuação correta.
 ## Estado atual (16/11/2026)
 
 - **Fase 0 (fundação) feita** (issues #2–#7, `v0.1.0`); releases `v0.2.0` e `v0.3.0` com a Fase 1: Postgres + schema + RLS + login.
-- **Fase 1 em andamento** (issues #8–#14): telas passam dos mocks de `src/data/*.ts` para o banco.
+- **Fase 1 concluída** (issues #8–#14): telas passam dos mocks de `src/data/*.ts` para o banco.
   Já leem e gravam no banco: moradores e condomínios (#8), demandas com anexos (#9),
   fornecedores com documentos (#10), a base de conhecimento (#11; arquivos no S3, status
   "enviado" até a leitura da Fase 3), a configuração do agente por condomínio (#12;
@@ -23,7 +23,7 @@ Responda sempre em português do Brasil, com acentuação correta.
   `preset: "node-server"` (`bun run build && bun start` → `.output/server/index.mjs`).
 - Lovable removido e desconectado (PR #1).
 - Baseline conhecida: `tsc` limpo; `bun run lint` já tinha ~18 mil erros (Prettier) antes das
-  mudanças. Algumas telas vazam na horizontal a 390px (já acontecia no `main`).
+  mudanças. Todas as telas cabem em 390px sem rolagem horizontal (#14); manter assim.
 
 ## Telas e o que elas viram no produto
 
@@ -36,8 +36,8 @@ Responda sempre em português do Brasil, com acentuação correta.
 | `/app/moradores` | Moradores por condomínio (vertical/horizontal), importação CSV |
 | `/admin/*` | Portal da plataforma: clientes (síndicos), planos, faturas |
 
-Lacunas já identificadas: `temperature`/`temp` (cold/warm/hot) ainda aparece em `/app/agente` e
-no dashboard e deve sair (#14; ver decisões abaixo).
+Urgência: escala única `priority` em `src/lib/urgencia.ts` (`URGENCIA`, `maiorPrioridade`); a
+temperatura (cold/warm/hot) saiu de todas as telas (#14).
 
 ## Decisões de produto (13/11/2026)
 

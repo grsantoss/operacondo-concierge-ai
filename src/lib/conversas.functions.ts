@@ -9,6 +9,7 @@ import type { Priority } from "@/data/demandas";
 import { PRIO_TELA, unidadeTexto } from "@/lib/demandas.functions";
 import { formatarTelefone } from "@/lib/telefone";
 import { maiorPrioridade } from "@/lib/urgencia";
+import { linkTemporario } from "@/server/arquivos";
 import { exigirCliente } from "@/server/auth/contexto";
 import { schema as s, withTenant } from "@/server/db";
 import { enviarNaConversa } from "@/server/whatsapp/send";
@@ -40,6 +41,10 @@ export interface MensagemConversa {
   autor: "morador" | "ia" | "sindico" | "sistema";
   tipo: "texto" | "audio" | "imagem" | "documento";
   texto: string | null;
+  /** Áudio transcrito (quando há provedor de transcrição configurado). */
+  transcricao: string | null;
+  /** Link temporário (15 min) do arquivo no S3; null enquanto não foi baixado. */
+  midiaUrl: string | null;
   criadoEm: string;
 }
 
@@ -109,18 +114,23 @@ export const listarMensagens = createServerFn({ method: "GET" })
         .select()
         .from(s.mensagens)
         .where(eq(s.mensagens.conversaId, data.id))
-        .orderBy(asc(s.mensagens.criadoEm))
+        // Mesma transação = mesmo now(): a entrada vem antes da resposta automática.
+        .orderBy(asc(s.mensagens.criadoEm), asc(s.mensagens.direcao))
         // ponytail: últimas 500 bastam para a tela; histórico completo quando pedirem.
         .limit(500),
     );
-    return linhas.map((m) => ({
-      id: m.id,
-      direcao: m.direcao,
-      autor: m.autor,
-      tipo: m.tipo,
-      texto: m.texto ?? (ROTULO_TIPO[m.tipo] || null),
-      criadoEm: m.criadoEm.toISOString(),
-    }));
+    return Promise.all(
+      linhas.map(async (m) => ({
+        id: m.id,
+        direcao: m.direcao,
+        autor: m.autor,
+        tipo: m.tipo,
+        texto: m.texto ?? (m.midiaPath ? null : ROTULO_TIPO[m.tipo] || null),
+        transcricao: m.transcricao,
+        midiaUrl: m.midiaPath ? await linkTemporario(m.midiaPath) : null,
+        criadoEm: m.criadoEm.toISOString(),
+      })),
+    );
   });
 
 async function mudarEstado(id: string, estado: EstadoConversa) {

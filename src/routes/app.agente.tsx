@@ -9,6 +9,7 @@ import {
   useConversas,
   useMensagens,
   type ConversaResumo,
+  type MensagemConversa,
 } from "@/data/conversas";
 import { URGENCIA } from "@/lib/urgencia";
 
@@ -375,7 +376,7 @@ function AgentePage() {
                     <div
                       className={`whitespace-pre-line rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-soft ${cor}`}
                     >
-                      {m.texto}
+                      <Conteudo m={m} />
                     </div>
                     <span className="px-1 text-[10px] text-[var(--color-on-surface-variant)]">
                       {quem} • {hora(m.criadoEm)}
@@ -426,5 +427,37 @@ function AgentePage() {
         </div>
       )}
     </AppShell>
+  );
+}
+
+/** Texto, imagem, áudio (com transcrição) ou link do arquivo. */
+function Conteudo({ m }: { m: MensagemConversa }) {
+  if (!m.midiaUrl) return <>{m.texto}</>;
+  if (m.tipo === "imagem")
+    return (
+      <>
+        <a href={m.midiaUrl} target="_blank" rel="noreferrer">
+          <img
+            src={m.midiaUrl}
+            alt={m.texto ?? "Imagem enviada pelo morador"}
+            className="max-h-64 max-w-full rounded-lg"
+          />
+        </a>
+        {m.texto ? <p className="mt-1.5">{m.texto}</p> : null}
+      </>
+    );
+  if (m.tipo === "audio")
+    return (
+      <>
+        <audio controls preload="none" src={m.midiaUrl} className="max-w-full" />
+        <p className="mt-1.5 text-xs italic opacity-80">
+          {m.transcricao ? `Transcrição: ${m.transcricao}` : "Áudio sem transcrição."}
+        </p>
+      </>
+    );
+  return (
+    <a href={m.midiaUrl} target="_blank" rel="noreferrer" className="underline">
+      📎 {m.texto ?? "Abrir arquivo"}
+    </a>
   );
 }

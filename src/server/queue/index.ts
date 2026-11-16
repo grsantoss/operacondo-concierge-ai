@@ -26,6 +26,16 @@ export interface JobAlerta {
   regra: "gas" | "incendio" | "elevador" | "vazamento";
 }
 
+/** Fila "midia": baixa áudio/imagem/documento da Z-API para o S3 e transcreve áudio. */
+export const FILA_MIDIA = "midia";
+
+export interface JobMidia {
+  tenantId: string;
+  mensagemId: string;
+  url: string;
+  mime: string | null;
+}
+
 let boss: Promise<PgBoss> | null = null;
 
 export function fila(): Promise<PgBoss> {
@@ -39,6 +49,9 @@ export function fila(): Promise<PgBoss> {
     await b.createQueue(FILA_MENSAGEM, { policy: "stately" });
     // Falha (ex.: Z-API fora do ar) → 3 novas tentativas: 30 s, 60 s, 120 s.
     await b.updateQueue(FILA_MENSAGEM, { retryLimit: 3, retryDelay: 30, retryBackoff: true });
+    await b.createQueue(FILA_MIDIA);
+    // A URL da Z-API expira: tenta logo (5 vezes, a partir de 10 s).
+    await b.updateQueue(FILA_MIDIA, { retryLimit: 5, retryDelay: 10, retryBackoff: true });
     await b.createQueue(FILA_ALERTA);
     // Urgência: tenta logo de novo (5 vezes, a partir de 5 s).
     await b.updateQueue(FILA_ALERTA, { retryLimit: 5, retryDelay: 5, retryBackoff: true });
@@ -65,4 +78,10 @@ export async function enfileirarAlerta(job: JobAlerta) {
     singletonKey: `${job.conversaId}:${job.regra}`,
     singletonSeconds: ALERTA_INTERVALO_S,
   });
+}
+
+export async function enfileirarMidias(jobs: JobMidia[]) {
+  if (!jobs.length) return;
+  const b = await fila();
+  for (const job of jobs) await b.send(FILA_MIDIA, job, { singletonKey: job.mensagemId });
 }

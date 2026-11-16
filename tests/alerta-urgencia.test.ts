@@ -118,7 +118,7 @@ describe("alerta", () => {
     const job = { tenantId, canalId, telefone };
     let alerta: JobAlerta | null = null;
     await processarConversa(job, async (e) => {
-      alerta = await rotear(job, e);
+      alerta = (await rotear(job, e)).alerta;
     });
     return alerta as JobAlerta | null;
   }

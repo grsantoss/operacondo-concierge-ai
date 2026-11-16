@@ -23,6 +23,11 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   desconhecido, recebe um menu numerado com os condomínios e responde com o número ou o nome. As
   mensagens passam a ser gravadas na conversa (sem duplicar) e o morador recebe a confirmação de
   que a administração foi avisada. Sem condomínio definido, nada específico é respondido (#60).
+- **Conversas do WhatsApp ao vivo em `/app/agente`**: a tela deixa os exemplos e mostra as
+  conversas reais, com condomínio, unidade, urgência (a maior entre a conversa e as demandas
+  abertas dela) e estado. Mensagens novas aparecem sem recarregar a página. O síndico responde
+  pelo WhatsApp direto da tela (e assume a conversa ao responder), assume ou marca como
+  resolvida, e abre uma demanda já com o condomínio e o morador. O conselho só acompanha.
 
 ### Segurança
 
@@ -30,6 +35,12 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   devolvidos ao navegador; só o síndico (não o conselho) configura o canal (#58).
 - **Webhook com segredo por canal**: a Z-API não assina as chamadas, então a URL leva um segredo
   aleatório (no banco fica só o hash) e a instância do payload precisa ser a do canal (#59).
+
+### Removido
+
+- **Dados de exemplo e controles simulados de `/app/agente`**: conversas fictícias, indicadores
+  inventados ("Resolução autônoma 94%", "Tempo médio IA") e o seletor de tom de voz da tela, que
+  não salvava (o tom fica em Configurações → Agente).
 
 ## [0.4.0] - 2026-11-16
 

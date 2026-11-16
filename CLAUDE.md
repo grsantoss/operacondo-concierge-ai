@@ -80,6 +80,10 @@ temperatura (cold/warm/hot) saiu de todas as telas (#14).
   numerado para vários ou desconhecido; grava `conversas`/`mensagens`; sem agente, conversa com
   condomínio fica `aguardando_sindico`). Envio: `src/server/whatsapp/send.ts`
   (`enviarNaConversa`, grava a saída). Falha no envio → rollback e nova tentativa da fila.
+  Tempo real: triggers da migration 0007 fazem `pg_notify('eventos', {tenant, tabela, conversa})`
+  (só ids) em `conversas`, `mensagens` e `demandas` → `src/server/realtime` (um LISTEN por
+  processo) → SSE `GET /api/eventos` (filtra pelo cliente da sessão) → `useConversasAoVivo()`
+  invalida as queries. Tela: `src/lib/conversas.functions.ts` + `src/data/conversas.ts`.
   O número identifica o cliente; o telefone do remetente identifica o condomínio:
   1 condomínio → segue; vários → pergunta qual; desconhecido → lista os condomínios do síndico,
   pergunta a unidade e cria cadastro pendente. Enquanto o condomínio não estiver definido, o agente

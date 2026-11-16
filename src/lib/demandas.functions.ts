@@ -22,10 +22,11 @@ import { type Tx, schema as s, withTenant } from "@/server/db";
 /* ------------------------------------------------------------ conversões */
 
 const PRIO_DB = { Crítica: "critica", Alta: "alta", Normal: "normal" } as const;
-const PRIO_TELA = { critica: "Crítica", alta: "Alta", normal: "Normal" } as const satisfies Record<
-  string,
-  Priority
->;
+export const PRIO_TELA = {
+  critica: "Crítica",
+  alta: "Alta",
+  normal: "Normal",
+} as const satisfies Record<string, Priority>;
 const CAT_DB = {
   Manutenção: "manutencao",
   Segurança: "seguranca",
@@ -80,7 +81,7 @@ function prazo(slaAte: Date | null, coluna: ColumnId): string | undefined {
   return h <= 0 ? "SLA vencido" : `SLA ${h}h`;
 }
 
-function unidadeTexto(u: typeof s.unidades.$inferSelect | null): string {
+export function unidadeTexto(u: typeof s.unidades.$inferSelect | null): string {
   if (!u) return "Áreas comuns";
   return u.quadra != null ? `Casa ${u.casa ?? ""}` : `Apto ${u.apto ?? ""}`;
 }

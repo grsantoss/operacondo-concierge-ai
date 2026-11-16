@@ -4,6 +4,7 @@
  */
 import {
   CreateBucketCommand,
+  DeleteObjectCommand,
   GetObjectCommand,
   HeadBucketCommand,
   PutObjectCommand,
@@ -85,4 +86,8 @@ export function linkTemporario(caminho: string, nomeDownload?: string): Promise<
     }),
     { expiresIn: 900 },
   );
+}
+
+export async function apagarArquivo(caminho: string) {
+  await s3().send(new DeleteObjectCommand({ Bucket: bucket(), Key: caminho }));
 }

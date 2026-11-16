@@ -6,11 +6,24 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
 
 ## [Não lançado]
 
+### Adicionado
+
+- **Coleção Estatuto** na base de conhecimento.
+
 ### Alterado
 
 - **Fornecedores gravados no banco**: cadastro, edição, checklist de homologação (vale 12 meses),
   arquivamento e envio de documentos (PDF ou imagem, até 20 MB, no S3, com data de validade)
   passam a valer de verdade. CNPJ repetido no mesmo cliente é recusado (#51).
+- **Base de conhecimento gravada no banco e no S3**: envio de PDF, DOCX, TXT, MD ou imagem (até
+  20 MB, até 10 por vez) por condomínio, com coleção, visibilidade e vigência; abrir e remover o
+  arquivo. A tela mostra os números reais e o status "Aguardando leitura" até a IA ler o conteúdo.
+
+### Removido
+
+- **"Retreinar IA" e "Treinar automaticamente" na base**: eram simulados; a leitura dos
+  documentos chega com a ingestão. O campo "Descrição" do envio também saiu (não era guardado).
+- **Envio de `.doc` antigo**: a leitura de documentos não suporta esse formato; use DOCX ou PDF.
 
 ### Corrigido
 

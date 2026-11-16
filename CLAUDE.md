@@ -11,7 +11,9 @@ Responda sempre em português do Brasil, com acentuação correta.
 
 - **Fase 0 (fundação) feita** (issues #2–#7, `v0.1.0`): Postgres + schema + RLS + login.
 - **Fase 1 em andamento** (issues #8–#14): telas passam dos mocks de `src/data/*.ts` para o banco.
-  Moradores e condomínios (#8) e demandas com anexos no S3 (#9) já leem e gravam no banco.
+  Já leem e gravam no banco: moradores e condomínios (#8), demandas com anexos (#9),
+  fornecedores com documentos (#10) e a base de conhecimento (#11; arquivos no S3, status
+  "enviado" até a leitura da Fase 3).
 - Rodar localmente: `cp .env.example .env` → `bun run db:reset` (sobe containers, migrations e
   seed) → `bun run dev`. Login: `sindico@operacondo.local` (cliente Aurora) ou
   `admin@operacondo.local` (Admin Master), senha `SEED_SENHA` (padrão `operacondo123`).
@@ -32,9 +34,8 @@ Responda sempre em português do Brasil, com acentuação correta.
 | `/app/moradores` | Moradores por condomínio (vertical/horizontal), importação CSV |
 | `/admin/*` | Portal da plataforma: clientes (síndicos), planos, faturas |
 
-Lacunas já identificadas: falta a coleção **Estatuto** em `app.base.enviar.tsx`; telefone precisa
-ser guardado em E.164; `temperature`/`temp` (cold/warm/hot)
-deve sair das telas (ver decisões abaixo).
+Lacunas já identificadas: `temperature`/`temp` (cold/warm/hot) ainda aparece em `/app/agente` e
+no dashboard e deve sair (#14; ver decisões abaixo).
 
 ## Decisões de produto (13/11/2026)
 

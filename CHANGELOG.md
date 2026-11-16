@@ -27,7 +27,7 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   conversas reais, com condomínio, unidade, urgência (a maior entre a conversa e as demandas
   abertas dela) e estado. Mensagens novas aparecem sem recarregar a página. O síndico responde
   pelo WhatsApp direto da tela (e assume a conversa ao responder), assume ou marca como
-  resolvida, e abre uma demanda já com o condomínio e o morador. O conselho só acompanha.
+  resolvida, e abre uma demanda já com o condomínio e o morador. O conselho só acompanha (#61).
 
 ### Segurança
 
@@ -40,7 +40,7 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
 
 - **Dados de exemplo e controles simulados de `/app/agente`**: conversas fictícias, indicadores
   inventados ("Resolução autônoma 94%", "Tempo médio IA") e o seletor de tom de voz da tela, que
-  não salvava (o tom fica em Configurações → Agente).
+  não salvava (o tom fica em Configurações → Agente) (#61).
 
 ## [0.4.0] - 2026-11-16
 

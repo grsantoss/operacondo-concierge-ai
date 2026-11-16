@@ -18,6 +18,7 @@ import { Route as AdminAmbientesRouteImport } from './routes/admin.ambientes'
 import { Route as AdminConfiguracoesRouteImport } from './routes/admin.configuracoes'
 import { Route as AdminFinanceiroRouteImport } from './routes/admin.financeiro'
 import { Route as AdminUsuariosRouteImport } from './routes/admin.usuarios'
+import { Route as ApiEventosRouteImport } from './routes/api/eventos'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AppAgenteRouteImport } from './routes/app.agente'
 import { Route as AppBaseRouteImport } from './routes/app.base'
@@ -85,6 +86,11 @@ const AdminUsuariosRoute = AdminUsuariosRouteImport.update({
   id: '/usuarios',
   path: '/usuarios',
   getParentRoute: () => AdminRoute,
+} as any)
+const ApiEventosRoute = ApiEventosRouteImport.update({
+  id: '/api/eventos',
+  path: '/api/eventos',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
@@ -206,6 +212,7 @@ export interface FileRoutesByFullPath {
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/financeiro': typeof AdminFinanceiroRoute
   '/admin/usuarios': typeof AdminUsuariosRouteWithChildren
+  '/api/eventos': typeof ApiEventosRoute
   '/app/agente': typeof AppAgenteRoute
   '/app/base': typeof AppBaseRouteWithChildren
   '/app/configuracoes': typeof AppConfiguracoesRoute
@@ -236,6 +243,7 @@ export interface FileRoutesByTo {
   '/admin/ambientes': typeof AdminAmbientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/financeiro': typeof AdminFinanceiroRoute
+  '/api/eventos': typeof ApiEventosRoute
   '/app/agente': typeof AppAgenteRoute
   '/app/configuracoes': typeof AppConfiguracoesRoute
   '/admin': typeof AdminIndexRoute
@@ -266,6 +274,7 @@ export interface FileRoutesById {
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/financeiro': typeof AdminFinanceiroRoute
   '/admin/usuarios': typeof AdminUsuariosRouteWithChildren
+  '/api/eventos': typeof ApiEventosRoute
   '/app/agente': typeof AppAgenteRoute
   '/app/base': typeof AppBaseRouteWithChildren
   '/app/configuracoes': typeof AppConfiguracoesRoute
@@ -301,6 +310,7 @@ export interface FileRouteTypes {
     | '/admin/configuracoes'
     | '/admin/financeiro'
     | '/admin/usuarios'
+    | '/api/eventos'
     | '/app/agente'
     | '/app/base'
     | '/app/configuracoes'
@@ -331,6 +341,7 @@ export interface FileRouteTypes {
     | '/admin/ambientes'
     | '/admin/configuracoes'
     | '/admin/financeiro'
+    | '/api/eventos'
     | '/app/agente'
     | '/app/configuracoes'
     | '/admin'
@@ -360,6 +371,7 @@ export interface FileRouteTypes {
     | '/admin/configuracoes'
     | '/admin/financeiro'
     | '/admin/usuarios'
+    | '/api/eventos'
     | '/app/agente'
     | '/app/base'
     | '/app/configuracoes'
@@ -390,6 +402,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   AppRoute: typeof AppRouteWithChildren
   OnboardingRoute: typeof OnboardingRoute
+  ApiEventosRoute: typeof ApiEventosRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiWhatsappZapiSegredoRoute: typeof ApiWhatsappZapiSegredoRoute
 }
@@ -458,6 +471,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/usuarios'
       preLoaderRoute: typeof AdminUsuariosRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/api/eventos': {
+      id: '/api/eventos'
+      path: '/api/eventos'
+      fullPath: '/api/eventos'
+      preLoaderRoute: typeof ApiEventosRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/app/': {
       id: '/app/'
@@ -736,6 +756,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   AppRoute: AppRouteWithChildren,
   OnboardingRoute: OnboardingRoute,
+  ApiEventosRoute: ApiEventosRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiWhatsappZapiSegredoRoute: ApiWhatsappZapiSegredoRoute,
 }

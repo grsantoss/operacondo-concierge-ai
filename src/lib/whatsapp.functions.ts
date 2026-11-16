@@ -11,6 +11,7 @@ import { cifrar, decifrar, hashSegredo, novoSegredo } from "@/server/cripto";
 import { schema as s, withTenant, type Tx } from "@/server/db";
 import {
   configurarWebhookZapi,
+  credDoCanal,
   desconectarZapi,
   dispositivoZapi,
   ErroZapi,
@@ -46,20 +47,6 @@ async function exigirGestor() {
 async function lerCanal(tx: Tx) {
   const [c] = await tx.select().from(s.whatsappCanais).limit(1);
   return c ?? null;
-}
-
-function credDe(c: {
-  instanceId: string | null;
-  credenciaisCifradas: string | null;
-}): CredZapi & { webhookSegredo?: string } {
-  if (!c.instanceId || !c.credenciaisCifradas)
-    throw new Error("Salve as credenciais da Z-API primeiro.");
-  const { token, clientToken, webhookSegredo } = JSON.parse(decifrar(c.credenciaisCifradas)) as {
-    token: string;
-    clientToken?: string;
-    webhookSegredo?: string;
-  };
-  return { instanceId: c.instanceId, token, clientToken, webhookSegredo };
 }
 
 /** Endereço público da aplicação; a Z-API só chama HTTPS. */
@@ -154,7 +141,7 @@ export const verificarCanal = createServerFn({ method: "POST" }).handler(
     const { tenantId } = await exigirGestor();
     const canal = await withTenant(tenantId, lerCanal);
     if (!canal) throw new Error("Salve as credenciais da Z-API primeiro.");
-    const cred = credDe(canal);
+    const cred = credDoCanal(canal);
     let r: Verificacao = { conectado: false, qrCode: null, aviso: null };
     try {
       const st = await statusZapi(cred);
@@ -230,7 +217,7 @@ export const desconectarCanal = createServerFn({ method: "POST" }).handler(async
   const canal = await withTenant(tenantId, lerCanal);
   if (!canal) return;
   try {
-    await desconectarZapi(credDe(canal));
+    await desconectarZapi(credDoCanal(canal));
   } catch (err) {
     if (err instanceof ErroZapi) throw new Error(err.message);
     throw err;

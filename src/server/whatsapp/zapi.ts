@@ -6,6 +6,8 @@
  * ponytail: caminhos das rotas conferidos na documentação, mas ainda não contra uma instância real;
  * confirmar no teste de ponta a ponta.
  */
+import { decifrar } from "@/server/cripto";
+
 export interface CredZapi {
   instanceId: string;
   token: string;
@@ -72,3 +74,27 @@ export const desconectarZapi = (c: CredZapi) => chamar<unknown>(c, "GET", "disco
 /** Aponta o webhook "Ao receber" da instância para a nossa URL. */
 export const configurarWebhookZapi = (c: CredZapi, url: string) =>
   chamar<{ value?: boolean }>(c, "PUT", "update-webhook-received", { value: url });
+
+/** Envia texto. `phone` só com dígitos (DDI + DDD + número). Devolve o id da mensagem. */
+export async function enviarTextoZapi(c: CredZapi, phone: string, message: string) {
+  const r = await chamar<{ messageId?: string; zaapId?: string }>(c, "POST", "send-text", {
+    phone: phone.replace(/\D/g, ""),
+    message,
+  });
+  return r.messageId ?? r.zaapId ?? null;
+}
+
+/** Credenciais do canal (decifradas). Só no servidor. */
+export function credDoCanal(c: {
+  instanceId: string | null;
+  credenciaisCifradas: string | null;
+}): CredZapi & { webhookSegredo?: string } {
+  if (!c.instanceId || !c.credenciaisCifradas)
+    throw new Error("Salve as credenciais da Z-API primeiro.");
+  const { token, clientToken, webhookSegredo } = JSON.parse(decifrar(c.credenciaisCifradas)) as {
+    token: string;
+    clientToken?: string;
+    webhookSegredo?: string;
+  };
+  return { instanceId: c.instanceId, token, clientToken, webhookSegredo };
+}

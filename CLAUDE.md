@@ -76,7 +76,10 @@ temperatura (cold/warm/hot) saiu de todas as telas (#14).
   → `whatsapp_entradas` (dedupe por `canal_id + provider_msg_id`; só oc_admin) → fila `mensagem`
   (pg-boss em `src/server/queue`, schema `pgboss` criado pela migration, política `stately`,
   `singletonKey` canal:telefone, 8 s de espera) → worker `src/server/worker.ts` →
-  `src/server/pipeline/processar.ts`.
+  `src/server/pipeline/processar.ts` → `pipeline/roteamento.ts` (telefone → condomínio; menu
+  numerado para vários ou desconhecido; grava `conversas`/`mensagens`; sem agente, conversa com
+  condomínio fica `aguardando_sindico`). Envio: `src/server/whatsapp/send.ts`
+  (`enviarNaConversa`, grava a saída). Falha no envio → rollback e nova tentativa da fila.
   O número identifica o cliente; o telefone do remetente identifica o condomínio:
   1 condomínio → segue; vários → pergunta qual; desconhecido → lista os condomínios do síndico,
   pergunta a unidade e cria cadastro pendente. Enquanto o condomínio não estiver definido, o agente

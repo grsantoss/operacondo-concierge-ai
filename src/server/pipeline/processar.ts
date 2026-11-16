@@ -17,7 +17,7 @@ export async function processarConversa(
       .orderBy(asc(e.recebidoEm))
       .for("update", { skipLocked: true });
     if (!entradas.length) return 0;
-    // Roteamento e gravação em conversas/mensagens entram na issue #17, dentro de `fn`.
+    // Se `fn` falhar, nada é marcado e a fila tenta de novo (mensagens não duplicam).
     await fn(entradas);
     await tx
       .update(e)

@@ -3,32 +3,25 @@ import { useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/brand/Icon";
+import {
+  COLECOES,
+  VISIBILIDADES,
+  useDocumentosAcoes,
+  type ColecaoId,
+  type VisibilidadeId,
+} from "@/data/base";
+import { condominiosQuery, useCondominios } from "@/data/moradores";
 
 export const Route = createFileRoute("/app/base/enviar")({
   head: () => ({ meta: [{ title: "Enviar documento | Base de Conhecimento" }] }),
+  loader: ({ context: { queryClient } }) => queryClient.ensureQueryData(condominiosQuery),
   component: EnviarDocumentoPage,
 });
 
-const COLECOES = [
-  { id: "convencao", label: "Convenção", icon: "gavel" },
-  { id: "regimento", label: "Regimento Interno", icon: "rule" },
-  { id: "atas", label: "Atas de Assembleia", icon: "history_edu" },
-  { id: "procedimentos", label: "Procedimentos", icon: "checklist" },
-  { id: "comunicados", label: "Comunicados", icon: "campaign" },
-  { id: "manuais", label: "Manuais técnicos", icon: "engineering" },
-] as const;
-
-const VISIBILIDADES = [
-  { id: "interno", label: "Interno (síndico)", icon: "shield_person" },
-  { id: "conselho", label: "Conselho", icon: "groups" },
-  { id: "moradores", label: "Moradores", icon: "apartment" },
-  { id: "publico", label: "Público (IA responde)", icon: "smart_toy" },
-] as const;
-
-const ACCEPT = ".pdf,.doc,.docx,.txt,.md,.png,.jpg,.jpeg";
+// `.doc` antigo não é suportado pela leitura (Docling).
+const ACCEPT = ".pdf,.docx,.txt,.md,.png,.jpg,.jpeg";
 const ACCEPT_MIME = [
   "application/pdf",
-  "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   "text/plain",
   "text/markdown",
@@ -43,10 +36,11 @@ const metaSchema = z.object({
     .trim()
     .min(3, "Informe um título com pelo menos 3 caracteres")
     .max(120, "Máximo de 120 caracteres"),
-  colecao: z.string().min(1, "Selecione uma coleção"),
-  visibilidade: z.string().min(1, "Selecione a visibilidade"),
-  descricao: z.string().trim().max(500, "Máximo de 500 caracteres").optional(),
-  treinarIA: z.boolean(),
+  condominioId: z.string().min(1, "Selecione o condomínio"),
+  colecao: z.enum(COLECOES.map((c) => c.id) as [ColecaoId, ...ColecaoId[]], {
+    errorMap: () => ({ message: "Selecione uma coleção" }),
+  }),
+  visibilidade: z.enum(VISIBILIDADES.map((v) => v.id) as [VisibilidadeId, ...VisibilidadeId[]]),
   vigencia: z.string().optional(),
 });
 
@@ -78,12 +72,13 @@ function EnviarDocumentoPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<FileItem[]>([]);
   const [dragging, setDragging] = useState(false);
+  const condominios = useCondominios();
+  const { enviar } = useDocumentosAcoes();
   const [meta, setMeta] = useState({
     titulo: "",
+    condominioId: condominios.length === 1 ? condominios[0].id : "",
     colecao: "",
-    visibilidade: "interno",
-    descricao: "",
-    treinarIA: true,
+    visibilidade: "moradores",
     vigencia: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -147,38 +142,6 @@ function EnviarDocumentoPage() {
     if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
   }
 
-  function simulateUpload(): Promise<void> {
-    return new Promise((resolve) => {
-      const total = files.length;
-      let completed = 0;
-      files.forEach((item) => {
-        setFiles((prev) =>
-          prev.map((f) =>
-            f.id === item.id && f.status === "queued"
-              ? { ...f, status: "uploading" }
-              : f,
-          ),
-        );
-        const interval = setInterval(() => {
-          setFiles((prev) =>
-            prev.map((f) => {
-              if (f.id !== item.id) return f;
-              const p = Math.min(100, f.progress + Math.random() * 22 + 8);
-              if (p >= 100) {
-                clearInterval(interval);
-                completed += 1;
-                if (completed === total) setTimeout(resolve, 300);
-                return { ...f, progress: 100, status: "done" };
-              }
-              return { ...f, progress: p };
-            }),
-          );
-        }, 220);
-      });
-      if (total === 0) resolve();
-    });
-  }
-
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     const parsed = metaSchema.safeParse(meta);
@@ -194,7 +157,31 @@ function EnviarDocumentoPage() {
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
-    await simulateUpload();
+    if (!parsed.success) return;
+    const enviando = (status: FileItem["status"], error?: string) =>
+      setFiles((prev) =>
+        prev.map((f) =>
+          f.status === "error" ? f : { ...f, status, progress: status === "done" ? 100 : 50, error },
+        ),
+      );
+    enviando("uploading");
+    try {
+      await enviar(
+        {
+          condominioId: parsed.data.condominioId,
+          titulo: parsed.data.titulo,
+          colecao: parsed.data.colecao,
+          visibilidade: parsed.data.visibilidade,
+          vigenteDesde: parsed.data.vigencia || undefined,
+        },
+        validFiles.map((f) => f.file),
+      );
+    } catch (err) {
+      enviando("queued");
+      setErrors({ files: (err as Error).message });
+      return;
+    }
+    enviando("done");
     setSubmitted(true);
     setTimeout(() => navigate({ to: "/app/base" }), 1100);
   }
@@ -234,9 +221,7 @@ function EnviarDocumentoPage() {
             Documento{files.length > 1 ? "s enviados" : " enviado"}
           </h2>
           <p className="mt-1 text-sm text-[var(--color-on-surface-variant)]">
-            {meta.treinarIA
-              ? "A IA será atualizada nos próximos minutos."
-              : "Arquivos disponíveis na base sem retreino automático."}
+            Guardado na base. A leitura do conteúdo pela IA chega na próxima fase.
           </p>
         </div>
       ) : (
@@ -392,6 +377,24 @@ function EnviarDocumentoPage() {
                   />
                 </Field>
 
+                <Field label="Condomínio" error={errors.condominioId}>
+                  <select
+                    value={meta.condominioId}
+                    onChange={(e) => {
+                      setMeta({ ...meta, condominioId: e.target.value });
+                      if (errors.condominioId) setErrors((er) => ({ ...er, condominioId: "" }));
+                    }}
+                    className={inputClass(errors.condominioId)}
+                  >
+                    <option value="">Selecione…</option>
+                    {condominios.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.nome}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+
                 <Field label="Coleção" error={errors.colecao}>
                   <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
                     {COLECOES.map((c) => (
@@ -432,9 +435,7 @@ function EnviarDocumentoPage() {
                             type="radio"
                             name="visibilidade"
                             checked={meta.visibilidade === v.id}
-                            onChange={() =>
-                              setMeta({ ...meta, visibilidade: v.id })
-                            }
+                            onChange={() => setMeta({ ...meta, visibilidade: v.id })}
                             className="accent-[var(--color-brand)]"
                           />
                           <Icon
@@ -461,46 +462,6 @@ function EnviarDocumentoPage() {
                   </Field>
                 </div>
 
-                <Field
-                  label="Descrição (opcional)"
-                  hint={`${meta.descricao.length}/500`}
-                  error={errors.descricao}
-                >
-                  <textarea
-                    rows={3}
-                    value={meta.descricao}
-                    maxLength={500}
-                    onChange={(e) =>
-                      setMeta({ ...meta, descricao: e.target.value.slice(0, 500) })
-                    }
-                    placeholder="Contexto, decisões-chave, seções relevantes…"
-                    className={inputClass(errors.descricao)}
-                  />
-                </Field>
-
-                <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-[var(--color-outline-variant)] bg-[var(--color-surface-low)] p-3">
-                  <input
-                    type="checkbox"
-                    checked={meta.treinarIA}
-                    onChange={(e) =>
-                      setMeta({ ...meta, treinarIA: e.target.checked })
-                    }
-                    className="h-4 w-4 accent-[var(--color-brand)]"
-                  />
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-[var(--color-navy)]">
-                      Treinar a Voz do Condomínio automaticamente
-                    </p>
-                    <p className="text-xs text-[var(--color-on-surface-variant)]">
-                      Indexa o conteúdo para o agente responder em nome do síndico.
-                    </p>
-                  </div>
-                  <Icon
-                    name="smart_toy"
-                    className="text-[22px] text-[var(--color-brand)]"
-                    filled
-                  />
-                </label>
               </div>
             </section>
           </div>
@@ -537,9 +498,9 @@ function EnviarDocumentoPage() {
                   }
                 />
                 <SummaryRow
-                  icon="smart_toy"
-                  label="Retreinar IA"
-                  value={meta.treinarIA ? "Sim" : "Não"}
+                  icon="apartment"
+                  label="Condomínio"
+                  value={condominios.find((c) => c.id === meta.condominioId)?.nome || "—"}
                 />
               </dl>
             </section>

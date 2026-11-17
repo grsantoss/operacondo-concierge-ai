@@ -58,6 +58,10 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   pendente (com unidade, vínculo e aceite da LGPD, para o síndico aprovar), troca o condomínio
   da conversa quando o morador é de outro e passa a conversa ao síndico quando o assunto pede.
   Orçamento acima do limite de aprovação vai para "Triagem" aguardando o síndico (#68).
+- **Rascunho da IA para o síndico aprovar**: quando a conversa vai para o síndico, a tela de
+  conversas mostra o motivo ("Sem base documental", reclamação de vizinho…) e a resposta que a IA
+  sugeriu, com "Aprovar e enviar" e "Editar". Cada resposta do síndico registra se o rascunho foi
+  aprovado sem edição, editado ou reescrito, para medir a qualidade do agente (#70).
 
 ### Corrigido
 

@@ -169,6 +169,12 @@ temperatura (cold/warm/hot) saiu de todas as telas (#14).
   `atualizar_demanda` (só cadastro aprovado, só as próprias); `escalar_sindico` (o texto do
   modelo vai ao morador e a conversa vira `aguardando_sindico`). Demandas abertas da conversa
   entram no contexto para não abrir de novo.
+- **Rascunho para o síndico (#24):** ao ir para o síndico, o agente grava
+  `conversas.rascunho` (texto depois de `[SEM_BASE]`) e `conversas.rascunho_motivo` ("Sem base
+  documental", motivo do `escalar_sindico`, falha ou recusa da IA). `/app/agente` mostra o cartão
+  com "Aprovar e enviar" e "Editar". Ao responder, `avaliarRascunho()` grava a nota em
+  `mensagens.avaliacao_rascunho` (`aprovado | editado | reescrito`) e o rascunho é apagado;
+  resolver também apaga. A nota vai para o Langfuse na #26.
 - **Mascaramento (#25):** `src/server/mascarar.ts`. `mascarar()` troca CPF (formatado ou 11
   dígitos com DV válido) e telefone por `[CPF]`/`[telefone]` em toda mensagem da conversa antes
   de ir ao Claude; `mascararCpf()` nos trechos de documentos (telefone de portaria/zelador

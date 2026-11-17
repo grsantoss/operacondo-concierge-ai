@@ -8,6 +8,7 @@ export async function enviarNaConversa(
   conversa: { id: string; tenantId: string; canalId: string; phoneE164: string },
   texto: string,
   autor: "sistema" | "sindico" | "ia",
+  avaliacaoRascunho?: "aprovado" | "editado" | "reescrito",
 ) {
   const [canal] = await tx
     .select()
@@ -23,5 +24,6 @@ export async function enviarNaConversa(
     tipo: "texto",
     texto,
     providerMsgId,
+    avaliacaoRascunho,
   });
 }

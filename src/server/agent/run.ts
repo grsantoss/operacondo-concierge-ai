@@ -46,10 +46,17 @@ export function fontes(r: BetaMessage, ctx: Contexto): string[] {
   return [...vistas].slice(0, 3);
 }
 
-async function escalar(tx: Tx, ctx: Contexto, texto = AVISO_SINDICO) {
+/** O síndico vê o motivo e, quando houver, o rascunho para aprovar, editar ou reescrever (#24). */
+async function escalar(
+  tx: Tx,
+  ctx: Contexto,
+  motivo: string,
+  rascunho: string | null = null,
+  texto = AVISO_SINDICO,
+) {
   await tx
     .update(s.conversas)
-    .set({ estado: "aguardando_sindico" })
+    .set({ estado: "aguardando_sindico", rascunho, rascunhoMotivo: motivo })
     .where(and(eq(s.conversas.id, ctx.conversa.id), eq(s.conversas.estado, "ia")));
   await enviarNaConversa(tx, ctx.conversa, texto, texto === AVISO_SINDICO ? "sistema" : "ia");
 }
@@ -97,7 +104,7 @@ export async function responder(
   } catch (e) {
     if (!ultimaTentativa) throw e;
     console.error(`[agente] conversa ${job.conversaId}: falhou de vez, vai para o síndico`, e);
-    await withTenant(job.tenantId, (tx) => escalar(tx, ctx));
+    await withTenant(job.tenantId, (tx) => escalar(tx, ctx, "A IA não conseguiu responder"));
     return;
   }
   if (!r) return;
@@ -138,8 +145,16 @@ export async function responder(
       .limit(1);
     if (cv?.estado !== "ia" || maisNova?.id !== ultima.id) return;
 
-    // ponytail: o rascunho depois de [SEM_BASE] ainda não é guardado (#24 mostra ao síndico).
-    if (semBase) return escalar(tx, ctx);
+    if (semBase) {
+      const rascunho = texto.startsWith(SEM_BASE) ? texto.slice(SEM_BASE.length).trim() : "";
+      const motivo =
+        r.stop_reason === "refusal"
+          ? "A IA recusou responder"
+          : r.stop_reason === "max_tokens" || r.stop_reason === "tool_use"
+            ? "A IA não concluiu a resposta"
+            : "Sem base documental";
+      return escalar(tx, ctx, motivo, rascunho || null);
+    }
 
     const f = fontes(r, ctx);
     const assinatura = ctx.config.opcoes.assinatura.trim();
@@ -147,7 +162,7 @@ export async function responder(
       .filter(Boolean)
       .join("\n\n");
     // escalar_sindico: o modelo já escreveu o aviso ao morador; a conversa vai para o síndico.
-    if (efeitos.escalar) return escalar(tx, ctx, mensagem);
+    if (efeitos.escalar) return escalar(tx, ctx, efeitos.escalar, null, mensagem);
     await enviarNaConversa(tx, ctx.conversa, mensagem, "ia");
   });
 

@@ -18,7 +18,7 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   resposta esperada (responder citando o artigo certo, mandar ao síndico quando não há base,
   abrir demanda, não vazar documento interno, resistir a pedido para ignorar as instruções). O
   script roda o agente de verdade e mostra o que passou; com o Langfuse, cada execução vira um
-  experimento sobre o dataset `concierge-perguntas`, para comparar modelos e mudanças no prompt.
+  experimento sobre o dataset `concierge-perguntas`, para comparar modelos e mudanças no prompt (#75).
 
 ### Corrigido
 

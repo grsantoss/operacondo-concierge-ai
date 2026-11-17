@@ -1,0 +1,1 @@
+ALTER TABLE "moradores" ADD COLUMN "unidade_informada" text;

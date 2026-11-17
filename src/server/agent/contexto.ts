@@ -2,7 +2,7 @@
  * Contexto de uma resposta do agente, sempre a partir da conversa (nunca do modelo):
  * condomínio, morador, configuração, documentos visíveis e histórico.
  */
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, ne } from "drizzle-orm";
 import { ConfigAgente } from "@/lib/agente.functions";
 import { schema as s, type Tx } from "@/server/db";
 
@@ -44,6 +44,8 @@ export interface Contexto {
   instrucoes: string | null;
   documentos: DocContexto[];
   historico: (typeof s.mensagens.$inferSelect)[];
+  /** Demandas abertas desta conversa (o histórico não guarda as ferramentas usadas). */
+  demandas: { codigo: string; titulo: string }[];
 }
 
 export async function carregarContexto(tx: Tx, conversaId: string): Promise<Contexto | null> {
@@ -117,6 +119,11 @@ export async function carregarContexto(tx: Tx, conversaId: string): Promise<Cont
       .limit(HISTORICO)
   ).reverse();
 
+  const demandas = await tx
+    .select({ codigo: s.demandas.codigo, titulo: s.demandas.titulo })
+    .from(s.demandas)
+    .where(and(eq(s.demandas.conversaId, conversaId), ne(s.demandas.coluna, "resolvidas")));
+
   return {
     conversa: linha.conversa,
     condominio: linha.condominio,
@@ -125,5 +132,6 @@ export async function carregarContexto(tx: Tx, conversaId: string): Promise<Cont
     instrucoes: cfg?.instrucoes ?? null,
     documentos,
     historico,
+    demandas,
   };
 }

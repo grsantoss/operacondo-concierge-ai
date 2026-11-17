@@ -4,6 +4,7 @@ import { desc, eq } from "drizzle-orm";
 import { carregarContexto } from "../src/server/agent/contexto";
 import { mensagens, SEM_BASE } from "../src/server/agent/prompt";
 import { AVISO_SINDICO, responder } from "../src/server/agent/run";
+import { acharUnidade } from "../src/server/agent/tools";
 import { cifrar } from "../src/server/cripto";
 import { dbAdmin, schema as s, withTenant } from "../src/server/db";
 import { processarConversa } from "../src/server/pipeline/processar";
@@ -20,7 +21,10 @@ type Pedido = {
 };
 const pedidos: Pedido[] = [];
 const enviados: { phone: string; message: string }[] = [];
-let resposta: { texto: string; citar?: [number, number] } = { texto: "" };
+type Texto = { texto: string; citar?: [number, number]; citarBusca?: boolean };
+let resposta: Texto = { texto: "" };
+/** Respostas em ordem (antes de `resposta`): pedido de ferramenta ou texto final. */
+const roteiro: (Texto | { ferramenta: string; entrada: unknown })[] = [];
 let falhar = false;
 let durante: (() => Promise<void>) | null = null;
 
@@ -39,9 +43,65 @@ beforeAll(async () => {
             { type: "error", error: { type: "api_error", message: "fora" } },
             { status: 500 },
           );
-        pedidos.push((await req.json()) as Pedido);
+        const pedido = (await req.json()) as Pedido;
+        pedidos.push(pedido);
         await durante?.();
-        const [doc, bloco] = resposta.citar ?? [];
+        const passo = roteiro.shift();
+        if (passo && "ferramenta" in passo)
+          return Response.json({
+            id: "msg_tool",
+            type: "message",
+            role: "assistant",
+            model: "claude-haiku-5-5",
+            content: [
+              {
+                type: "tool_use",
+                id: `tu_${pedidos.length}`,
+                name: passo.ferramenta,
+                input: passo.entrada,
+              },
+            ],
+            stop_reason: "tool_use",
+            stop_sequence: null,
+            usage: { input_tokens: 100, output_tokens: 20 },
+          });
+        const atual = passo ?? resposta;
+        // Cita o 1º resultado de buscar_regras que veio no último tool_result.
+        const busca = atual.citarBusca
+          ? (pedido.messages.at(-1)!.content as { type: string; content?: unknown }[])
+              .flatMap((b) =>
+                b.type === "tool_result" ? (b.content as { title: string; source: string }[]) : [],
+              )
+              .at(0)
+          : undefined;
+        if (busca)
+          return Response.json({
+            id: "msg_busca",
+            type: "message",
+            role: "assistant",
+            model: "claude-haiku-5-5",
+            content: [
+              {
+                type: "text",
+                text: atual.texto,
+                citations: [
+                  {
+                    type: "search_result_location",
+                    cited_text: "…",
+                    search_result_index: 0,
+                    source: busca.source,
+                    title: busca.title,
+                    start_block_index: 0,
+                    end_block_index: 1,
+                  },
+                ],
+              },
+            ],
+            stop_reason: "end_turn",
+            stop_sequence: null,
+            usage: { input_tokens: 100, output_tokens: 20 },
+          });
+        const [doc, bloco] = atual.citar ?? [];
         return Response.json({
           id: "msg_teste",
           type: "message",
@@ -50,7 +110,7 @@ beforeAll(async () => {
           content: [
             {
               type: "text",
-              text: resposta.texto,
+              text: atual.texto,
               citations:
                 doc == null
                   ? null
@@ -202,6 +262,7 @@ const conversa = (id: string) =>
 beforeEach(async () => {
   falhar = false;
   durante = null;
+  roteiro.length = 0;
   // Cada teste começa sem conversa aberta.
   await admin
     .update(s.conversas)
@@ -328,4 +389,167 @@ describe("responder", () => {
     expect((await conversa(r.agente!.conversaId)).estado).toBe("aguardando_sindico");
     expect(enviados.at(-1)!.message).toBe(AVISO_SINDICO);
   });
+});
+
+describe("ferramentas", () => {
+  const ultimaDemanda = () =>
+    admin
+      .select()
+      .from(s.demandas)
+      .where(eq(s.demandas.tenantId, tenantId))
+      .orderBy(desc(s.demandas.criadoEm))
+      .limit(1)
+      .then((x) => x[0]!);
+
+  test("abrir_demanda: grava com a conversa; acima do limite vai para análise; resultado volta ao modelo", async () => {
+    const r = await receber("A bomba da piscina quebrou, o técnico cobrou R$ 900");
+    roteiro.push(
+      {
+        ferramenta: "abrir_demanda",
+        entrada: {
+          titulo: "Bomba da piscina quebrada",
+          descricao: "Morador relata bomba quebrada; orçamento do técnico R$ 900.",
+          categoria: "manutencao",
+          prioridade: "normal",
+          local: "Piscina",
+          custo_estimado: 900,
+          // O modelo não escolhe cliente nem condomínio: campos extras são ignorados.
+          condominio_id: "00000000-0000-0000-0000-000000000000",
+        },
+      },
+      { texto: "Abri a demanda e o síndico vai analisar o orçamento." },
+    );
+    await responder(r.agente!);
+    const d = await ultimaDemanda();
+    expect(d).toMatchObject({
+      conversaId: r.agente!.conversaId,
+      condominioId: condo,
+      moradorId,
+      coluna: "triagem",
+      custoEstimado: 900,
+    });
+    const resultado = JSON.stringify(pedidos.at(-1)!.messages.at(-1));
+    expect(resultado).toContain(`Demanda ${d.codigo} aberta`);
+    expect(enviados.at(-1)!.message).toStartWith("Abri a demanda");
+    // Próxima resposta sabe que a demanda já existe.
+    const ctx = await withTenant(tenantId, (tx) => carregarContexto(tx, r.agente!.conversaId));
+    expect(ctx!.demandas.map((x) => x.codigo)).toEqual([d.codigo]);
+  });
+
+  test("registrar_cadastro: número novo vira morador pendente, com unidade, contato e aceite", async () => {
+    await admin.insert(s.unidades).values([
+      { tenantId, condominioId: condo, bloco: "A", apto: "302" },
+      { tenantId, condominioId: condo, bloco: "B", apto: "302" },
+    ]);
+    const r = await receber("Oi, moro aqui e quero me cadastrar", "+5511922220000");
+    roteiro.push(
+      {
+        ferramenta: "registrar_cadastro",
+        entrada: {
+          nome: "Caio Lima",
+          unidade: "Bloco B, apto 302",
+          vinculo: "locatario",
+          aceite_lgpd: true,
+        },
+      },
+      { texto: "Pronto, Caio! O síndico vai conferir seu cadastro." },
+    );
+    await responder(r.agente!);
+    const [m] = await admin
+      .select({ m: s.moradores, u: s.unidades })
+      .from(s.moradores)
+      .innerJoin(s.unidades, eq(s.unidades.id, s.moradores.unidadeId))
+      .where(eq(s.moradores.nome, "Caio Lima"));
+    expect(m).toMatchObject({
+      m: { cadastro: "pendente", status: "locatario", unidadeInformada: "Bloco B, apto 302" },
+      u: { bloco: "B", apto: "302" },
+    });
+    expect((await conversa(r.agente!.conversaId)).moradorId).toBe(m!.m.id);
+    const [aceite] = await admin
+      .select()
+      .from(s.consentimentos)
+      .where(eq(s.consentimentos.phoneE164, "+5511922220000"));
+    expect(aceite).toBeDefined();
+  });
+
+  test("registrar_cadastro sem aceite: o SDK recusa a entrada e nada é gravado", async () => {
+    const r = await receber("quero cadastro", "+5511911110000");
+    roteiro.push(
+      {
+        ferramenta: "registrar_cadastro",
+        entrada: { nome: "Sem Aceite", unidade: "A 302", vinculo: "residente", aceite_lgpd: false },
+      },
+      { texto: "Preciso do seu aceite para continuar." },
+    );
+    await responder(r.agente!);
+    const nada = await admin.select().from(s.moradores).where(eq(s.moradores.nome, "Sem Aceite"));
+    expect(nada).toHaveLength(0);
+    expect(JSON.stringify(pedidos.at(-1)!.messages.at(-1))).toContain("is_error");
+  });
+
+  test("escalar_sindico: o aviso escrito pelo modelo vai ao morador e a conversa ao síndico", async () => {
+    const r = await receber("O vizinho de cima faz barulho toda noite, quero falar com o síndico");
+    roteiro.push(
+      { ferramenta: "escalar_sindico", entrada: { motivo: "Reclamação de vizinho" } },
+      { texto: "Vou passar para o síndico, que responde por aqui." },
+    );
+    await responder(r.agente!);
+    expect((await conversa(r.agente!.conversaId)).estado).toBe("aguardando_sindico");
+    expect(enviados.at(-1)!.message).toStartWith("Vou passar para o síndico");
+  });
+
+  test("buscar_regras: só documentos visíveis; a fonte vem do resultado citado", async () => {
+    const r = await receber("tem regra de silêncio?");
+    roteiro.push(
+      { ferramenta: "buscar_regras", entrada: { consulta: "silêncio" } },
+      { texto: "Sim, silêncio após as 22h.", citarBusca: true },
+    );
+    await responder(r.agente!);
+    expect(enviados.at(-1)!.message).toContain("📄 Regimento Interno, Art. 2");
+
+    // Interno nunca aparece, nem pela busca.
+    const r2 = await receber("qual a senha do portão?");
+    roteiro.push(
+      { ferramenta: "buscar_regras", entrada: { consulta: "senha portão" } },
+      { texto: `${SEM_BASE} rascunho` },
+    );
+    await responder(r2.agente!);
+    expect(JSON.stringify(pedidos.at(-1)!.messages.at(-1))).toContain("Nenhum trecho encontrado");
+  });
+
+  test("minhas_demandas e atualizar_demanda: só as demandas do próprio morador", async () => {
+    const minha = await ultimaDemanda();
+    const r = await receber("como está minha demanda?");
+    roteiro.push(
+      { ferramenta: "minhas_demandas", entrada: {} },
+      {
+        ferramenta: "atualizar_demanda",
+        entrada: { codigo: minha.codigo, comentario: "Agora vaza mais." },
+      },
+      { ferramenta: "atualizar_demanda", entrada: { codigo: "D-1", comentario: "outra" } },
+      { texto: "Anotei na sua demanda." },
+    );
+    await responder(r.agente!);
+    const resultados = pedidos.slice(-3).map((p) => JSON.stringify(p.messages.at(-1)));
+    expect(resultados[0]).toContain(minha.codigo);
+    expect(resultados[1]).toContain(`Comentário registrado na ${minha.codigo}`);
+    expect(resultados[2]).toContain("Não achei a demanda D-1");
+    const [ev] = await admin
+      .select()
+      .from(s.demandaEventos)
+      .where(eq(s.demandaEventos.demandaId, minha.id))
+      .orderBy(desc(s.demandaEventos.em))
+      .limit(1);
+    expect(ev).toMatchObject({ detalhe: "Agora vaza mais.", canal: "whatsapp" });
+  });
+});
+
+test("acharUnidade: só casa quando há uma unidade inequívoca", () => {
+  const u = (bloco: string | null, apto: string) =>
+    ({ id: `${bloco}${apto}`, bloco, apto, quadra: null, casa: null }) as never;
+  const lista = [u("A", "302"), u("B", "302"), u(null, "15")];
+  expect(acharUnidade("Bloco B, apto 302", lista)).toMatchObject({ bloco: "B" });
+  expect(acharUnidade("b302", lista)).toMatchObject({ bloco: "B" });
+  expect(acharUnidade("apto 302", lista)).toBeNull();
+  expect(acharUnidade("15", lista)).toMatchObject({ apto: "15" });
 });

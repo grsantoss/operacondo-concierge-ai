@@ -155,7 +155,20 @@ temperatura (cold/warm/hot) saiu de todas as telas (#14).
   `[SEM_BASE]` (ou recusa/corte) → `aguardando_sindico` + `AVISO_SINDICO`; senão envia com a fonte
   ("📄 Regimento Interno, Art. 12", das citações) e a assinatura de `agente_config`. Resposta é
   descartada se o síndico assumiu ou chegou mensagem nova durante a chamada. Áudio: o agente roda
-  depois da fila `midia`. Uso em `llm_execucoes` com `conversa_id`.
+  depois da fila `midia`. Uso em `llm_execucoes` com `conversa_id` (soma das rodadas).
+- **Ferramentas do agente (#23):** `src/server/agent/tools.ts`, Tool Runner do SDK
+  (`client.beta.messages.toolRunner` + `betaZodTool`, zod v4 em `zod/v4`; o runner usa o beta
+  `message-threads`, então só a 1ª chamada leva `tools`), até 6 rodadas. Cliente, condomínio,
+  morador e telefone vêm do contexto (closure), nunca da entrada do modelo. `buscar_regras`
+  (tsvector português, só visibilidade do morador, devolve `search_result` citável);
+  `definir_condominio` (troca e responde de novo com os documentos do novo); `identificar_morador`;
+  `registrar_cadastro` (sempre `pendente`, exige `aceite_lgpd: true`, grava contato,
+  `consentimentos` e `moradores.unidade_informada`; `acharUnidade` liga à unidade se for
+  inequívoca); `abrir_demanda` (código por `proximoCodigoDemanda`, prazo `SLA_HORAS`; custo acima
+  de `limite_aprovacao` → coluna `triagem` + evento "Aguarda aprovação"); `minhas_demandas` e
+  `atualizar_demanda` (só cadastro aprovado, só as próprias); `escalar_sindico` (o texto do
+  modelo vai ao morador e a conversa vira `aguardando_sindico`). Demandas abertas da conversa
+  entram no contexto para não abrir de novo.
   Áudio do WhatsApp precisa de transcrição externa (Whisper/Deepgram); fotos vão direto ao Claude.
 - **Urgência:** regras fixas (gás, incêndio, alguém preso no elevador, vazamento) alertam o síndico
   sem depender da IA.

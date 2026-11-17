@@ -441,6 +441,8 @@ export const moradores = pgTable(
     condominioId: uuid("condominio_id").notNull(),
     /** Opcional enquanto o cadastro estiver pendente. */
     unidadeId: uuid("unidade_id"),
+    /** Unidade como o morador escreveu no cadastro pelo WhatsApp (o síndico confere ao aprovar). */
+    unidadeInformada: text("unidade_informada"),
     nome: text("nome").notNull(),
     status: moradorStatus("status").notNull().default("residente"),
     /** pendente = criado pelo agente no 1º contato; aprovado pelo síndico ou pela importação CSV. */

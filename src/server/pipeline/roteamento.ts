@@ -8,7 +8,8 @@
  */
 import { and, asc, desc, eq, isNull, ne, sql } from "drizzle-orm";
 import { schema as s, withTenant, type Tx } from "@/server/db";
-import type { JobAlerta, JobMensagem, JobMidia } from "@/server/queue";
+import { iaConfigurada } from "@/server/llm";
+import type { JobAgente, JobAlerta, JobMensagem, JobMidia } from "@/server/queue";
 import { detectarUrgencia } from "@/server/pipeline/regras-urgencia";
 import { normalizarZapi } from "@/server/whatsapp/normalizar";
 import { enviarNaConversa } from "@/server/whatsapp/send";
@@ -53,6 +54,8 @@ export interface Roteado {
   alerta: JobAlerta | null;
   /** Mensagens novas com mídia, para baixar (e transcrever) fora da transação. */
   midias: JobMidia[];
+  /** Resposta da IA a enfileirar (conversa com condomínio definido e com a IA). */
+  agente: JobAgente | null;
 }
 
 /** Sobe a urgência da conversa (nunca desce); se estiver com a IA, passa para o síndico. */
@@ -141,11 +144,38 @@ export async function rotear(job: JobMensagem, entradas: Entrada[]): Promise<Rot
     // Só as mensagens gravadas agora (reprocessamento não baixa de novo).
     const midias: JobMidia[] = novas.flatMap((n) => {
       const m = msgs.find((x) => x.id === n.providerMsgId);
-      return m?.midia ? [{ tenantId: job.tenantId, mensagemId: n.id, ...m.midia }] : [];
+      return m?.midia
+        ? [
+            {
+              tenantId: job.tenantId,
+              mensagemId: n.id,
+              conversaId: conversa.id,
+              audio: m.tipo === "audio",
+              ...m.midia,
+            },
+          ]
+        : [];
     });
-    const res: Roteado = { alerta, midias };
+    const res: Roteado = { alerta, midias, agente: null };
+    // Com IA: responde se a conversa segue com ela. Áudio novo espera a transcrição (a fila
+    // "midia" chama o agente depois).
+    const comIa = iaConfigurada();
+    const pedirAgente = async () => {
+      const [cv] = await tx
+        .select({ estado: s.conversas.estado })
+        .from(s.conversas)
+        .where(eq(s.conversas.id, conversa.id));
+      const audioNovo = novas.some(
+        (n) => msgs.find((x) => x.id === n.providerMsgId)?.tipo === "audio",
+      );
+      if (comIa && cv?.estado === "ia" && novas.length && !audioNovo)
+        res.agente = { tenantId: job.tenantId, conversaId: conversa.id };
+    };
 
-    if (conversa.condominioId) return res;
+    if (conversa.condominioId) {
+      await pedirAgente();
+      return res;
+    }
 
     // Opções: os condomínios do número; desconhecido → todos os do cliente.
     const opcoes: Opcao[] = vinculos.length
@@ -177,17 +207,18 @@ export async function rotear(job: JobMensagem, entradas: Entrada[]): Promise<Rot
       return res;
     }
 
-    // ponytail: sem agente ainda, toda conversa com condomínio vai para o síndico; na Fase 3
-    // o estado inicial passa a ser "ia".
+    // Com IA, a conversa segue com ela (estado "ia", a menos que uma urgência já a tenha
+    // passado ao síndico). Sem IA configurada, vai para o síndico com o aviso de sempre.
     await tx
       .update(s.conversas)
       .set({
         condominioId: escolhido.condominioId,
         moradorId: escolhido.moradorId,
-        estado: "aguardando_sindico",
+        ...(comIa ? {} : { estado: "aguardando_sindico" as const }),
       })
       .where(eq(s.conversas.id, conversa.id));
-    await enviarNaConversa(tx, conversa, avisoEncaminhado(escolhido.nome), "sistema");
+    if (comIa) await pedirAgente();
+    else await enviarNaConversa(tx, conversa, avisoEncaminhado(escolhido.nome), "sistema");
     return res;
   });
 }

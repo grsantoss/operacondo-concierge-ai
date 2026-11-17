@@ -4,13 +4,12 @@
  */
 import Anthropic from "@anthropic-ai/sdk";
 import { PDFDocument } from "pdf-lib";
+import { HAIKU, iaConfigurada, uso } from "@/server/llm";
 
 /** Erro com texto para o síndico (vai para documentos.leitura_aviso). */
 export class ErroLeitura extends Error {}
 
-export const MODELO_LEITURA = process.env.INGESTAO_MODELO ?? "claude-haiku-5-5";
-// US$ por milhão de tokens (Haiku 5.5, prompt até 100 mil tokens).
-const PRECO = { entrada: 0.1, saida: 0.5 };
+export const MODELO_LEITURA = process.env.INGESTAO_MODELO ?? HAIKU;
 const SEPARADOR = "=====PAGINA=====";
 
 const PROMPT = `Transcreva fielmente o texto ${"{alvo}"}, em português, como Markdown.
@@ -20,18 +19,10 @@ Tabelas viram tabelas Markdown. Ignore carimbos, rubricas e assinaturas.`;
 
 export interface Leitura {
   paginas: string[];
-  uso: {
-    modelo: string;
-    tokensEntrada: number;
-    tokensSaida: number;
-    custoUsd: number;
-    latenciaMs: number;
-  };
+  uso: ReturnType<typeof uso>;
 }
 
-export function fallbackConfigurado(): boolean {
-  return !!process.env.ANTHROPIC_API_KEY;
-}
+export const fallbackConfigurado = iaConfigurada;
 
 /** `paginas` são índices a partir de 0 (só para PDF). Imagem = uma página. */
 export async function lerComClaude(
@@ -91,16 +82,5 @@ export async function lerComClaude(
     partes.length === paginas.length
       ? partes
       : [partes.join("\n\n"), ...paginas.slice(1).map(() => "")];
-  const tokensEntrada = r.usage.input_tokens;
-  const tokensSaida = r.usage.output_tokens;
-  return {
-    paginas: porPagina,
-    uso: {
-      modelo: MODELO_LEITURA,
-      tokensEntrada,
-      tokensSaida,
-      custoUsd: (tokensEntrada * PRECO.entrada + tokensSaida * PRECO.saida) / 1e6,
-      latenciaMs: Date.now() - inicio,
-    },
-  };
+  return { paginas: porPagina, uso: uso(r, MODELO_LEITURA, inicio) };
 }

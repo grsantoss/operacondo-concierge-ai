@@ -16,9 +16,10 @@ Responda sempre em português do Brasil, com acentuação correta.
   "enviado" até a leitura da Fase 3), a configuração do agente por condomínio (#12;
   `agente_config`, ajustes em `opcoes` validados por zod com padrões) e o portal `/admin` (#13;
   `src/lib/admin.functions.ts` com `dbAdmin()`/`oc_admin` e `exigirAdmin()`; Stripe na Fase 6).
-- **Fase 2 (WhatsApp, #15–#20) concluída**, uma issue por PR. **Fase 3 (#21, leitura dos
-  documentos) em andamento.** Testes reais (instância Z-API, transcrição, pagamento) ficam para
-  depois de todas as issues.
+- **Fase 2 (WhatsApp, #15–#20) e Fase 3 (#21, leitura dos documentos) concluídas**, uma issue
+  por PR. **Fase 4 (agente v1, #22–#27) em andamento**, na ordem #22 → #23 → #25 → #24 → #26 →
+  #27. Testes reais (instância Z-API, transcrição, Claude, pagamento) ficam para depois de todas
+  as issues.
 - Rodar localmente: `cp .env.example .env` → `bun run db:reset` (sobe containers, migrations e
   seed) → `bun run dev` (e `bun run worker` para a fila; `bun run docling:up` para ler documentos). Login: `sindico@operacondo.local` (cliente Aurora) ou
   `admin@operacondo.local` (Admin Master), senha `SEED_SENHA` (padrão `operacondo123`).
@@ -143,6 +144,18 @@ temperatura (cold/warm/hot) saiu de todas as telas (#14).
   por título e tamanho) → `documento_trechos`. Status: `treinado`; `revisao` (páginas ilegíveis
   ou sem `ANTHROPIC_API_KEY`); `erro` (motivo em `documentos.leitura_aviso`, a fila tenta de novo).
   Embeddings (Voyage) ficam para a busca vetorial (Fase 6).
+- **Agente (núcleo, #22):** ligado por `ANTHROPIC_API_KEY` (`iaConfigurada()` em
+  `src/server/llm.ts`, que também calcula o custo). Com IA, a conversa com condomínio definido fica
+  em `ia` e o roteamento devolve `agente` → fila `agente` (stately por conversa, 2 novas
+  tentativas; na última, vai para o síndico) → `src/server/agent/run.ts` `responder`.
+  `agent/contexto.ts`: documentos `treinado`/`revisao` do condomínio visíveis ao morador (aprovado:
+  `publico` + `moradores`; senão só `publico`), em ordem de prevalência, até ~250 mil caracteres;
+  histórico de 30 mensagens. `agent/prompt.ts`: um bloco `document` por arquivo, um bloco de texto
+  por trecho, citações ligadas e `cache_control` no último documento. Resposta começa com
+  `[SEM_BASE]` (ou recusa/corte) → `aguardando_sindico` + `AVISO_SINDICO`; senão envia com a fonte
+  ("📄 Regimento Interno, Art. 12", das citações) e a assinatura de `agente_config`. Resposta é
+  descartada se o síndico assumiu ou chegou mensagem nova durante a chamada. Áudio: o agente roda
+  depois da fila `midia`. Uso em `llm_execucoes` com `conversa_id`.
   Áudio do WhatsApp precisa de transcrição externa (Whisper/Deepgram); fotos vão direto ao Claude.
 - **Urgência:** regras fixas (gás, incêndio, alguém preso no elevador, vazamento) alertam o síndico
   sem depender da IA.

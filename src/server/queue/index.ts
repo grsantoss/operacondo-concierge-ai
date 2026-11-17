@@ -32,6 +32,9 @@ export const FILA_MIDIA = "midia";
 export interface JobMidia {
   tenantId: string;
   mensagemId: string;
+  /** Áudio: depois da transcrição, o agente responde a conversa. */
+  conversaId: string;
+  audio: boolean;
   url: string;
   mime: string | null;
 }
@@ -43,6 +46,17 @@ export interface JobIngestao {
   tenantId: string;
   documentoId: string;
 }
+
+/** Fila "agente": uma resposta da IA por conversa (stately: a próxima espera a atual). */
+export const FILA_AGENTE = "agente";
+
+export interface JobAgente {
+  tenantId: string;
+  conversaId: string;
+}
+
+/** Novas tentativas por fila (o worker sabe quando é a última). */
+export const TENTATIVAS = { midia: 5, agente: 2 };
 
 let boss: Promise<PgBoss> | null = null;
 
@@ -59,7 +73,18 @@ export function fila(): Promise<PgBoss> {
     await b.updateQueue(FILA_MENSAGEM, { retryLimit: 3, retryDelay: 30, retryBackoff: true });
     await b.createQueue(FILA_MIDIA);
     // A URL da Z-API expira: tenta logo (5 vezes, a partir de 10 s).
-    await b.updateQueue(FILA_MIDIA, { retryLimit: 5, retryDelay: 10, retryBackoff: true });
+    await b.updateQueue(FILA_MIDIA, {
+      retryLimit: TENTATIVAS.midia,
+      retryDelay: 10,
+      retryBackoff: true,
+    });
+    await b.createQueue(FILA_AGENTE, { policy: "stately" });
+    // API do Claude fora do ar: 2 novas tentativas (10 s, 20 s); na última, vai para o síndico.
+    await b.updateQueue(FILA_AGENTE, {
+      retryLimit: TENTATIVAS.agente,
+      retryDelay: 10,
+      retryBackoff: true,
+    });
     await b.createQueue(FILA_INGESTAO);
     // Docling fora do ar ou lento: 3 novas tentativas a partir de 1 min.
     await b.updateQueue(FILA_INGESTAO, { retryLimit: 3, retryDelay: 60, retryBackoff: true });
@@ -101,4 +126,9 @@ export async function enfileirarIngestao(jobs: JobIngestao[]) {
   if (!jobs.length) return;
   const b = await fila();
   for (const job of jobs) await b.send(FILA_INGESTAO, job, { singletonKey: job.documentoId });
+}
+
+export async function enfileirarAgente(job: JobAgente) {
+  const b = await fila();
+  await b.send(FILA_AGENTE, job, { singletonKey: job.conversaId });
 }

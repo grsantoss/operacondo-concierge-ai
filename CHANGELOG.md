@@ -45,6 +45,13 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   artigo ou cláusula, para a IA citar o artigo; atas, por assunto. Página ilegível deixa o
   documento em "Revisar" com o motivo, e erro de leitura mostra a causa, com a opção "Ler de
   novo". Arquivo `.doc` (Word antigo) recebe a orientação de salvar como `.docx` ou PDF (#66).
+- **Agente de IA no WhatsApp (núcleo)**: com a chave do Claude configurada, o Concierge responde
+  o morador sozinho com base nos documentos do condomínio (convenção, estatuto, regimento, atas),
+  respeitando a prevalência entre eles, e termina a resposta com a fonte ("📄 Regimento Interno,
+  Art. 12"). Morador sem cadastro aprovado só recebe regras públicas; documentos internos e do
+  conselho nunca entram. Quando os documentos não respondem, ou o pedido depende do síndico, o
+  morador recebe um aviso e a conversa vai para "Aguardando síndico". Sem a chave, tudo continua
+  indo direto ao síndico. Custo de cada resposta registrado por cliente e condomínio.
 
 ### Corrigido
 

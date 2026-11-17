@@ -20,7 +20,7 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
 - **Servidor de produção respondia erro 500 em todas as páginas** (`bun run build && bun start`;
   o `bun run dev` funcionava): o login usa o zod 4 e o projeto estava no zod 3, e o empacotamento
   de produção juntava as versões erradas. O projeto passa para o zod 4, e o CI agora sobe o
-  servidor de produção e confere a página inicial e o login.
+  servidor de produção e confere a página inicial e o login (#74).
 - **Tela de conversas quebrava quando uma conversa tinha demanda aberta pelo agente**: a lista de
   prioridades das demandas chegava como texto e a página `/app/agente` dava erro (#72).
 

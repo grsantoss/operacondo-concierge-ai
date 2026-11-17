@@ -169,6 +169,11 @@ temperatura (cold/warm/hot) saiu de todas as telas (#14).
   `atualizar_demanda` (só cadastro aprovado, só as próprias); `escalar_sindico` (o texto do
   modelo vai ao morador e a conversa vira `aguardando_sindico`). Demandas abertas da conversa
   entram no contexto para não abrir de novo.
+- **Mascaramento (#25):** `src/server/mascarar.ts`. `mascarar()` troca CPF (formatado ou 11
+  dígitos com DV válido) e telefone por `[CPF]`/`[telefone]` em toda mensagem da conversa antes
+  de ir ao Claude; `mascararCpf()` nos trechos de documentos (telefone de portaria/zelador
+  publicado pelo síndico continua). Usar as mesmas funções no Langfuse e no Sentry (#26). Áudio
+  para transcrição e páginas para o fallback de OCR vão sem máscara (não há texto a mascarar).
   Áudio do WhatsApp precisa de transcrição externa (Whisper/Deepgram); fotos vão direto ao Claude.
 - **Urgência:** regras fixas (gás, incêndio, alguém preso no elevador, vazamento) alertam o síndico
   sem depender da IA.

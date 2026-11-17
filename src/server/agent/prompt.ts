@@ -4,6 +4,7 @@
  */
 import type Anthropic from "@anthropic-ai/sdk";
 import { COLECAO_NOME, type Contexto } from "@/server/agent/contexto";
+import { mascarar, mascararCpf } from "@/server/mascarar";
 
 /** O modelo começa a resposta com isto quando os documentos não respondem (vai ao síndico). */
 export const SEM_BASE = "[SEM_BASE]";
@@ -50,7 +51,8 @@ export function blocosDocumentos(ctx: Contexto): Anthropic.DocumentBlockParam[] 
           .join(" ") || undefined,
       source: {
         type: "content",
-        content: d.trechos.map((t) => ({ type: "text" as const, text: t.texto })),
+        // CPF sai; telefone fica (contato da portaria, do zelador… que o síndico publicou).
+        content: d.trechos.map((t) => ({ type: "text" as const, text: mascararCpf(t.texto) })),
       },
       citations: { enabled: true },
     }),
@@ -77,7 +79,8 @@ export function mensagens(ctx: Contexto): Anthropic.MessageParam[] {
   for (const m of ctx.historico) {
     const role = m.direcao === "entrada" ? "user" : "assistant";
     const prefixo = m.autor === "sindico" ? "(síndico) " : "";
-    const texto = prefixo + textoMensagem(m);
+    // LGPD: CPF e telefone que o morador (ou o síndico) escreveu não vão para o modelo.
+    const texto = prefixo + mascarar(textoMensagem(m));
     if (!texto.trim()) continue;
     const ultimo = turnos.at(-1);
     if (ultimo?.role === role) ultimo.texto += `\n${texto}`;

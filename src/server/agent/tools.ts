@@ -10,6 +10,7 @@ import * as z from "zod/v4";
 import { PRIO_TELA, proximoCodigoDemanda, SLA_HORAS } from "@/lib/demandas.functions";
 import { COLECAO_NOME, type Contexto } from "@/server/agent/contexto";
 import { schema as s, withTenant } from "@/server/db";
+import { mascararCpf } from "@/server/mascarar";
 import { escolherCondominio } from "@/server/pipeline/roteamento";
 
 /** Texto do aceite que o agente apresenta antes do cadastro (versão gravada em `consentimentos`). */
@@ -115,7 +116,7 @@ export function ferramentas(ctx: Contexto, efeitos: Efeitos) {
           title: [l.colecao === "ata" ? l.titulo : COLECAO_NOME[l.colecao], l.referencia]
             .filter((x) => x && x !== "Preâmbulo")
             .join(", "),
-          content: [{ type: "text", text: l.texto }],
+          content: [{ type: "text", text: mascararCpf(l.texto) }],
           citations: { enabled: true },
         }),
       );

@@ -66,6 +66,9 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
 
 ### Segurança
 
+- **CPF e telefone não vão para a IA**: números de CPF e de telefone escritos nas conversas
+  são trocados por "[CPF]" e "[telefone]" antes de qualquer envio ao Claude; nos documentos do
+  condomínio sai o CPF e ficam os telefones de contato publicados pelo síndico.
 - **Tokens da Z-API cifrados no banco** (AES-256-GCM, chave em `CREDENCIAIS_CHAVE`) e nunca
   devolvidos ao navegador; só o síndico (não o conselho) configura o canal (#58).
 - **Webhook com segredo por canal**: a Z-API não assina as chamadas, então a URL leva um segredo

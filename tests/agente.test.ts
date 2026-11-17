@@ -553,3 +553,17 @@ test("acharUnidade: só casa quando há uma unidade inequívoca", () => {
   expect(acharUnidade("apto 302", lista)).toBeNull();
   expect(acharUnidade("15", lista)).toMatchObject({ apto: "15" });
 });
+
+test("LGPD: CPF e telefone escritos pelo morador não chegam ao Claude", async () => {
+  await admin
+    .update(s.conversas)
+    .set({ estado: "resolvida" })
+    .where(eq(s.conversas.tenantId, tenantId));
+  const r = await receber("Meu CPF é 529.982.247-25 e meu outro número é (11) 98123-0506");
+  resposta = { texto: "Obrigado!" };
+  await responder(r.agente!);
+  const pedido = JSON.stringify(pedidos.at(-1));
+  expect(pedido).not.toContain("529.982.247-25");
+  expect(pedido).not.toContain("98123-0506");
+  expect(pedido).toContain("Meu CPF é [CPF] e meu outro número é [telefone]");
+});

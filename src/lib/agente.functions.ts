@@ -31,7 +31,7 @@ const Opcoes = z.object({
       escalar: z.enum(["reincidente", "outro_morador", "sempre"]).default("reincidente"),
       instrucoes: texto,
     })
-    .default({}),
+    .prefault({}),
   manutencao: z
     .object({
       canal: z.enum(["whatsapp", "portal", "ambos"]).default("whatsapp"),
@@ -39,14 +39,14 @@ const Opcoes = z.object({
       aprovarAcimaLimite: z.boolean().default(true),
       instrucoes: texto,
     })
-    .default({}),
+    .prefault({}),
 });
 
 export const ConfigAgente = z.object({
   tom: z.enum(TONS).default("cordial"),
   /** R$; vazio = sem limite. */
   limiteAprovacao: z.number().min(0).max(1_000_000).nullable().default(500),
-  opcoes: Opcoes.default({}),
+  opcoes: Opcoes.prefault({}),
 });
 export type ConfigAgente = z.infer<typeof ConfigAgente>;
 

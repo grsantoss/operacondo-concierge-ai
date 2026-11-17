@@ -38,7 +38,7 @@ const metaSchema = z.object({
     .max(120, "Máximo de 120 caracteres"),
   condominioId: z.string().min(1, "Selecione o condomínio"),
   colecao: z.enum(COLECOES.map((c) => c.id) as [ColecaoId, ...ColecaoId[]], {
-    errorMap: () => ({ message: "Selecione uma coleção" }),
+    error: "Selecione uma coleção",
   }),
   visibilidade: z.enum(VISIBILIDADES.map((v) => v.id) as [VisibilidadeId, ...VisibilidadeId[]]),
   vigencia: z.string().optional(),

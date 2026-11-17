@@ -37,7 +37,7 @@ const schema = z.object({
     .min(2, "Informe o nome do fornecedor")
     .max(120, "Máximo de 120 caracteres"),
   categoria: z.enum(CATEGORIAS, {
-    errorMap: () => ({ message: "Selecione uma categoria" }),
+    error: "Selecione uma categoria",
   }),
   cnpj: z
     .string()

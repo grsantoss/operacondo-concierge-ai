@@ -103,6 +103,16 @@ function EnviarDocumentoPage() {
         });
         continue;
       }
+      if (/\.doc$/i.test(f.name)) {
+        next.push({
+          id: crypto.randomUUID(),
+          file: f,
+          progress: 0,
+          status: "error",
+          error: "Word antigo (.doc): salve como .docx ou PDF",
+        });
+        continue;
+      }
       if (
         f.type &&
         !ACCEPT_MIME.includes(f.type) &&

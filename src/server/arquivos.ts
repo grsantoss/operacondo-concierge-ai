@@ -88,6 +88,13 @@ export function linkTemporario(caminho: string, nomeDownload?: string): Promise<
   );
 }
 
+/** Lê o arquivo inteiro (worker: ingestão de documentos). */
+export async function lerArquivo(caminho: string): Promise<Uint8Array<ArrayBuffer>> {
+  const r = await s3().send(new GetObjectCommand({ Bucket: bucket(), Key: caminho }));
+  if (!r.Body) throw new Error(`Arquivo vazio no S3: ${caminho}`);
+  return new Uint8Array(await r.Body.transformToByteArray());
+}
+
 export async function apagarArquivo(caminho: string) {
   await s3().send(new DeleteObjectCommand({ Bucket: bucket(), Key: caminho }));
 }

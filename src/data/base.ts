@@ -1,5 +1,10 @@
 import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
-import { enviarDocumentos, excluirDocumento, listarDocumentos } from "@/lib/base.functions";
+import {
+  enviarDocumentos,
+  excluirDocumento,
+  lerDocumentoDeNovo,
+  listarDocumentos,
+} from "@/lib/base.functions";
 
 /** Coleções da base. Os ids são os do banco (enum `colecao`). Ordem = prevalência das regras. */
 export const COLECOES = [
@@ -101,6 +106,10 @@ export interface Documento {
   enviadoEm: string;
   vigenteDesde?: string;
   status: StatusDocumento;
+  /** Erro da leitura ou páginas a revisar. */
+  aviso: string | null;
+  /** Trechos citáveis gravados pela leitura. */
+  trechos: number;
   url: string;
 }
 
@@ -110,7 +119,16 @@ export const documentosQuery = queryOptions({
 });
 
 export function useDocumentos(): Documento[] {
-  return useQuery(documentosQuery).data ?? [];
+  return (
+    useQuery({
+      ...documentosQuery,
+      // Enquanto houver documento na fila ou sendo lido, confere a cada 5 s.
+      refetchInterval: (q) =>
+        q.state.data?.some((d) => d.status === "enviado" || d.status === "processando")
+          ? 5000
+          : false,
+    }).data ?? []
+  );
 }
 
 export function useDocumentosAcoes() {
@@ -131,6 +149,10 @@ export function useDocumentosAcoes() {
       for (const [k, v] of Object.entries(meta)) if (v) fd.set(k, v);
       for (const f of arquivos) fd.append("arquivos", f);
       await enviarDocumentos({ data: fd });
+      await recarregar();
+    },
+    async lerDeNovo(id: string) {
+      await lerDocumentoDeNovo({ data: { id } });
       await recarregar();
     },
     async excluir(id: string) {

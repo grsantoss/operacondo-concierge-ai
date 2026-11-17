@@ -1,0 +1,1 @@
+ALTER TABLE "documentos" ADD COLUMN "leitura_aviso" text;

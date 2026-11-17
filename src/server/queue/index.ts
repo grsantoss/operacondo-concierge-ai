@@ -36,6 +36,14 @@ export interface JobMidia {
   mime: string | null;
 }
 
+/** Fila "ingestao": leitura dos documentos da base (Docling + fallback no Claude). */
+export const FILA_INGESTAO = "ingestao";
+
+export interface JobIngestao {
+  tenantId: string;
+  documentoId: string;
+}
+
 let boss: Promise<PgBoss> | null = null;
 
 export function fila(): Promise<PgBoss> {
@@ -52,6 +60,9 @@ export function fila(): Promise<PgBoss> {
     await b.createQueue(FILA_MIDIA);
     // A URL da Z-API expira: tenta logo (5 vezes, a partir de 10 s).
     await b.updateQueue(FILA_MIDIA, { retryLimit: 5, retryDelay: 10, retryBackoff: true });
+    await b.createQueue(FILA_INGESTAO);
+    // Docling fora do ar ou lento: 3 novas tentativas a partir de 1 min.
+    await b.updateQueue(FILA_INGESTAO, { retryLimit: 3, retryDelay: 60, retryBackoff: true });
     await b.createQueue(FILA_ALERTA);
     // Urgência: tenta logo de novo (5 vezes, a partir de 5 s).
     await b.updateQueue(FILA_ALERTA, { retryLimit: 5, retryDelay: 5, retryBackoff: true });
@@ -84,4 +95,10 @@ export async function enfileirarMidias(jobs: JobMidia[]) {
   if (!jobs.length) return;
   const b = await fila();
   for (const job of jobs) await b.send(FILA_MIDIA, job, { singletonKey: job.mensagemId });
+}
+
+export async function enfileirarIngestao(jobs: JobIngestao[]) {
+  if (!jobs.length) return;
+  const b = await fila();
+  for (const job of jobs) await b.send(FILA_INGESTAO, job, { singletonKey: job.documentoId });
 }

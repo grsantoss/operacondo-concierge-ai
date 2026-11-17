@@ -4,13 +4,15 @@
  * Cada ferramenta grava na hora, na própria transação (withTenant → RLS do cliente).
  */
 import { betaZodTool } from "@anthropic-ai/sdk/helpers/beta/zod";
+import type { BetaRunnableTool } from "@anthropic-ai/sdk/lib/tools/BetaRunnableTool";
+import { startActiveObservation } from "@langfuse/tracing";
 import type { BetaToolResultContentBlockParam } from "@anthropic-ai/sdk/resources/beta";
 import { and, desc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import * as z from "zod/v4";
 import { PRIO_TELA, proximoCodigoDemanda, SLA_HORAS } from "@/lib/demandas.functions";
 import { COLECAO_NOME, type Contexto } from "@/server/agent/contexto";
 import { schema as s, withTenant } from "@/server/db";
-import { mascararCpf } from "@/server/mascarar";
+import { mascararCpf } from "@/lib/mascarar";
 import { escolherCondominio } from "@/server/pipeline/roteamento";
 
 /** Texto do aceite que o agente apresenta antes do cadastro (versão gravada em `consentimentos`). */
@@ -407,5 +409,23 @@ export function ferramentas(ctx: Contexto, efeitos: Efeitos) {
     minhas_demandas,
     atualizar_demanda,
     escalar_sindico,
-  ];
+  ].map(rastreada);
+}
+
+/** Cada chamada vira uma observação "tool" no rastro do agente (Langfuse; sem ele, nada). */
+function rastreada<T extends BetaRunnableTool>(t: T): T {
+  return {
+    ...t,
+    run: (entrada, contexto) =>
+      startActiveObservation(
+        t.name,
+        async (obs) => {
+          obs.update({ input: entrada });
+          const saida = await t.run(entrada, contexto);
+          obs.update({ output: saida });
+          return saida;
+        },
+        { asType: "tool" },
+      ),
+  };
 }

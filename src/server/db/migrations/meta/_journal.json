@@ -92,6 +92,13 @@
       "when": 1794928240892,
       "tag": "0012_conversa_rascunho",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794930113473,
+      "tag": "0013_llm_trace_id",
+      "breakpoints": true
     }
   ]
 }

@@ -5,12 +5,20 @@
  */
 import Anthropic from "@anthropic-ai/sdk";
 import type { BetaMessage } from "@anthropic-ai/sdk/resources/beta";
+import {
+  getActiveTraceId,
+  propagateAttributes,
+  startActiveObservation,
+  startObservation,
+  type LangfuseAgent,
+} from "@langfuse/tracing";
 import { and, desc, eq } from "drizzle-orm";
 import { carregarContexto, COLECAO_NOME, type Contexto } from "@/server/agent/contexto";
 import { mensagens, SEM_BASE, sistema } from "@/server/agent/prompt";
 import { ferramentas, type Efeitos } from "@/server/agent/tools";
 import { schema as s, withTenant, type Tx } from "@/server/db";
 import { HAIKU, uso } from "@/server/llm";
+import { langfuseConfigurado } from "@/server/observability";
 import type { JobAgente } from "@/server/queue";
 import { enviarNaConversa } from "@/server/whatsapp/send";
 
@@ -65,15 +73,50 @@ async function escalar(
  * `ultimaTentativa`: se a API falhar de vez, a conversa vai para o síndico (morador não fica sem
  * resposta). `recomeco`: já é a 2ª passada depois de definir_condominio trocar o condomínio.
  */
-export async function responder(
+export function responder(job: JobAgente, ultimaTentativa = false, recomeco = false) {
+  // Um rastro por resposta no Langfuse; a sessão é a conversa. Sem Langfuse, as chamadas abaixo
+  // não fazem nada. Dados pessoais saem mascarados pelo processador (observability).
+  return propagateAttributes(
+    { sessionId: job.conversaId, traceName: "agente", metadata: { tenantId: job.tenantId } },
+    () =>
+      startActiveObservation(
+        "agente",
+        (obs) => responderNoRastro(job, ultimaTentativa, recomeco, obs),
+        { asType: "agent" },
+      ),
+  );
+}
+
+async function responderNoRastro(
   job: JobAgente,
-  ultimaTentativa = false,
-  recomeco = false,
+  ultimaTentativa: boolean,
+  recomeco: boolean,
+  obs: LangfuseAgent,
 ): Promise<void> {
   const ctx = await withTenant(job.tenantId, (tx) => carregarContexto(tx, job.conversaId));
   // Só responde conversa com a IA e com mensagem do morador esperando.
   const ultima = ctx?.historico.at(-1);
-  if (!ctx || ctx.conversa.estado !== "ia" || ultima?.direcao !== "entrada") return;
+  if (!ctx || ctx.conversa.estado !== "ia" || ultima?.direcao !== "entrada") {
+    obs.update({ output: "nada a responder" });
+    return;
+  }
+  obs.update({
+    // Só a conversa (os documentos são grandes e já estão no Langfuse pelo título).
+    input: ctx.historico
+      .slice(-10)
+      .map(
+        (m) =>
+          `${m.direcao === "entrada" ? "morador" : m.autor}: ${m.texto ?? m.transcricao ?? ""}`,
+      ),
+    metadata: {
+      condominioId: ctx.conversa.condominioId,
+      cadastro: ctx.morador?.cadastro ?? "desconhecido",
+      documentos: ctx.documentos.map((d) => d.titulo),
+    },
+  });
+  const fim = (resultado: string, saida?: string) =>
+    obs.update({ output: saida ?? resultado, metadata: { resultado } });
+  const traceId = langfuseConfigurado() ? (getActiveTraceId() ?? null) : null;
 
   const efeitos: Efeitos = { escalar: null, trocouCondominio: false };
   const inicio = Date.now();
@@ -86,7 +129,9 @@ export async function responder(
     cache_creation_input_tokens: 0,
   };
   try {
-    const runner = new Anthropic().beta.messages.toolRunner({
+    // Os spans automáticos do SDK duplicariam as gerações abaixo (que têm custo e saída mascarada).
+    const cliente = new Anthropic({ openTelemetry: { traces: false, propagation: false } });
+    const runner = cliente.beta.messages.toolRunner({
       model: MODELO_AGENTE,
       max_tokens: 2000,
       system: sistema(ctx),
@@ -94,15 +139,36 @@ export async function responder(
       tools: ferramentas(ctx, efeitos),
       max_iterations: MAX_RODADAS,
     });
+    let rodadaInicio = new Date();
     for await (const m of runner) {
       r = m;
+      // Uma geração por rodada (tool_use ou texto final), com tokens e custo.
+      startObservation(
+        "claude",
+        {
+          model: MODELO_AGENTE,
+          output: m.content,
+          usageDetails: {
+            input: m.usage.input_tokens,
+            output: m.usage.output_tokens,
+            cache_read_input_tokens: m.usage.cache_read_input_tokens ?? 0,
+            cache_creation_input_tokens: m.usage.cache_creation_input_tokens ?? 0,
+          },
+          costDetails: { total: uso({ usage: { ...m.usage } }, MODELO_AGENTE, 0).custoUsd },
+          metadata: { stop_reason: m.stop_reason },
+        },
+        { asType: "generation", startTime: rodadaInicio },
+      ).end();
+      rodadaInicio = new Date();
       total.input_tokens += m.usage.input_tokens;
       total.output_tokens += m.usage.output_tokens;
       total.cache_read_input_tokens += m.usage.cache_read_input_tokens ?? 0;
       total.cache_creation_input_tokens += m.usage.cache_creation_input_tokens ?? 0;
     }
   } catch (e) {
+    obs.update({ level: "ERROR", statusMessage: String(e) });
     if (!ultimaTentativa) throw e;
+    fim("síndico: A IA não conseguiu responder");
     console.error(`[agente] conversa ${job.conversaId}: falhou de vez, vai para o síndico`, e);
     await withTenant(job.tenantId, (tx) => escalar(tx, ctx, "A IA não conseguiu responder"));
     return;
@@ -127,8 +193,9 @@ export async function responder(
       conversaId: ctx.conversa.id,
       condominioId: ctx.conversa.condominioId,
       ...uso({ usage: { ...r.usage, ...total } }, MODELO_AGENTE, inicio),
+      traceId,
     });
-    if (efeitos.trocouCondominio) return;
+    if (efeitos.trocouCondominio) return fim("trocou de condomínio");
     // Enquanto o modelo pensava: o síndico assumiu, ou chegou outra mensagem (o próximo job
     // responde as duas juntas). Nesses casos esta resposta é descartada; o que as ferramentas
     // gravaram (demanda, cadastro) fica, e o próximo job vê as demandas abertas no contexto.
@@ -143,7 +210,7 @@ export async function responder(
       .where(eq(s.mensagens.conversaId, ctx.conversa.id))
       .orderBy(desc(s.mensagens.criadoEm), desc(s.mensagens.direcao))
       .limit(1);
-    if (cv?.estado !== "ia" || maisNova?.id !== ultima.id) return;
+    if (cv?.estado !== "ia" || maisNova?.id !== ultima.id) return fim("descartada", texto);
 
     if (semBase) {
       const rascunho = texto.startsWith(SEM_BASE) ? texto.slice(SEM_BASE.length).trim() : "";
@@ -153,6 +220,7 @@ export async function responder(
           : r.stop_reason === "max_tokens" || r.stop_reason === "tool_use"
             ? "A IA não concluiu a resposta"
             : "Sem base documental";
+      fim(`síndico: ${motivo}`, texto);
       return escalar(tx, ctx, motivo, rascunho || null);
     }
 
@@ -162,7 +230,11 @@ export async function responder(
       .filter(Boolean)
       .join("\n\n");
     // escalar_sindico: o modelo já escreveu o aviso ao morador; a conversa vai para o síndico.
-    if (efeitos.escalar) return escalar(tx, ctx, efeitos.escalar, null, mensagem);
+    if (efeitos.escalar) {
+      fim(`síndico: ${efeitos.escalar}`, mensagem);
+      return escalar(tx, ctx, efeitos.escalar, null, mensagem);
+    }
+    fim("enviada", mensagem);
     await enviarNaConversa(tx, ctx.conversa, mensagem, "ia");
   });
 

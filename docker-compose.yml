@@ -1,5 +1,6 @@
 # Ambiente de desenvolvimento. Produção usa o mesmo código com Postgres gerenciado ou container.
-# Subir: bun run db:up   ·   Docling (pesado, só quando for testar ingestão): docker compose --profile ingestao up -d
+# Subir: bun run db:up   ·   Docling (pesado, só quando for testar ingestão): bun run docling:up
+# Langfuse (pesado, só quando for olhar os rastros da IA): bun run langfuse:up
 name: operacondo-concierge
 
 services:
@@ -36,6 +37,90 @@ services:
     profiles: [ingestao]
     ports: ["5001:5001"]
 
+  # Langfuse auto-hospedado (rastro da IA). Pesado: só com `bun run langfuse:up`, que cria o banco
+  # "langfuse" neste Postgres e o bucket "langfuse" neste S3 antes de subir. Painel em
+  # http://localhost:3100 (admin@operacondo.local / operacondo123). Senhas e chaves daqui são de dev.
+  langfuse-web:
+    image: docker.langfuse.com/langfuse/langfuse:4
+    profiles: [observabilidade]
+    depends_on: &langfuse-deps
+      postgres: { condition: service_healthy }
+      clickhouse: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    ports: ["3100:3000"]
+    environment: &langfuse-env
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/langfuse
+      NEXTAUTH_URL: http://localhost:3100
+      NEXTAUTH_SECRET: dev-nextauth-secret
+      SALT: dev-salt
+      ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
+      TELEMETRY_ENABLED: "false"
+      CLICKHOUSE_URL: http://clickhouse:8123
+      CLICKHOUSE_MIGRATION_URL: clickhouse://clickhouse:9000
+      CLICKHOUSE_USER: clickhouse
+      CLICKHOUSE_PASSWORD: clickhouse
+      CLICKHOUSE_CLUSTER_ENABLED: "false"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_AUTH: dev-redis
+      LANGFUSE_S3_EVENT_UPLOAD_BUCKET: langfuse
+      LANGFUSE_S3_EVENT_UPLOAD_REGION: auto
+      LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: dev
+      LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: dev
+      LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://s3:8333
+      LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: "true"
+      LANGFUSE_S3_EVENT_UPLOAD_PREFIX: events/
+      LANGFUSE_S3_MEDIA_UPLOAD_BUCKET: langfuse
+      LANGFUSE_S3_MEDIA_UPLOAD_REGION: auto
+      LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID: dev
+      LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY: dev
+      LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT: http://s3:8333
+      LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE: "true"
+      LANGFUSE_S3_MEDIA_UPLOAD_PREFIX: media/
+      # Organização, projeto, chaves e usuário prontos em dev (as chaves vão no .env da aplicação).
+      LANGFUSE_INIT_ORG_ID: operacondo
+      LANGFUSE_INIT_ORG_NAME: OperaCondo
+      LANGFUSE_INIT_PROJECT_ID: concierge
+      LANGFUSE_INIT_PROJECT_NAME: Concierge
+      LANGFUSE_INIT_PROJECT_PUBLIC_KEY: pk-lf-dev
+      LANGFUSE_INIT_PROJECT_SECRET_KEY: sk-lf-dev
+      LANGFUSE_INIT_USER_EMAIL: admin@operacondo.local
+      LANGFUSE_INIT_USER_NAME: Admin
+      LANGFUSE_INIT_USER_PASSWORD: operacondo123
+
+  langfuse-worker:
+    image: docker.langfuse.com/langfuse/langfuse-worker:4
+    profiles: [observabilidade]
+    depends_on: *langfuse-deps
+    environment: *langfuse-env
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:26.3.62.3
+    profiles: [observabilidade]
+    user: "101:101"
+    environment:
+      CLICKHOUSE_DB: default
+      CLICKHOUSE_USER: clickhouse
+      CLICKHOUSE_PASSWORD: clickhouse
+    volumes:
+      - clickhousedata:/var/lib/clickhouse
+      - clickhouselogs:/var/log/clickhouse-server
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:8123/ping || exit 1
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    profiles: [observabilidade]
+    command: --requirepass dev-redis --maxmemory-policy noeviction
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "dev-redis", "ping"]
+      interval: 3s
+      retries: 10
+
 volumes:
   pgdata:
   s3data:
+  clickhousedata:
+  clickhouselogs:

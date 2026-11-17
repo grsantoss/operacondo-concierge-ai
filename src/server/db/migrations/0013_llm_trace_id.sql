@@ -1,0 +1,1 @@
+ALTER TABLE "llm_execucoes" ADD COLUMN "trace_id" text;

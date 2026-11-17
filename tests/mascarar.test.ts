@@ -1,6 +1,6 @@
 /** LGPD: CPF e telefone saem dos textos enviados para fora. */
 import { expect, test } from "bun:test";
-import { mascarar, mascararCpf } from "../src/server/mascarar";
+import { mascarar, mascararCpf } from "../src/lib/mascarar";
 
 test("mascara CPF e telefone nos formatos comuns", () => {
   const casos: [string, string][] = [

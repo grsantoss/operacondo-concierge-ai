@@ -4,6 +4,7 @@ import { Logo } from "@/components/brand/Logo";
 import { Icon } from "@/components/brand/Icon";
 import { useConversas, useConversasAoVivo } from "@/data/conversas";
 import { useDemandas } from "@/data/demandas";
+import { usePendentes } from "@/data/moradores";
 import { authClient } from "@/lib/auth-client";
 
 interface NavItem {
@@ -144,8 +145,11 @@ export function AppShell({ title, breadcrumbs, actions, children }: AppShellProp
   const convs = (useConversas().data ?? []).filter((c) => c.estado !== "resolvida");
   const esperando = convs.filter((c) => c.estado === "aguardando_sindico").length;
   const critica = convs.some((c) => c.urgencia === "Crítica");
+  const pendentes = usePendentes().length;
   const nav = NAV.map((i) =>
-    i.to === "/app/demandas" && abertas
+    i.to === "/app/moradores" && pendentes
+      ? { ...i, badge: String(pendentes) }
+      : i.to === "/app/demandas" && abertas
       ? { ...i, badge: String(abertas) }
       : i.to === "/app/agente" && (esperando || critica)
         ? { ...i, badge: critica ? `! ${esperando || ""}`.trim() : String(esperando), alerta: critica }

@@ -4,12 +4,13 @@
  */
 import { createHmac } from "node:crypto";
 import { createServerFn } from "@tanstack/react-start";
-import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
-import type { Condominio, Morador, Status } from "@/data/moradores";
+import type { Condominio, Morador, Pendente, Status } from "@/data/moradores";
 import { formatarTelefone, paraE164 } from "@/lib/telefone";
 import { exigirCliente } from "@/server/auth/contexto";
 import { type Tx, schema as s, withTenant } from "@/server/db";
+import { decidirCadastroTx, unidadeDo } from "@/server/moradores";
 
 /* ------------------------------------------------------------ conversões */
 
@@ -110,14 +111,15 @@ export const listarMoradores = createServerFn({ method: "GET" }).handler(
           where c.morador_id = ${s.moradores.id} order by c.principal desc limit 1)`,
         })
         .from(s.moradores)
-        // ponytail: pendentes sem unidade ficam fora até a tela de aprovação (#28).
+        // Pendentes e recusados ficam em listarPendentes (#28), não na lista de moradores.
         .innerJoin(s.unidades, eq(s.unidades.id, s.moradores.unidadeId))
+        .where(eq(s.moradores.cadastro, "aprovado"))
         .orderBy(s.moradores.nome);
       const vagas = await tx
         .select()
         .from(s.unidades)
         .where(
-          sql`not exists (select 1 from moradores m where m.unidade_id = ${s.unidades.id} and m.desativado_em is null)`,
+          sql`not exists (select 1 from moradores m where m.unidade_id = ${s.unidades.id} and m.desativado_em is null and m.cadastro = 'aprovado')`,
         );
 
       const endereco = (u: typeof s.unidades.$inferSelect): Morador["endereco"] =>
@@ -158,36 +160,6 @@ export const listarMoradores = createServerFn({ method: "GET" }).handler(
 );
 
 /* ------------------------------------------------------------ gravação */
-
-/** Acha ou cria a unidade do endereço (a unicidade é do banco). */
-async function unidadeDo(tx: Tx, tenantId: string, i: MoradorInput): Promise<string> {
-  const e = i.endereco;
-  const chave =
-    e.tipo === "vertical"
-      ? { bloco: e.bloco, apto: e.apto, quadra: null, casa: null }
-      : { bloco: null, apto: null, quadra: e.quadra, casa: e.casa };
-  const [u] = await tx
-    .insert(s.unidades)
-    .values({
-      tenantId,
-      condominioId: i.condominioId,
-      ...chave,
-      andar: e.tipo === "vertical" ? e.andar : null,
-      vagas: i.vagas,
-    })
-    .onConflictDoUpdate({
-      target: [
-        s.unidades.condominioId,
-        s.unidades.bloco,
-        s.unidades.apto,
-        s.unidades.quadra,
-        s.unidades.casa,
-      ],
-      set: { vagas: i.vagas, andar: e.tipo === "vertical" ? e.andar : null },
-    })
-    .returning({ id: s.unidades.id });
-  return u.id;
-}
 
 async function gravarContato(tx: Tx, tenantId: string, moradorId: string, i: MoradorInput) {
   const bruto = i.contato?.trim();
@@ -313,4 +285,63 @@ export const excluirMoradores = createServerFn({ method: "POST" })
           ),
         ),
     );
+  });
+
+/* ------------------------------------------------------------ cadastro pelo WhatsApp (#28) */
+
+/** Cadastros feitos pelo agente no 1º contato, esperando o síndico (mais antigos primeiro). */
+export const listarPendentes = createServerFn({ method: "GET" }).handler(
+  async (): Promise<Pendente[]> => {
+    const { tenantId } = await exigirCliente();
+    const rows = await withTenant(tenantId, (tx) =>
+      tx
+        .select({
+          m: s.moradores,
+          u: s.unidades,
+          condominio: s.condominios.nome,
+          tipo: s.condominios.tipo,
+          fone: sql<string | null>`(select c.phone_e164 from morador_contatos c
+          where c.morador_id = ${s.moradores.id} order by c.principal desc limit 1)`,
+        })
+        .from(s.moradores)
+        .innerJoin(s.condominios, eq(s.condominios.id, s.moradores.condominioId))
+        .leftJoin(s.unidades, eq(s.unidades.id, s.moradores.unidadeId))
+        .where(and(eq(s.moradores.cadastro, "pendente"), isNull(s.moradores.desativadoEm)))
+        .orderBy(s.moradores.criadoEm),
+    );
+    return rows.map(({ m, u, condominio, tipo, fone }) => ({
+      id: m.id,
+      nome: m.nome,
+      condominioId: m.condominioId,
+      condominio,
+      tipo,
+      vinculo: STATUS_TELA[m.status],
+      unidadeInformada: m.unidadeInformada,
+      unidade: u
+        ? u.quadra != null
+          ? { tipo: "horizontal", quadra: u.quadra, casa: u.casa ?? "" }
+          : { tipo: "vertical", bloco: u.bloco ?? "", andar: u.andar ?? 0, apto: u.apto ?? "" }
+        : null,
+      contato: formatarTelefone(fone),
+      criadoEm: m.criadoEm.toISOString(),
+    }));
+  },
+);
+
+/**
+ * Aprovar libera demandas próprias, regras de moradores e dados da unidade no agente. Sem unidade
+ * ligada (o agente só liga quando a resposta é inequívoca), o síndico informa o endereço aqui.
+ * Recusar mantém o número: o agente continua reconhecendo e responde só regras públicas.
+ */
+const Decisao = z.object({
+  id: z.string().uuid(),
+  decisao: z.enum(["aprovar", "recusar"]),
+  endereco: Endereco.optional(),
+});
+
+export const decidirCadastro = createServerFn({ method: "POST" })
+  .inputValidator(Decisao)
+  .handler(async ({ data }) => {
+    const { tenantId } = await exigirCliente();
+    await withTenant(tenantId, (tx) => decidirCadastroTx(tx, tenantId, data));
   });

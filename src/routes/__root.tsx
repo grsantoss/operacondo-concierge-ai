@@ -10,7 +10,10 @@ import {
 } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
+import { capturarErroNavegador, iniciarSentryNavegador } from "@/lib/sentry-navegador";
 import appCss from "../styles.css?url";
+
+iniciarSentryNavegador();
 
 function NotFoundComponent() {
   return (
@@ -36,6 +39,7 @@ function NotFoundComponent() {
 
 function ErrorComponent({ error, reset }: ErrorComponentProps) {
   console.error(error);
+  capturarErroNavegador(error);
   const router = useRouter();
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">

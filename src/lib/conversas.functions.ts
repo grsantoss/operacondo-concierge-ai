@@ -3,7 +3,7 @@
  * (responder, assumir, resolver). O envio usa src/server/whatsapp/send.ts.
  */
 import { createServerFn } from "@tanstack/react-start";
-import { asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNotNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Priority } from "@/data/demandas";
 import { PRIO_TELA, unidadeTexto } from "@/lib/demandas.functions";
@@ -12,6 +12,7 @@ import { maiorPrioridade } from "@/lib/urgencia";
 import { linkTemporario } from "@/server/arquivos";
 import { exigirCliente } from "@/server/auth/contexto";
 import { schema as s, withTenant } from "@/server/db";
+import { registrarNota } from "@/server/observability";
 import { enviarNaConversa } from "@/server/whatsapp/send";
 import { ErroZapi } from "@/server/whatsapp/zapi";
 
@@ -75,7 +76,7 @@ export const listarConversas = createServerFn({ method: "GET" }).handler(
             select json_build_object('texto', m.texto, 'tipo', m.tipo) from mensagens m
             where m.conversa_id = ${c.id} order by m.criado_em desc limit 1)`,
           prioridades: sql<("normal" | "alta" | "critica")[] | null>`(
-            select array_agg(d.prioridade) from demandas d
+            select array_agg(d.prioridade::text) from demandas d
             where d.conversa_id = ${c.id} and d.coluna <> 'resolvidas')`,
         })
         .from(c)
@@ -184,6 +185,8 @@ export const responderConversa = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const { tenantId } = await exigirGestor();
+    let avaliacao: ReturnType<typeof avaliarRascunho> | undefined;
+    let rastro: { traceId: string | null } | undefined;
     try {
       await withTenant(tenantId, async (tx) => {
         const [cv] = await tx
@@ -192,13 +195,16 @@ export const responderConversa = createServerFn({ method: "POST" })
           .where(eq(s.conversas.id, data.id))
           .limit(1);
         if (!cv) throw new Error("Conversa não encontrada.");
-        await enviarNaConversa(
-          tx,
-          cv,
-          data.texto,
-          "sindico",
-          cv.rascunho ? avaliarRascunho(cv.rascunho, data.texto) : undefined,
-        );
+        avaliacao = cv.rascunho ? avaliarRascunho(cv.rascunho, data.texto) : undefined;
+        await enviarNaConversa(tx, cv, data.texto, "sindico", avaliacao);
+        // Rastro da resposta da IA que gerou o rascunho (para a nota no Langfuse).
+        if (avaliacao)
+          [rastro] = await tx
+            .select({ traceId: s.llmExecucoes.traceId })
+            .from(s.llmExecucoes)
+            .where(and(eq(s.llmExecucoes.conversaId, cv.id), isNotNull(s.llmExecucoes.traceId)))
+            .orderBy(desc(s.llmExecucoes.criadoEm))
+            .limit(1);
         await tx
           .update(s.conversas)
           .set({ estado: "sindico", ultimaMsgEm: sql`now()`, rascunho: null, rascunhoMotivo: null })
@@ -208,4 +214,6 @@ export const responderConversa = createServerFn({ method: "POST" })
       if (err instanceof ErroZapi) throw new Error(`Não foi enviada: ${err.message}`);
       throw err;
     }
+    // Nota de qualidade do agente no Langfuse (depois do commit; falha não afeta o envio).
+    if (avaliacao && rastro?.traceId) await registrarNota(rastro.traceId, "rascunho", avaliacao);
   });

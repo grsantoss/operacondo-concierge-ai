@@ -4,7 +4,7 @@
  */
 import type Anthropic from "@anthropic-ai/sdk";
 import { COLECAO_NOME, type Contexto } from "@/server/agent/contexto";
-import { mascarar, mascararCpf } from "@/server/mascarar";
+import { mascarar, mascararCpf } from "@/lib/mascarar";
 
 /** O modelo começa a resposta com isto quando os documentos não respondem (vai ao síndico). */
 export const SEM_BASE = "[SEM_BASE]";

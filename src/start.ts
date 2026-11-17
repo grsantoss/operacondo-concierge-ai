@@ -10,6 +10,8 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
       throw error;
     }
     console.error(error);
+    // Import dinâmico: o Sentry do servidor não entra no pacote do navegador.
+    void import("./server/observability").then((o) => o.capturarErro(error));
     return new Response(renderErrorPage(), {
       status: 500,
       headers: { "content-type": "text/html; charset=utf-8" },

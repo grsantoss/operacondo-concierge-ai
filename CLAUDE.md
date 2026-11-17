@@ -175,7 +175,23 @@ temperatura (cold/warm/hot) saiu de todas as telas (#14).
   com "Aprovar e enviar" e "Editar". Ao responder, `avaliarRascunho()` grava a nota em
   `mensagens.avaliacao_rascunho` (`aprovado | editado | reescrito`) e o rascunho é apagado;
   resolver também apaga. A nota vai para o Langfuse na #26.
-- **Mascaramento (#25):** `src/server/mascarar.ts`. `mascarar()` troca CPF (formatado ou 11
+- **Observabilidade (#26):** `src/server/observability/index.ts` (`iniciarObservabilidade` no
+  `src/server.ts` e no worker). Tudo opcional por variável. Langfuse: `NodeSDK` +
+  `LangfuseSpanProcessor` (SDK v6 do Langfuse, servidor v4) com `mask` = `mascararDado` (CPF,
+  telefone e segredo do webhook; UUID fica). O agente cria um rastro por resposta
+  (`propagateAttributes` com `sessionId` = conversa; observação `agent`, uma `generation` por
+  rodada com tokens e custo, e cada ferramenta como `tool`); os spans automáticos do SDK da
+  Anthropic ficam desligados no agente (`openTelemetry: { traces: false, propagation: false }`)
+  para não duplicar. `llm_execucoes.trace_id` liga a cobrança ao rastro; a nota do rascunho vai
+  como score `rascunho` (`registrarNota`). Na v4 a leitura é por `/api/public/v2/observations`
+  (o `/traces` não existe em modo events_only). Sentry: só erros (`enableOpenTelemetrySetup:
+  false`, `dataCollection` sem usuário, cookies, cabeçalhos, corpo e query), `beforeSend`
+  mascarado; falhas de job no worker (`comErros`) e do SSR (`capturarErro`). Navegador:
+  `src/lib/sentry-navegador.ts` (`VITE_SENTRY_DSN`). `src/server/**` não pode ser importado no
+  navegador (import-protection do TanStack Start): código comum fica em `src/lib`.
+  Langfuse em dev: `bun run langfuse:up` (perfil `observabilidade`; banco `langfuse` no Postgres
+  e bucket `langfuse` no S3 do projeto, por `scripts/langfuse-preparar.ts`).
+- **Mascaramento (#25):** `src/lib/mascarar.ts`. `mascarar()` troca CPF (formatado ou 11
   dígitos com DV válido) e telefone por `[CPF]`/`[telefone]` em toda mensagem da conversa antes
   de ir ao Claude; `mascararCpf()` nos trechos de documentos (telefone de portaria/zelador
   publicado pelo síndico continua). Usar as mesmas funções no Langfuse e no Sentry (#26). Áudio
@@ -183,7 +199,7 @@ temperatura (cold/warm/hot) saiu de todas as telas (#14).
   Áudio do WhatsApp precisa de transcrição externa (Whisper/Deepgram); fotos vão direto ao Claude.
 - **Urgência:** regras fixas (gás, incêndio, alguém preso no elevador, vazamento) alertam o síndico
   sem depender da IA.
-- **Observabilidade: Langfuse (IA) + Sentry (erros), instrumentados com OpenTelemetry.**
+- **Observabilidade: Langfuse (IA) + Sentry (erros), instrumentados com OpenTelemetry** (feito na #26, ver acima).
   - Langfuse auto-hospedado: rastro de cada conversa (mensagem, trechos achados, ferramentas,
     resposta, tokens, custo por cliente/condomínio), datasets para `evals/` e notas de qualidade
     vindas do síndico (rascunho aprovado sem edição / editado / reescrito). Dados ficam no Brasil.

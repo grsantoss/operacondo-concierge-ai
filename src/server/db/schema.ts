@@ -805,6 +805,8 @@ export const llmExecucoes = pgTable(
       .notNull()
       .default(0),
     latenciaMs: integer("latencia_ms"),
+    /** Rastro no Langfuse (quando configurado): liga a cobrança à conversa rastreada. */
+    traceId: text("trace_id"),
     criadoEm: criadoEm(),
   },
   (t) => [

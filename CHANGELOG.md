@@ -52,6 +52,12 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   conselho nunca entram. Quando os documentos não respondem, ou o pedido depende do síndico, o
   morador recebe um aviso e a conversa vai para "Aguardando síndico". Sem a chave, tudo continua
   indo direto ao síndico. Custo de cada resposta registrado por cliente e condomínio (#67).
+- **Agente abre demandas e faz o cadastro pelo WhatsApp**: o Concierge agora abre demandas
+  sozinho quando o morador relata um problema (e informa o código), consulta e comenta as
+  demandas do próprio morador, busca regras em atas e comunicados, cadastra número novo como
+  pendente (com unidade, vínculo e aceite da LGPD, para o síndico aprovar), troca o condomínio
+  da conversa quando o morador é de outro e passa a conversa ao síndico quando o assunto pede.
+  Orçamento acima do limite de aprovação vai para "Triagem" aguardando o síndico (#68).
 
 ### Corrigido
 

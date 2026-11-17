@@ -1,28 +1,37 @@
 /**
  * Uma resposta do agente (fila "agente", um job por conversa). Claude Haiku 5.5 com os documentos
- * do condomínio em cache e citações da API. Sem base documental → a conversa vai para o síndico.
- * ponytail: sem ferramentas ainda (#23 traz o Tool Runner); aqui é uma chamada só.
+ * do condomínio em cache, citações da API e as ferramentas de `tools.ts` (Tool Runner do SDK).
+ * Sem base documental, ou escalado pela ferramenta → a conversa vai para o síndico.
  */
 import Anthropic from "@anthropic-ai/sdk";
+import type { BetaMessage } from "@anthropic-ai/sdk/resources/beta";
 import { and, desc, eq } from "drizzle-orm";
 import { carregarContexto, COLECAO_NOME, type Contexto } from "@/server/agent/contexto";
 import { mensagens, SEM_BASE, sistema } from "@/server/agent/prompt";
+import { ferramentas, type Efeitos } from "@/server/agent/tools";
 import { schema as s, withTenant, type Tx } from "@/server/db";
 import { HAIKU, uso } from "@/server/llm";
 import type { JobAgente } from "@/server/queue";
 import { enviarNaConversa } from "@/server/whatsapp/send";
 
 export const MODELO_AGENTE = process.env.AGENTE_MODELO ?? HAIKU;
+/** Chamadas ao modelo por resposta (cada rodada de ferramentas conta uma). */
+const MAX_RODADAS = 6;
 
 export const AVISO_SINDICO =
   "Recebi sua mensagem e encaminhei ao síndico, que responde por aqui em breve.";
 
 /** "Regimento Interno, Art. 12" a partir das citações da resposta (no máximo 3). */
-export function fontes(r: Anthropic.Message, ctx: Contexto): string[] {
+export function fontes(r: BetaMessage, ctx: Contexto): string[] {
   const vistas = new Set<string>();
   for (const b of r.content) {
     if (b.type !== "text") continue;
     for (const c of b.citations ?? []) {
+      // Trecho achado por buscar_regras: o título já vem pronto ("Regimento Interno, Art. 3").
+      if (c.type === "search_result_location") {
+        if (c.title) vistas.add(c.title);
+        continue;
+      }
       if (c.type !== "content_block_location") continue;
       const d = ctx.documentos[c.document_index];
       if (!d) continue;
@@ -37,36 +46,61 @@ export function fontes(r: Anthropic.Message, ctx: Contexto): string[] {
   return [...vistas].slice(0, 3);
 }
 
-async function escalar(tx: Tx, ctx: Contexto) {
+async function escalar(tx: Tx, ctx: Contexto, texto = AVISO_SINDICO) {
   await tx
     .update(s.conversas)
     .set({ estado: "aguardando_sindico" })
     .where(and(eq(s.conversas.id, ctx.conversa.id), eq(s.conversas.estado, "ia")));
-  await enviarNaConversa(tx, ctx.conversa, AVISO_SINDICO, "sistema");
+  await enviarNaConversa(tx, ctx.conversa, texto, texto === AVISO_SINDICO ? "sistema" : "ia");
 }
 
-/** `ultimaTentativa`: se a API falhar de vez, a conversa vai para o síndico (morador não fica sem resposta). */
-export async function responder(job: JobAgente, ultimaTentativa = false): Promise<void> {
+/**
+ * `ultimaTentativa`: se a API falhar de vez, a conversa vai para o síndico (morador não fica sem
+ * resposta). `recomeco`: já é a 2ª passada depois de definir_condominio trocar o condomínio.
+ */
+export async function responder(
+  job: JobAgente,
+  ultimaTentativa = false,
+  recomeco = false,
+): Promise<void> {
   const ctx = await withTenant(job.tenantId, (tx) => carregarContexto(tx, job.conversaId));
   // Só responde conversa com a IA e com mensagem do morador esperando.
   const ultima = ctx?.historico.at(-1);
   if (!ctx || ctx.conversa.estado !== "ia" || ultima?.direcao !== "entrada") return;
 
+  const efeitos: Efeitos = { escalar: null, trocouCondominio: false };
   const inicio = Date.now();
-  let r: Anthropic.Message;
+  let r: BetaMessage | undefined;
+  // Soma das rodadas (cada uma é uma chamada cobrada).
+  const total = {
+    input_tokens: 0,
+    output_tokens: 0,
+    cache_read_input_tokens: 0,
+    cache_creation_input_tokens: 0,
+  };
   try {
-    r = await new Anthropic().messages.create({
+    const runner = new Anthropic().beta.messages.toolRunner({
       model: MODELO_AGENTE,
       max_tokens: 2000,
       system: sistema(ctx),
       messages: mensagens(ctx),
+      tools: ferramentas(ctx, efeitos),
+      max_iterations: MAX_RODADAS,
     });
+    for await (const m of runner) {
+      r = m;
+      total.input_tokens += m.usage.input_tokens;
+      total.output_tokens += m.usage.output_tokens;
+      total.cache_read_input_tokens += m.usage.cache_read_input_tokens ?? 0;
+      total.cache_creation_input_tokens += m.usage.cache_creation_input_tokens ?? 0;
+    }
   } catch (e) {
     if (!ultimaTentativa) throw e;
     console.error(`[agente] conversa ${job.conversaId}: falhou de vez, vai para o síndico`, e);
     await withTenant(job.tenantId, (tx) => escalar(tx, ctx));
     return;
   }
+  if (!r) return;
 
   const texto = r.content
     .flatMap((b) => (b.type === "text" ? [b.text] : []))
@@ -76,17 +110,21 @@ export async function responder(job: JobAgente, ultimaTentativa = false): Promis
     !texto ||
     texto.startsWith(SEM_BASE) ||
     r.stop_reason === "refusal" ||
-    r.stop_reason === "max_tokens";
+    r.stop_reason === "max_tokens" ||
+    // Acabaram as rodadas ainda pedindo ferramenta.
+    r.stop_reason === "tool_use";
 
   await withTenant(job.tenantId, async (tx) => {
     await tx.insert(s.llmExecucoes).values({
       tenantId: job.tenantId,
       conversaId: ctx.conversa.id,
       condominioId: ctx.conversa.condominioId,
-      ...uso(r, MODELO_AGENTE, inicio),
+      ...uso({ usage: { ...r.usage, ...total } }, MODELO_AGENTE, inicio),
     });
+    if (efeitos.trocouCondominio) return;
     // Enquanto o modelo pensava: o síndico assumiu, ou chegou outra mensagem (o próximo job
-    // responde as duas juntas). Nesses casos esta resposta é descartada.
+    // responde as duas juntas). Nesses casos esta resposta é descartada; o que as ferramentas
+    // gravaram (demanda, cadastro) fica, e o próximo job vê as demandas abertas no contexto.
     const [cv] = await tx
       .select({ estado: s.conversas.estado })
       .from(s.conversas)
@@ -108,6 +146,11 @@ export async function responder(job: JobAgente, ultimaTentativa = false): Promis
     const mensagem = [texto, f.length ? `📄 ${f.join("; ")}` : "", assinatura]
       .filter(Boolean)
       .join("\n\n");
+    // escalar_sindico: o modelo já escreveu o aviso ao morador; a conversa vai para o síndico.
+    if (efeitos.escalar) return escalar(tx, ctx, mensagem);
     await enviarNaConversa(tx, ctx.conversa, mensagem, "ia");
   });
+
+  // definir_condominio trocou o condomínio: responde de novo, com os documentos do novo.
+  if (efeitos.trocouCondominio && !recomeco) await responder(job, ultimaTentativa, true);
 }

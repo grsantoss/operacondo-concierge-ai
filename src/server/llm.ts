@@ -8,7 +8,7 @@ export const HAIKU = "claude-haiku-5-5";
 // dobra (o contexto do agente fica abaixo disso, ver agent/contexto.ts).
 const PRECO = { entrada: 0.1, saida: 0.5 };
 
-export function uso(r: Anthropic.Message, modelo: string, inicio: number) {
+export function uso(r: Pick<Anthropic.Message, "usage">, modelo: string, inicio: number) {
   const u = r.usage;
   const cacheLido = u.cache_read_input_tokens ?? 0;
   const cacheGravado = u.cache_creation_input_tokens ?? 0;

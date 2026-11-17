@@ -54,7 +54,7 @@ const AUTOR_TELA = {
 } as const satisfies Record<string, Message["from"]>;
 
 /** Prazo da demanda aberta pelo painel (mesma tabela mostrada na tela "Nova demanda"). */
-const SLA_HORAS: Record<Priority, number> = { Crítica: 2, Alta: 6, Normal: 24 };
+export const SLA_HORAS: Record<Priority, number> = { Crítica: 2, Alta: 6, Normal: 24 };
 
 const TZ = "America/Sao_Paulo";
 const hora = (d: Date) =>
@@ -213,6 +213,20 @@ export const obterDemanda = createServerFn({ method: "GET" })
 
 /* ------------------------------------------------------------ gravação */
 
+/**
+ * Próximo código do cliente (D-2401…). Usado pelo painel e pelo agente.
+ * ponytail: duas aberturas no mesmo instante → a 2ª falha no unique(tenant_id, codigo); trocar
+ * por sequência por cliente se acontecer de verdade.
+ */
+export async function proximoCodigoDemanda(tx: Tx): Promise<string> {
+  const [{ n }] = (
+    await tx.execute<{ n: number }>(
+      sql`select coalesce(max(substring(codigo from 3)::int), 2400) + 1 as n from demandas`,
+    )
+  ).rows;
+  return `D-${n}`;
+}
+
 async function idDa(tx: Tx, codigo: string) {
   const [d] = await tx
     .select({
@@ -251,14 +265,7 @@ export const criarDemanda = createServerFn({ method: "POST" })
           and(eq(s.moradores.id, data.moradorId), eq(s.moradores.condominioId, data.condominioId)),
         );
       if (!m) throw new Error("Morador não encontrado neste condomínio.");
-      // Próximo código do cliente. ponytail: duas aberturas no mesmo instante → a 2ª falha no
-      // unique(tenant_id, codigo); trocar por sequência por cliente se acontecer de verdade.
-      const [{ n }] = (
-        await tx.execute<{ n: number }>(
-          sql`select coalesce(max(substring(codigo from 3)::int), 2400) + 1 as n from demandas`,
-        )
-      ).rows;
-      const codigo = `D-${n}`;
+      const codigo = await proximoCodigoDemanda(tx);
       const [d] = await tx
         .insert(s.demandas)
         .values({

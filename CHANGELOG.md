@@ -13,12 +13,12 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   sessão = conversa), e a escolha do síndico sobre o rascunho (aprovado, editado, reescrito) vira
   nota de qualidade. Erros do servidor, do worker e do navegador vão para o Sentry. CPF, telefone
   e o segredo do webhook são mascarados antes de qualquer envio; sem as chaves, nada é enviado.
-  Em dev, `bun run langfuse:up` sobe o painel.
+  Em dev, `bun run langfuse:up` sobe o painel (#72).
 
 ### Corrigido
 
 - **Tela de conversas quebrava quando uma conversa tinha demanda aberta pelo agente**: a lista de
-  prioridades das demandas chegava como texto e a página `/app/agente` dava erro.
+  prioridades das demandas chegava como texto e a página `/app/agente` dava erro (#72).
 
 ## [0.5.0] - 2026-11-17
 

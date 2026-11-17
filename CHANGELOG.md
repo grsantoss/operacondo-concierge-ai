@@ -12,12 +12,12 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   aparece em Moradores, num cartão "esperando aprovação", com o que informou da unidade e um selo
   no menu. O síndico aprova (informando bloco e apartamento, ou quadra e casa, quando o agente não
   achou a unidade) ou recusa. Aprovado, o morador passa a ver as regras de moradores, as próprias
-  demandas e os dados da unidade; recusado, o agente continua só com as regras públicas.
+  demandas e os dados da unidade; recusado, o agente continua só com as regras públicas (#77).
 
 ### Corrigido
 
 - **Cadastros pendentes apareciam na lista de moradores** quando o agente já tinha ligado a
-  unidade, e ocupavam a unidade como se ela não estivesse vaga.
+  unidade, e ocupavam a unidade como se ela não estivesse vaga (#77).
 
 ## [0.6.0] - 2026-11-17
 

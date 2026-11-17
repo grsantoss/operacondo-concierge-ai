@@ -85,6 +85,13 @@
       "when": 1794927099536,
       "tag": "0011_morador_unidade_informada",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1794928240892,
+      "tag": "0012_conversa_rascunho",
+      "breakpoints": true
     }
   ]
 }

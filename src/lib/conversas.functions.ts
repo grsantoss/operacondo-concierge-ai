@@ -33,6 +33,10 @@ export interface ConversaResumo {
   urgencia: Priority;
   preview: string;
   ultimaMsgEm: string;
+  /** Resposta sugerida pela IA para o síndico aprovar, editar ou reescrever. */
+  rascunho: string | null;
+  /** Por que a conversa foi para o síndico ("Sem base documental"…). */
+  rascunhoMotivo: string | null;
 }
 
 export interface MensagemConversa {
@@ -98,6 +102,8 @@ export const listarConversas = createServerFn({ method: "GET" }).handler(
         ),
         preview: ultima ? ultima.texto || ROTULO_TIPO[ultima.tipo] : "",
         ultimaMsgEm: cv.ultimaMsgEm.toISOString(),
+        rascunho: cv.rascunho,
+        rascunhoMotivo: cv.rascunhoMotivo,
       }));
     });
   },
@@ -133,12 +139,29 @@ export const listarMensagens = createServerFn({ method: "GET" })
     );
   });
 
+/**
+ * Nota de qualidade do rascunho da IA: igual (ignorando espaços) = aprovado; metade ou mais das
+ * palavras em comum = editado; senão, reescrito.
+ */
+export function avaliarRascunho(rascunho: string, enviado: string) {
+  const palavras = (t: string) => t.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
+  const a = palavras(rascunho);
+  const b = palavras(enviado);
+  if (a.join(" ") === b.join(" ")) return "aprovado" as const;
+  const sa = new Set(a);
+  const sb = new Set(b);
+  const comuns = [...sa].filter((p) => sb.has(p)).length;
+  const uniao = new Set([...sa, ...sb]).size;
+  return uniao && comuns / uniao >= 0.5 ? ("editado" as const) : ("reescrito" as const);
+}
+
 async function mudarEstado(id: string, estado: EstadoConversa) {
   const { tenantId } = await exigirGestor();
   const r = await withTenant(tenantId, (tx) =>
     tx
       .update(s.conversas)
-      .set({ estado })
+      // Resolver descarta o rascunho; assumir mantém (o síndico ainda pode usá-lo).
+      .set(estado === "resolvida" ? { estado, rascunho: null, rascunhoMotivo: null } : { estado })
       .where(eq(s.conversas.id, id))
       .returning({ id: s.conversas.id }),
   );
@@ -169,10 +192,16 @@ export const responderConversa = createServerFn({ method: "POST" })
           .where(eq(s.conversas.id, data.id))
           .limit(1);
         if (!cv) throw new Error("Conversa não encontrada.");
-        await enviarNaConversa(tx, cv, data.texto, "sindico");
+        await enviarNaConversa(
+          tx,
+          cv,
+          data.texto,
+          "sindico",
+          cv.rascunho ? avaliarRascunho(cv.rascunho, data.texto) : undefined,
+        );
         await tx
           .update(s.conversas)
-          .set({ estado: "sindico", ultimaMsgEm: sql`now()` })
+          .set({ estado: "sindico", ultimaMsgEm: sql`now()`, rascunho: null, rascunhoMotivo: null })
           .where(eq(s.conversas.id, cv.id));
       });
     } catch (err) {

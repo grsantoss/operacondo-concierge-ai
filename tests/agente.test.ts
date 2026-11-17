@@ -5,6 +5,7 @@ import { carregarContexto } from "../src/server/agent/contexto";
 import { mensagens, SEM_BASE } from "../src/server/agent/prompt";
 import { AVISO_SINDICO, responder } from "../src/server/agent/run";
 import { acharUnidade } from "../src/server/agent/tools";
+import { avaliarRascunho } from "../src/lib/conversas.functions";
 import { cifrar } from "../src/server/cripto";
 import { dbAdmin, schema as s, withTenant } from "../src/server/db";
 import { processarConversa } from "../src/server/pipeline/processar";
@@ -355,7 +356,11 @@ describe("responder", () => {
     resposta = { texto: `${SEM_BASE} Olá, Bia! Vou verificar com o síndico.` };
     await responder(r.agente!);
     expect(enviados.at(-1)!.message).toBe(AVISO_SINDICO);
-    expect((await conversa(r.agente!.conversaId)).estado).toBe("aguardando_sindico");
+    expect(await conversa(r.agente!.conversaId)).toMatchObject({
+      estado: "aguardando_sindico",
+      rascunho: "Olá, Bia! Vou verificar com o síndico.",
+      rascunhoMotivo: "Sem base documental",
+    });
   });
 
   test("conversa com o síndico: a IA não chama o modelo", async () => {
@@ -494,7 +499,11 @@ describe("ferramentas", () => {
       { texto: "Vou passar para o síndico, que responde por aqui." },
     );
     await responder(r.agente!);
-    expect((await conversa(r.agente!.conversaId)).estado).toBe("aguardando_sindico");
+    expect(await conversa(r.agente!.conversaId)).toMatchObject({
+      estado: "aguardando_sindico",
+      rascunho: null,
+      rascunhoMotivo: "Reclamação de vizinho",
+    });
     expect(enviados.at(-1)!.message).toStartWith("Vou passar para o síndico");
   });
 
@@ -566,4 +575,15 @@ test("LGPD: CPF e telefone escritos pelo morador não chegam ao Claude", async (
   expect(pedido).not.toContain("529.982.247-25");
   expect(pedido).not.toContain("98123-0506");
   expect(pedido).toContain("Meu CPF é [CPF] e meu outro número é [telefone]");
+});
+
+test("nota do rascunho: aprovado, editado ou reescrito", () => {
+  const r = "Olá, Bia! A reforma da varanda precisa de autorização do síndico.";
+  expect(
+    avaliarRascunho(r, "  Olá, Bia!  A reforma da varanda precisa de autorização do síndico. "),
+  ).toBe("aprovado");
+  expect(
+    avaliarRascunho(r, "Oi, Bia! A reforma da varanda precisa de autorização prévia do síndico."),
+  ).toBe("editado");
+  expect(avaliarRascunho(r, "Pode fazer, só avise a portaria antes.")).toBe("reescrito");
 });

@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Check, Pencil, Sparkles } from "lucide-react";
 import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/brand/Icon";
 import {
@@ -101,8 +102,8 @@ function AgentePage() {
     }
   }
 
-  function handleSend() {
-    const text = draft.trim();
+  function handleSend(texto = draft) {
+    const text = texto.trim();
     if (!text || !selected) return;
     void executar(async () => {
       await acoes.responder(selected.id, text);
@@ -386,6 +387,45 @@ function AgentePage() {
               })}
             </div>
 
+            {selected.rascunhoMotivo && selected.estado !== "resolvida" && (
+              <div
+                className="border-t border-border bg-warning-soft px-4 py-3"
+                aria-label="Rascunho da IA"
+              >
+                <p className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                  <Sparkles className="size-3.5" aria-hidden />
+                  {selected.rascunho ? "Rascunho da IA" : "Encaminhada pela IA"}
+                  <span className="font-normal text-muted-foreground">
+                    • {selected.rascunhoMotivo}
+                  </span>
+                </p>
+                {selected.rascunho ? (
+                  <>
+                    <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed text-foreground">
+                      {selected.rascunho}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <button
+                        onClick={() => handleSend(selected.rascunho!)}
+                        disabled={ocupado}
+                        className="btn-press inline-flex h-8 items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+                      >
+                        <Check className="size-3.5" aria-hidden /> Aprovar e enviar
+                      </button>
+                      <button
+                        onClick={() => setDraft(selected.rascunho!)}
+                        className="btn-press inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-white px-3 text-xs font-semibold text-foreground"
+                      >
+                        <Pencil className="size-3.5" aria-hidden /> Editar
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <p className="mt-1 text-xs text-muted-foreground">Responda abaixo.</p>
+                )}
+              </div>
+            )}
+
             <footer className="border-t border-[var(--color-outline-variant)] bg-white p-3">
               <div className="flex items-end gap-2">
                 <textarea
@@ -403,7 +443,7 @@ function AgentePage() {
                   className="max-h-28 min-w-0 flex-1 resize-none rounded-lg border border-[var(--color-outline-variant)] bg-white px-3 py-2.5 text-sm outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand)]/15"
                 />
                 <button
-                  onClick={handleSend}
+                  onClick={() => handleSend()}
                   disabled={!draft.trim() || ocupado}
                   className="btn-press inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-brand)] px-4 text-sm font-semibold text-white hover:bg-[var(--color-brand-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                 >

@@ -84,6 +84,8 @@ export const moradorStatus = pgEnum("morador_status", [
   "inativo",
 ]);
 export const cadastro = pgEnum("cadastro", ["pendente", "aprovado", "recusado"]);
+/** Como o síndico usou o rascunho da IA (nota de qualidade). */
+export const avaliacaoRascunho = pgEnum("avaliacao_rascunho", ["aprovado", "editado", "reescrito"]);
 export const conversaEstado = pgEnum("conversa_estado", [
   "ia",
   "aguardando_sindico",
@@ -517,6 +519,10 @@ export const conversas = pgTable(
     estado: conversaEstado("estado").notNull().default("ia"),
     /** Mesma escala das demandas; assume a maior entre a triagem e as demandas abertas. */
     prioridade: prioridade("prioridade").notNull().default("normal"),
+    /** Resposta sugerida pela IA quando foi para o síndico (ex.: sem base documental). */
+    rascunho: text("rascunho"),
+    /** Por que foi para o síndico: "Sem base documental", motivo do escalonamento… */
+    rascunhoMotivo: text("rascunho_motivo"),
     ultimaMsgEm: ts("ultima_msg_em").notNull().defaultNow(),
     criadoEm: criadoEm(),
   },
@@ -554,6 +560,8 @@ export const mensagens = pgTable(
     midiaPath: text("midia_path"),
     /** Evita gravar duas vezes a mesma mensagem do provedor. */
     providerMsgId: text("provider_msg_id").unique(),
+    /** Resposta do síndico a partir do rascunho da IA: aprovado sem edição, editado ou reescrito. */
+    avaliacaoRascunho: avaliacaoRascunho("avaliacao_rascunho"),
     criadoEm: criadoEm(),
   },
   (t) => [

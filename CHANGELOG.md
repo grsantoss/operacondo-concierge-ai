@@ -57,7 +57,7 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   demandas do próprio morador, busca regras em atas e comunicados, cadastra número novo como
   pendente (com unidade, vínculo e aceite da LGPD, para o síndico aprovar), troca o condomínio
   da conversa quando o morador é de outro e passa a conversa ao síndico quando o assunto pede.
-  Orçamento acima do limite de aprovação vai para "Triagem" aguardando o síndico.
+  Orçamento acima do limite de aprovação vai para "Triagem" aguardando o síndico (#68).
 
 ### Corrigido
 

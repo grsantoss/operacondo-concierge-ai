@@ -14,6 +14,11 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   nota de qualidade. Erros do servidor, do worker e do navegador vão para o Sentry. CPF, telefone
   e o segredo do webhook são mascarados antes de qualquer envio; sem as chaves, nada é enviado.
   Em dev, `bun run langfuse:up` sobe o painel (#72).
+- **Avaliação do agente** (`bun run evals`): 22 perguntas de um condomínio fictício, com a
+  resposta esperada (responder citando o artigo certo, mandar ao síndico quando não há base,
+  abrir demanda, não vazar documento interno, resistir a pedido para ignorar as instruções). O
+  script roda o agente de verdade e mostra o que passou; com o Langfuse, cada execução vira um
+  experimento sobre o dataset `concierge-perguntas`, para comparar modelos e mudanças no prompt.
 
 ### Corrigido
 

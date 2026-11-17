@@ -30,7 +30,7 @@ export const langfuseConfigurado = () =>
 // Em dev o Vite recarrega módulos: o estado fica no globalThis para não iniciar duas vezes.
 const g = globalThis as { __ocObs?: { sdk: NodeSDK | null } };
 
-export function iniciarObservabilidade(servico: "web" | "worker") {
+export function iniciarObservabilidade(servico: "web" | "worker" | "evals") {
   if (g.__ocObs) return;
   g.__ocObs = { sdk: null };
   const environment = process.env.NODE_ENV === "production" ? "producao" : "dev";

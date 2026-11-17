@@ -6,6 +6,8 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
 
 ## [Não lançado]
 
+## [0.6.0] - 2026-11-17
+
 ### Adicionado
 
 - **Observabilidade da IA e dos erros**: com as chaves configuradas, cada resposta do agente vira
@@ -241,7 +243,8 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   arquivos `.lovable/`. (#1)
 - **Seletor de tema** em Configurações → Aparência (o modo escuro está desligado). (#1)
 
-[Não lançado]: https://github.com/grsantoss/operacondo-concierge-ai/compare/v0.5.0...HEAD
+[Não lançado]: https://github.com/grsantoss/operacondo-concierge-ai/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/grsantoss/operacondo-concierge-ai/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/grsantoss/operacondo-concierge-ai/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/grsantoss/operacondo-concierge-ai/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/grsantoss/operacondo-concierge-ai/compare/v0.2.0...v0.3.0

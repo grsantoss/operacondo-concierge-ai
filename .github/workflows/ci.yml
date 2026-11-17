@@ -48,3 +48,16 @@ jobs:
         run: bun run db:seed
       - name: Build
         run: bun run build
+      # O build pode passar e o servidor quebrar em execução (ex.: dependência resolvida errada no
+      # empacotamento, #73). Sobe o servidor de produção e confere a página inicial e o login.
+      - name: Servidor de produção responde
+        run: |
+          PORT=8080 node .output/server/index.mjs > servidor.log 2>&1 &
+          for i in $(seq 1 30); do curl -s -o /dev/null http://localhost:8080/ && break; sleep 1; done
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/)" = 200
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:8080/api/auth/sign-in/email \
+            -H 'content-type: application/json' -H 'origin: http://localhost:8080' \
+            -d '{"email":"sindico@operacondo.local","password":"operacondo123"}')" = 200
+      - name: Log do servidor (se falhou)
+        if: failure()
+        run: cat servidor.log || true

@@ -157,7 +157,7 @@ temperatura (cold/warm/hot) saiu de todas as telas (#14).
   descartada se o síndico assumiu ou chegou mensagem nova durante a chamada. Áudio: o agente roda
   depois da fila `midia`. Uso em `llm_execucoes` com `conversa_id` (soma das rodadas).
 - **Ferramentas do agente (#23):** `src/server/agent/tools.ts`, Tool Runner do SDK
-  (`client.beta.messages.toolRunner` + `betaZodTool`, zod v4 em `zod/v4`; o runner usa o beta
+  (`client.beta.messages.toolRunner` + `betaZodTool`; o runner usa o beta
   `message-threads`, então só a 1ª chamada leva `tools`), até 6 rodadas. Cliente, condomínio,
   morador e telefone vêm do contexto (closure), nunca da entrada do modelo. `buscar_regras`
   (tsvector português, só visibilidade do morador, devolve `search_result` citável);
@@ -384,6 +384,10 @@ fim do período, sem reembolso proporcional.
   invalida o cache). Rotas fazem `loader: queryClient.ensureQueryData(...)` para a página chegar
   pronta do servidor. Dados de exemplo ficam só em `scripts/dados-exemplo/` (seed).
 - Prettier só em arquivos novos ou já formatados; não formatar arquivos antigos inteiros.
+- **zod 4** (uma versão só na árvore, a mesma do `better-auth` e do TanStack): objeto com padrões
+  internos usa `.prefault({})` (o `.default({})` do zod 4 não passa pelo schema); mensagem de
+  erro é `error`, não `errorMap`. Duas versões do zod quebram o build de produção (#73): o CI
+  sobe o servidor do build e confere página e login.
 
 ## Design system
 

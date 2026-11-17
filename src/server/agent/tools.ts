@@ -8,7 +8,7 @@ import type { BetaRunnableTool } from "@anthropic-ai/sdk/lib/tools/BetaRunnableT
 import { startActiveObservation } from "@langfuse/tracing";
 import type { BetaToolResultContentBlockParam } from "@anthropic-ai/sdk/resources/beta";
 import { and, desc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
-import * as z from "zod/v4";
+import { z } from "zod";
 import { PRIO_TELA, proximoCodigoDemanda, SLA_HORAS } from "@/lib/demandas.functions";
 import { COLECAO_NOME, type Contexto } from "@/server/agent/contexto";
 import { schema as s, withTenant } from "@/server/db";

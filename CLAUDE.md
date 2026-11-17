@@ -17,8 +17,9 @@ Responda sempre em português do Brasil, com acentuação correta.
   `agente_config`, ajustes em `opcoes` validados por zod com padrões) e o portal `/admin` (#13;
   `src/lib/admin.functions.ts` com `dbAdmin()`/`oc_admin` e `exigirAdmin()`; Stripe na Fase 6).
 - **Fase 2 (WhatsApp, #15–#20) e Fase 3 (#21, leitura dos documentos) concluídas**, uma issue
-  por PR. **Fase 4 (agente v1, #22–#27) concluída** com a #27 (avaliação). Testes reais (instância Z-API, transcrição, Claude, pagamento) ficam para depois de todas
-  as issues.
+  por PR. **Fase 4 (agente v1, #22–#27) concluída** (`v0.6.0`). **Fase 5 (#28, cadastro com
+  aprovação)** fecha a primeira rodada. Testes reais (instância Z-API, transcrição, Claude,
+  pagamento) ficam para depois de todas as issues.
 - Rodar localmente: `cp .env.example .env` → `bun run db:reset` (sobe containers, migrations e
   seed) → `bun run dev` (e `bun run worker` para a fila; `bun run docling:up` para ler documentos). Login: `sindico@operacondo.local` (cliente Aurora) ou
   `admin@operacondo.local` (Admin Master), senha `SEED_SENHA` (padrão `operacondo123`).
@@ -52,7 +53,12 @@ temperatura (cold/warm/hot) saiu de todas as telas (#14).
   aceite LGPD) e **salva o número na hora** como `moradores.cadastro = pendente`; nas próximas
   vezes já reconhece. Pendente pode: regras com visibilidade `publico` e abrir demanda. Só depois
   da aprovação do síndico: demandas próprias, regras `moradores`, dados da unidade. Importação CSV
-  entra como aprovado.
+  entra como aprovado. Tela (#28): cartão "Cadastros pelo WhatsApp esperando aprovação" em
+  `/app/moradores` (`CadastrosPendentes`) e selo no menu; `listarPendentes`/`decidirCadastro` em
+  `moradores.functions.ts`, lógica em `src/server/moradores.ts` (`decidirCadastroTx`). Aprovar
+  sem unidade ligada exige o endereço; recusar vira `recusado` e mantém o número (o agente segue
+  só com regras públicas). Pendentes e recusados ficam fora da lista de moradores e não ocupam
+  unidade vaga.
 - **Aprovação do síndico = o que não tiver base documental.** Achou trecho (convenção, estatuto,
   regimento, ata) → responde e cita. Não achou → `aguardando_sindico`, com rascunho marcado
   "sem base documental" para o síndico aprovar/editar. O controle "Autonomia da IA (%)" já foi

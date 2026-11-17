@@ -3,11 +3,13 @@ import { useMemo, useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/brand/Icon";
 import { WhatsAppIcon } from "@/components/brand/WhatsAppIcon";
+import { CadastrosPendentes } from "@/components/moradores/CadastrosPendentes";
 import { ImportCsvModal } from "@/components/moradores/ImportCsvModal";
 import { NewMoradorModal } from "@/components/moradores/NewMoradorModal";
 import {
   condominiosQuery,
   moradoresQuery,
+  pendentesQuery,
   useCondominios,
   type Condominio,
   STATUS_CLS,
@@ -22,7 +24,11 @@ import {
 
 export const Route = createFileRoute("/app/moradores/")({
   loader: ({ context: { queryClient } }) =>
-    Promise.all([queryClient.ensureQueryData(moradoresQuery), queryClient.ensureQueryData(condominiosQuery)]),
+    Promise.all([
+      queryClient.ensureQueryData(moradoresQuery),
+      queryClient.ensureQueryData(condominiosQuery),
+      queryClient.ensureQueryData(pendentesQuery),
+    ]),
   head: () => ({ meta: [{ title: "Moradores | OperaCondo Concierge" }] }),
   component: MoradoresPage,
 });
@@ -123,6 +129,8 @@ function MoradoresPage() {
         </>
       }
     >
+      <CadastrosPendentes condoId={condoId} />
+
       {/* Dashboard */}
       <section className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         <KpiCard

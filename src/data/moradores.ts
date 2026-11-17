@@ -2,10 +2,12 @@ import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   atualizarMorador,
   criarMoradores,
+  decidirCadastro,
   desativarMorador,
   excluirMoradores,
   listarCondominios,
   listarMoradores,
+  listarPendentes,
   reativarMorador,
 } from "@/lib/moradores.functions";
 
@@ -61,6 +63,22 @@ export const STATUS_CLS: Record<Status, string> = {
 
 export const STATUS_LIST: Status[] = ["Residente", "Locatário", "Proprietário", "Vago"];
 
+/** Cadastro feito pelo agente no WhatsApp, esperando o síndico (#28). */
+export interface Pendente {
+  id: string;
+  nome: string;
+  condominioId: string;
+  condominio: string;
+  tipo: CondoTipo;
+  vinculo: Status;
+  /** Como o morador escreveu ("bloco B 302"). */
+  unidadeInformada: string | null;
+  /** Unidade já ligada pelo agente (resposta inequívoca); senão o síndico informa ao aprovar. */
+  unidade: Endereco | null;
+  contato: string;
+  criadoEm: string;
+}
+
 /* -------- Dados do banco (React Query) -------- */
 
 export const condominiosQuery = queryOptions({
@@ -72,6 +90,27 @@ export const moradoresQuery = queryOptions({
   queryKey: ["moradores"],
   queryFn: () => listarMoradores(),
 });
+
+export const pendentesQuery = queryOptions({
+  queryKey: ["cadastros-pendentes"],
+  queryFn: () => listarPendentes(),
+});
+
+export function usePendentes(): Pendente[] {
+  return useQuery(pendentesQuery).data ?? [];
+}
+
+/** Aprovar ou recusar; aprovar sem unidade ligada exige o endereço. */
+export function useCadastroAcoes() {
+  const qc = useQueryClient();
+  return async (id: string, decisao: "aprovar" | "recusar", endereco?: Endereco) => {
+    await decidirCadastro({ data: { id, decisao, endereco } });
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: pendentesQuery.queryKey }),
+      qc.invalidateQueries({ queryKey: moradoresQuery.queryKey }),
+    ]);
+  };
+}
 
 export function useCondominios(): Condominio[] {
   return useQuery(condominiosQuery).data ?? [];

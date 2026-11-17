@@ -41,6 +41,8 @@ export function useConversasAoVivo() {
     es.onmessage = (m) => {
       const e = JSON.parse(m.data) as { tabela: string; conversa: string | null };
       void qc.invalidateQueries({ queryKey: conversasQuery.queryKey });
+      // O cadastro pelo WhatsApp (#28) acontece numa conversa: o selo de pendentes acompanha.
+      void qc.invalidateQueries({ queryKey: ["cadastros-pendentes"] });
       if (e.conversa && e.tabela === "mensagens")
         void qc.invalidateQueries({ queryKey: ["mensagens", e.conversa] });
     };

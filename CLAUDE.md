@@ -17,8 +17,7 @@ Responda sempre em português do Brasil, com acentuação correta.
   `agente_config`, ajustes em `opcoes` validados por zod com padrões) e o portal `/admin` (#13;
   `src/lib/admin.functions.ts` com `dbAdmin()`/`oc_admin` e `exigirAdmin()`; Stripe na Fase 6).
 - **Fase 2 (WhatsApp, #15–#20) e Fase 3 (#21, leitura dos documentos) concluídas**, uma issue
-  por PR. **Fase 4 (agente v1, #22–#27) em andamento**, na ordem #22 → #23 → #25 → #24 → #26 →
-  #27. Testes reais (instância Z-API, transcrição, Claude, pagamento) ficam para depois de todas
+  por PR. **Fase 4 (agente v1, #22–#27) concluída** com a #27 (avaliação). Testes reais (instância Z-API, transcrição, Claude, pagamento) ficam para depois de todas
   as issues.
 - Rodar localmente: `cp .env.example .env` → `bun run db:reset` (sobe containers, migrations e
   seed) → `bun run dev` (e `bun run worker` para a fila; `bun run docling:up` para ler documentos). Login: `sindico@operacondo.local` (cliente Aurora) ou
@@ -191,6 +190,16 @@ temperatura (cold/warm/hot) saiu de todas as telas (#14).
   navegador (import-protection do TanStack Start): código comum fica em `src/lib`.
   Langfuse em dev: `bun run langfuse:up` (perfil `observabilidade`; banco `langfuse` no Postgres
   e bucket `langfuse` no S3 do projeto, por `scripts/langfuse-preparar.ts`).
+- **Avaliação (#27):** `bun run evals [filtro…]` (`src/server/evals/run.ts`) cria um cliente
+  temporário com o condomínio fictício "Edifício Jacarandá" (`evals/documentos/*.md`, com ata que
+  altera o regimento e um procedimento `interno` com segredos), manda cada caso de
+  `evals/perguntas.jsonl` pelo caminho real (entrada → roteamento → agente; Claude de verdade,
+  Z-API falsa) e confere `espera`: `resultado` (`resposta | sindico | demanda`), `fonte` (trecho
+  da linha "📄"), `contem`/`nao_contem`. Apaga o cliente no fim; sai com código 1 se algum caso
+  falhar. Com Langfuse, os casos viram o dataset `concierge-perguntas` (id do item =
+  `concierge-perguntas-{id}`) e cada execução um experimento com uma nota por critério + `passou`
+  (na v4, experimentos ficam em `events_core`, não em `dataset_runs`). Precisa de
+  `ANTHROPIC_API_KEY` (custa centavos por rodada); ainda não rodou contra o Claude real.
 - **Mascaramento (#25):** `src/lib/mascarar.ts`. `mascarar()` troca CPF (formatado ou 11
   dígitos com DV válido) e telefone por `[CPF]`/`[telefone]` em toda mensagem da conversa antes
   de ir ao Claude; `mascararCpf()` nos trechos de documentos (telefone de portaria/zelador

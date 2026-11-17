@@ -51,7 +51,7 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   Art. 12"). Morador sem cadastro aprovado só recebe regras públicas; documentos internos e do
   conselho nunca entram. Quando os documentos não respondem, ou o pedido depende do síndico, o
   morador recebe um aviso e a conversa vai para "Aguardando síndico". Sem a chave, tudo continua
-  indo direto ao síndico. Custo de cada resposta registrado por cliente e condomínio.
+  indo direto ao síndico. Custo de cada resposta registrado por cliente e condomínio (#67).
 
 ### Corrigido
 

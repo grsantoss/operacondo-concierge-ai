@@ -9,6 +9,7 @@ import { z } from "zod";
 import type { Condominio, Morador, Pendente, Status } from "@/data/moradores";
 import { formatarTelefone, paraE164 } from "@/lib/telefone";
 import { exigirCliente } from "@/server/auth/contexto";
+import { exigirLimite } from "@/server/billing/limites";
 import { type Tx, schema as s, withTenant } from "@/server/db";
 import { decidirCadastroTx, unidadeDo } from "@/server/moradores";
 
@@ -213,6 +214,7 @@ export const criarMoradores = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { tenantId } = await exigirCliente();
     await withTenant(tenantId, async (tx) => {
+      await exigirLimite(tx, "moradores", data.length);
       for (const [n, i] of data.entries()) {
         try {
           await criar(tx, tenantId, i);
@@ -233,7 +235,11 @@ export const atualizarMorador = createServerFn({ method: "POST" })
   .handler(async ({ data: { id, dados } }) => {
     const { tenantId } = await exigirCliente();
     await withTenant(tenantId, async (tx) => {
-      if (id.startsWith(VAGO)) return criar(tx, tenantId, dados); // unidade vaga recebendo morador
+      if (id.startsWith(VAGO)) {
+        // unidade vaga recebendo morador
+        await exigirLimite(tx, "moradores");
+        return criar(tx, tenantId, dados);
+      }
       const unidadeId = await unidadeDo(tx, tenantId, dados);
       const r = await tx
         .update(s.moradores)
@@ -262,12 +268,13 @@ export const reativarMorador = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const { tenantId } = await exigirCliente();
-    await withTenant(tenantId, (tx) =>
-      tx
+    await withTenant(tenantId, async (tx) => {
+      await exigirLimite(tx, "moradores");
+      await tx
         .update(s.moradores)
         .set({ desativadoEm: null, status: STATUS_DB[data.status] })
-        .where(eq(s.moradores.id, data.id)),
-    );
+        .where(eq(s.moradores.id, data.id));
+    });
   });
 
 /** Exclui de vez (LGPD): só moradores já arquivados. */

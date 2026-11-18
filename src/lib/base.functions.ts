@@ -8,6 +8,7 @@ import { z } from "zod";
 import type { Documento } from "@/data/base";
 import { apagarArquivo, gravarArquivo, linkTemporario, nomeSeguro } from "@/server/arquivos";
 import { exigirCliente } from "@/server/auth/contexto";
+import { exigirLimite } from "@/server/billing/limites";
 import { schema as s, withTenant } from "@/server/db";
 import { enfileirarIngestao } from "@/server/queue";
 
@@ -108,6 +109,7 @@ export const enviarDocumentos = createServerFn({ method: "POST" })
         .from(s.condominios)
         .where(eq(s.condominios.id, meta.condominioId));
       if (!c) throw new Error("Condomínio não encontrado.");
+      await exigirLimite(tx, "documentos", arquivos.length);
       for (const f of arquivos) {
         const caminho = `${tenantId}/${c.id}/${meta.colecao}/${crypto.randomUUID()}-${nomeSeguro(f.name)}`;
         await gravarArquivo(

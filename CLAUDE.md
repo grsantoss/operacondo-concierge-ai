@@ -345,7 +345,11 @@ Fluxos:
   cancela no fim do período, sem troca de plano): plano, uso x limites, próxima
   fatura, histórico (do banco) e botão "Gerenciar pagamento" → sessão do **Customer Portal**
   (trocar cartão, baixar faturas, cancelar conforme configuração do portal).
-- **Limites do plano** (`billing/limites.ts`, lendo `uso_mensal`): moradores e condomínios
+- **Limites do plano** (feito na #34: `billing/limites.ts`, `exigirLimite` em criar/reativar
+  morador e enviar documento; o `registrar_cadastro` do agente não é bloqueado; condomínio ainda
+  não tem tela de cadastro, então o limite de condomínios só aparece na aba; corte da IA no início
+  de `agent/run.ts` por `iaNoLimite`, com `USD_BRL` para o teto; faixa `AvisoUso` no `AppShell`;
+  sem assinatura = sem limite) (`billing/limites.ts`, lendo `uso_mensal`): moradores e condomínios
   bloqueiam o cadastro acima do limite. A unidade cobrada é **resposta da IA** (cada vez que o
   agente responde), não mensagem recebida; zera no mês do calendário, inclusive no plano anual.
   Aviso em 80%. **Em 100%, nenhuma chamada ao modelo**: só as regras fixas de urgência repassam ao

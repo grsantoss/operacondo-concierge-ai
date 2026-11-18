@@ -216,7 +216,8 @@ export function ferramentas(ctx: Contexto, efeitos: Efeitos) {
           .from(s.unidades)
           .where(eq(s.unidades.condominioId, condominioId));
         const u = acharUnidade(unidade, unidades);
-        // Sempre pendente: só o síndico aprova (nunca o modelo).
+        // Sempre pendente: só o síndico aprova (nunca o modelo). Não passa pelo limite de
+        // moradores do plano: o contato não se perde; o bloqueio vale no painel.
         const [m] = await t
           .insert(s.moradores)
           .values({

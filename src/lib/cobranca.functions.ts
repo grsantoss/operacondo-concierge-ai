@@ -9,7 +9,7 @@ import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { exigirCliente } from "@/server/auth/contexto";
 import { APP, lookupKey } from "@/server/billing/catalogo";
-import { assinaturaAtual, type Limites } from "@/server/billing/limites";
+import { assinaturaAtual, usoMensal, type Limites, type Uso } from "@/server/billing/limites";
 import { stripe, stripeConfigurado } from "@/server/billing/stripe";
 import { concluirCheckout } from "@/server/billing/sync";
 import { trialJaUsado } from "@/server/billing/trial";
@@ -233,7 +233,7 @@ export interface MeuPlano {
   /** Estimativa a partir da tabela de planos; o cobrado é o do Stripe. */
   proximaCobranca: number | null;
   limites: Limites;
-  uso: { condominios: number; moradores: number; documentos: number; respostasIa: number };
+  uso: Uso;
   faturas: FaturaResumo[];
   podeGerenciar: boolean;
 }
@@ -246,12 +246,7 @@ export const meuPlano = createServerFn({ method: "GET" }).handler(
       const atual = await assinaturaAtual(tx);
       if (!atual) return null;
       const { assinatura: a, plano, limites } = atual;
-      const { rows: [uso] } = await tx.execute<{
-        condominios: string;
-        moradores: string;
-        documentos: string;
-        respostas_ia: string;
-      }>(sql`select condominios, moradores, documentos, respostas_ia from uso_mensal`);
+      const uso = await usoMensal(tx);
       const faturas = await tx
         .select()
         .from(s.faturas)
@@ -272,12 +267,7 @@ export const meuPlano = createServerFn({ method: "GET" }).handler(
         proximaCobranca:
           encerrada || a.cancelaNoFim ? null : a.intervalo === "anual" ? mensal * 10 : mensal,
         limites,
-        uso: {
-          condominios: Number(uso?.condominios ?? 0),
-          moradores: Number(uso?.moradores ?? 0),
-          documentos: Number(uso?.documentos ?? 0),
-          respostasIa: Number(uso?.respostas_ia ?? 0),
-        },
+        uso,
         faturas: faturas.map((f) => ({
           id: f.id,
           numero: f.numero,

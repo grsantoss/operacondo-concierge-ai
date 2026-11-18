@@ -12,7 +12,7 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   a próxima cobrança (ou o fim do teste grátis), o uso do mês comparado aos limites (respostas da
   IA, condomínios, moradores e documentos; no teste grátis valem os limites reduzidos) e as
   faturas com link para pagar e baixar o PDF. "Gerenciar pagamento" abre o Customer Portal do
-  Stripe para trocar o cartão, ver faturas e cancelar no fim do período (#PR).
+  Stripe para trocar o cartão, ver faturas e cancelar no fim do período (#88).
 
 - **Contratação pelo site, com 7 dias grátis**: página pública `/planos` (mensal ou anual),
   cadastro em `/cadastro` (seus dados, empresa e CNPJ validado) e pagamento no Stripe Checkout

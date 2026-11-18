@@ -30,6 +30,7 @@ import { Route as AdminUsuariosIndexRouteImport } from './routes/admin.usuarios.
 import { Route as AdminUsuariosIdRouteImport } from './routes/admin.usuarios.$id'
 import { Route as AdminUsuariosNovoRouteImport } from './routes/admin.usuarios.novo'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
 import { Route as AppBaseIndexRouteImport } from './routes/app.base.index'
 import { Route as AppBaseEnviarRouteImport } from './routes/app.base.enviar'
 import { Route as AppDemandasIndexRouteImport } from './routes/app.demandas.index'
@@ -147,6 +148,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiStripeWebhookRoute = ApiStripeWebhookRouteImport.update({
+  id: '/api/stripe/webhook',
+  path: '/api/stripe/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppBaseIndexRoute = AppBaseIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -224,6 +230,7 @@ export interface FileRoutesByFullPath {
   '/admin/usuarios/$id': typeof AdminUsuariosIdRoute
   '/admin/usuarios/novo': typeof AdminUsuariosNovoRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/app/base/enviar': typeof AppBaseEnviarRoute
   '/app/demandas/$id': typeof AppDemandasIdRoute
   '/app/demandas/nova': typeof AppDemandasNovaRoute
@@ -251,6 +258,7 @@ export interface FileRoutesByTo {
   '/admin/usuarios/$id': typeof AdminUsuariosIdRoute
   '/admin/usuarios/novo': typeof AdminUsuariosNovoRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/app/base/enviar': typeof AppBaseEnviarRoute
   '/app/demandas/$id': typeof AppDemandasIdRoute
   '/app/demandas/nova': typeof AppDemandasNovaRoute
@@ -286,6 +294,7 @@ export interface FileRoutesById {
   '/admin/usuarios/$id': typeof AdminUsuariosIdRoute
   '/admin/usuarios/novo': typeof AdminUsuariosNovoRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/app/base/enviar': typeof AppBaseEnviarRoute
   '/app/demandas/$id': typeof AppDemandasIdRoute
   '/app/demandas/nova': typeof AppDemandasNovaRoute
@@ -322,6 +331,7 @@ export interface FileRouteTypes {
     | '/admin/usuarios/$id'
     | '/admin/usuarios/novo'
     | '/api/auth/$'
+    | '/api/stripe/webhook'
     | '/app/base/enviar'
     | '/app/demandas/$id'
     | '/app/demandas/nova'
@@ -349,6 +359,7 @@ export interface FileRouteTypes {
     | '/admin/usuarios/$id'
     | '/admin/usuarios/novo'
     | '/api/auth/$'
+    | '/api/stripe/webhook'
     | '/app/base/enviar'
     | '/app/demandas/$id'
     | '/app/demandas/nova'
@@ -383,6 +394,7 @@ export interface FileRouteTypes {
     | '/admin/usuarios/$id'
     | '/admin/usuarios/novo'
     | '/api/auth/$'
+    | '/api/stripe/webhook'
     | '/app/base/enviar'
     | '/app/demandas/$id'
     | '/app/demandas/nova'
@@ -404,6 +416,7 @@ export interface RootRouteChildren {
   OnboardingRoute: typeof OnboardingRoute
   ApiEventosRoute: typeof ApiEventosRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
   ApiWhatsappZapiSegredoRoute: typeof ApiWhatsappZapiSegredoRoute
 }
 
@@ -554,6 +567,13 @@ declare module '@tanstack/react-router' {
       path: '/api/auth/$'
       fullPath: '/api/auth/$'
       preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/stripe/webhook': {
+      id: '/api/stripe/webhook'
+      path: '/api/stripe/webhook'
+      fullPath: '/api/stripe/webhook'
+      preLoaderRoute: typeof ApiStripeWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app/base/': {
@@ -758,6 +778,7 @@ const rootRouteChildren: RootRouteChildren = {
   OnboardingRoute: OnboardingRoute,
   ApiEventosRoute: ApiEventosRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiStripeWebhookRoute: ApiStripeWebhookRoute,
   ApiWhatsappZapiSegredoRoute: ApiWhatsappZapiSegredoRoute,
 }
 export const routeTree = rootRouteImport

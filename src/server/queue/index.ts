@@ -110,6 +110,13 @@ export function fila(): Promise<PgBoss> {
   return boss;
 }
 
+/** Para a fila e esquece a instância: o próximo `fila()` conecta de novo (testes e worker). */
+export async function pararFila(graceful = true) {
+  const atual = boss;
+  boss = null;
+  if (atual) await (await atual).stop({ graceful });
+}
+
 /** Agenda o processamento da conversa; se já houver um job esperando, ele leva esta mensagem junto. */
 export async function enfileirarMensagem(job: JobMensagem) {
   const b = await fila();

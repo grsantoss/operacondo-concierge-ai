@@ -8,6 +8,13 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
 
 ### Adicionado
 
+- **Limites do plano e corte da IA**: cadastrar ou reativar morador e enviar documento acima do
+  limite do plano (por condomínio contratado; no teste grátis, os limites reduzidos) é bloqueado
+  com uma mensagem clara. Ao chegar ao limite de respostas da IA do mês, ou ao teto técnico de
+  custo (`USD_BRL` converte o custo para reais), o modelo não é chamado: o morador recebe o aviso
+  fixo e a conversa vai para o síndico; as urgências continuam alertando. A partir de 80% das
+  respostas, uma faixa no painel avisa o síndico (#89).
+
 - **Aba "Plano e cobrança" do síndico**: em `/app/configuracoes?aba=plano`, o plano, o status,
   a próxima cobrança (ou o fim do teste grátis), o uso do mês comparado aos limites (respostas da
   IA, condomínios, moradores e documentos; no teste grátis valem os limites reduzidos) e as

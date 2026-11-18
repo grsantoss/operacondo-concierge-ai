@@ -14,6 +14,7 @@ import {
 } from "@langfuse/tracing";
 import { and, desc, eq } from "drizzle-orm";
 import { carregarContexto, COLECAO_NOME, type Contexto } from "@/server/agent/contexto";
+import { assinaturaAtual, iaNoLimite, usoMensal } from "@/server/billing/limites";
 import { mensagens, SEM_BASE, sistema } from "@/server/agent/prompt";
 import { ferramentas, type Efeitos } from "@/server/agent/tools";
 import { schema as s, withTenant, type Tx } from "@/server/db";
@@ -116,6 +117,18 @@ async function responderNoRastro(
   });
   const fim = (resultado: string, saida?: string) =>
     obs.update({ output: saida ?? resultado, metadata: { resultado } });
+
+  // Limite do plano (respostas da IA ou teto de custo do mês): nenhuma chamada ao modelo. O
+  // morador recebe o aviso fixo e a conversa vai para o síndico; urgências já foram no roteamento.
+  const corte = await withTenant(job.tenantId, async (tx) => {
+    const atual = await assinaturaAtual(tx);
+    return atual ? iaNoLimite(await usoMensal(tx), atual.limites) : null;
+  });
+  if (corte) {
+    fim(`síndico: ${corte}`);
+    await withTenant(job.tenantId, (tx) => escalar(tx, ctx, corte));
+    return;
+  }
   const traceId = langfuseConfigurado() ? (getActiveTraceId() ?? null) : null;
 
   const efeitos: Efeitos = { escalar: null, trocouCondominio: false };

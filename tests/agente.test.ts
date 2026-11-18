@@ -5,6 +5,7 @@ import { carregarContexto } from "../src/server/agent/contexto";
 import { mensagens, SEM_BASE } from "../src/server/agent/prompt";
 import { AVISO_SINDICO, responder } from "../src/server/agent/run";
 import { acharUnidade } from "../src/server/agent/tools";
+import { exigirLimite } from "../src/server/billing/limites";
 import { avaliarRascunho } from "../src/lib/conversas.functions";
 import { cifrar } from "../src/server/cripto";
 import { dbAdmin, schema as s, withTenant } from "../src/server/db";
@@ -393,6 +394,39 @@ describe("responder", () => {
     await responder(r.agente!, true);
     expect((await conversa(r.agente!.conversaId)).estado).toBe("aguardando_sindico");
     expect(enviados.at(-1)!.message).toBe(AVISO_SINDICO);
+  });
+});
+
+describe("limites do plano", () => {
+  test("teto do mês atingido: nenhuma chamada ao modelo, aviso fixo e conversa com o síndico", async () => {
+    // Trial: limites do plano `trial` (teto de custo de R$ 15); US$ 50 passa do teto.
+    const [a] = await admin
+      .insert(s.assinaturas)
+      .values({ tenantId, planoId: "essencial", status: "trialing", formaCobranca: "cartao" })
+      .returning();
+    const [l] = await admin
+      .insert(s.llmExecucoes)
+      .values({ tenantId, modelo: "teste", custoUsd: 50 })
+      .returning();
+    try {
+      const r = await receber("posso usar a churrasqueira?");
+      const antes = pedidos.length;
+      await responder(r.agente!);
+      expect(pedidos.length).toBe(antes);
+      expect(enviados.at(-1)!.message).toBe(AVISO_SINDICO);
+      expect(await conversa(r.agente!.conversaId)).toMatchObject({
+        estado: "aguardando_sindico",
+        rascunhoMotivo: "Teto de custo da IA do mês atingido",
+      });
+      // Cadastro acima do limite do trial (50 moradores) é bloqueado.
+      await expect(
+        withTenant(tenantId, (tx) => exigirLimite(tx, "moradores", 50)),
+      ).rejects.toThrow("O plano permite até 50 moradores");
+      await withTenant(tenantId, (tx) => exigirLimite(tx, "moradores", 1));
+    } finally {
+      await admin.delete(s.llmExecucoes).where(eq(s.llmExecucoes.id, l!.id));
+      await admin.delete(s.assinaturas).where(eq(s.assinaturas.id, a!.id));
+    }
   });
 });
 

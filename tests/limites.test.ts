@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { calcularLimites } from "@/server/billing/limites";
+import { calcularLimites, iaNoLimite } from "@/server/billing/limites";
 
 const plano = (o: Record<string, unknown>) =>
   ({
@@ -33,4 +33,12 @@ test("no trial valem os limites do plano trial, sem multiplicar", () => {
     moradores: 50,
     respostasIaMes: 150,
   });
+});
+
+test("IA para no limite de respostas ou no teto de custo (US$ × câmbio)", () => {
+  const l = calcularLimites(plano({}), 1, null); // 1.000 respostas, teto R$ 90
+  const uso = { condominios: 1, moradores: 0, documentos: 0, respostasIa: 999, custoIaUsd: 1 };
+  expect(iaNoLimite(uso, l)).toBeNull();
+  expect(iaNoLimite({ ...uso, respostasIa: 1000 }, l)).toContain("respostas");
+  expect(iaNoLimite({ ...uso, custoIaUsd: 20 }, l)).toContain("custo");
 });

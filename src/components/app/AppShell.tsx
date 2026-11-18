@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Logo } from "@/components/brand/Logo";
 import { Icon } from "@/components/brand/Icon";
 import { useConversas, useConversasAoVivo } from "@/data/conversas";
-import { AvisoUso } from "@/components/app/AvisoUso";
+import { AvisoPagamento, AvisoUso } from "@/components/app/AvisoUso";
 import { useDemandas } from "@/data/demandas";
 import { usePendentes } from "@/data/moradores";
 import { authClient } from "@/lib/auth-client";
@@ -484,6 +484,7 @@ export function AppShell({ title, breadcrumbs, actions, children }: AppShellProp
           </div>
 
           <main className="px-4 py-6 lg:px-8 lg:py-8">
+            <AvisoPagamento />
             <AvisoUso />
             {children}
           </main>

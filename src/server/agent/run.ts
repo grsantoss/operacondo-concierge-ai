@@ -14,7 +14,13 @@ import {
 } from "@langfuse/tracing";
 import { and, desc, eq } from "drizzle-orm";
 import { carregarContexto, COLECAO_NOME, type Contexto } from "@/server/agent/contexto";
-import { assinaturaAtual, iaNoLimite, usoMensal } from "@/server/billing/limites";
+import {
+  assinaturaAtual,
+  ATENDIMENTO_INDISPONIVEL,
+  iaNoLimite,
+  suspensaoDo,
+  usoMensal,
+} from "@/server/billing/limites";
 import { mensagens, SEM_BASE, sistema } from "@/server/agent/prompt";
 import { ferramentas, type Efeitos } from "@/server/agent/tools";
 import { schema as s, withTenant, type Tx } from "@/server/db";
@@ -67,7 +73,7 @@ async function escalar(
     .update(s.conversas)
     .set({ estado: "aguardando_sindico", rascunho, rascunhoMotivo: motivo })
     .where(and(eq(s.conversas.id, ctx.conversa.id), eq(s.conversas.estado, "ia")));
-  await enviarNaConversa(tx, ctx.conversa, texto, texto === AVISO_SINDICO ? "sistema" : "ia");
+  await enviarNaConversa(tx, ctx.conversa, texto, texto === AVISO_SINDICO || texto === ATENDIMENTO_INDISPONIVEL ? "sistema" : "ia");
 }
 
 /**
@@ -118,15 +124,22 @@ async function responderNoRastro(
   const fim = (resultado: string, saida?: string) =>
     obs.update({ output: saida ?? resultado, metadata: { resultado } });
 
-  // Limite do plano (respostas da IA ou teto de custo do mês): nenhuma chamada ao modelo. O
-  // morador recebe o aviso fixo e a conversa vai para o síndico; urgências já foram no roteamento.
+  // Limite do plano (respostas da IA ou teto de custo do mês) ou inadimplência: nenhuma chamada
+  // ao modelo. O morador recebe o aviso fixo e a conversa vai para o síndico; urgências já foram
+  // no roteamento. Congelado (D+10): resposta "atendimento indisponível".
   const corte = await withTenant(job.tenantId, async (tx) => {
+    const suspensao = await suspensaoDo(tx);
+    if (suspensao !== "nenhuma")
+      return { motivo: "Conta suspensa por falta de pagamento", congelado: suspensao === "integral" };
     const atual = await assinaturaAtual(tx);
-    return atual ? iaNoLimite(await usoMensal(tx), atual.limites) : null;
+    const motivo = atual ? iaNoLimite(await usoMensal(tx), atual.limites) : null;
+    return motivo ? { motivo, congelado: false } : null;
   });
   if (corte) {
-    fim(`síndico: ${corte}`);
-    await withTenant(job.tenantId, (tx) => escalar(tx, ctx, corte));
+    fim(`síndico: ${corte.motivo}`);
+    await withTenant(job.tenantId, (tx) =>
+      escalar(tx, ctx, corte.motivo, null, corte.congelado ? ATENDIMENTO_INDISPONIVEL : AVISO_SINDICO),
+    );
     return;
   }
   const traceId = langfuseConfigurado() ? (getActiveTraceId() ?? null) : null;

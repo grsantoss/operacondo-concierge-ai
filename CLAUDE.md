@@ -382,7 +382,13 @@ Fluxos:
 - **Plano anual: paga 10, leva 12.** Cada plano tem dois preços no Stripe
   (`concierge_{plano}_mensal` e `concierge_{plano}_anual`, anual = 10 × mensal, intervalo de 1 ano). Anual pode ser cartão ou boleto
   único. Cancelamento do anual vale no fim do período, sem reembolso proporcional.
-- **Inadimplência** (contada a partir do vencimento da fatura não paga, guardada em
+- **Inadimplência** (feito na #35: `billing/inadimplencia.ts` `aplicarInadimplencia`, fila
+  `inadimplencia` agendada no worker às 6h de Brasília; `tenants.aviso_inadimplencia` evita e-mail
+  repetido; parcial = `exigirCliente` recusa o que não é GET; congelado = `exigirCliente` recusa
+  tudo (`mesmoSuspenso` só em `meuPlano`/`abrirPortal`), `/app` → `/pagamento`, roteamento responde
+  `ATENDIMENTO_INDISPONIVEL` e o alerta de urgência ao síndico continua; exclusão apaga as tabelas
+  de `TABELAS_APAGADAS`, a pasta `{tenant}/` do S3 e os logins só deste cliente; pagar zera tudo
+  em `derivarCliente`) (contada a partir do vencimento da fatura não paga, guardada em
   `tenants.inadimplente_desde`; job diário do pg-boss aplica as fases):
   - D+1 a D+7: tudo funciona, aviso no painel e e-mail.
   - D+7: **suspensão parcial** — painel só leitura; agente sem IA, responde mensagem fixa e só
@@ -409,6 +415,8 @@ produção só no ambiente de produção; nada de chave no banco nem na tela. Lo
 
 **E-mail transacional e de notificação: Amazon SES** (decidido em 18/11/2026, #43; o dono do
 projeto já usa nos outros projetos). Usado pelos avisos de inadimplência (#35), trial e cadastro.
+`src/server/email.ts` (`enviarEmail`, texto puro; SDK `@aws-sdk/client-sesv2`): `SES_REMETENTE`
+(sem ele, só log), `SES_REGION` (padrão `sa-east-1`), `SES_ACCESS_KEY`/`SES_SECRET_KEY` ou papel IAM.
 
 O Stripe **não emite NFS-e**. Decidido: emissão manual no início; integração com emissor
 (disparada no `invoice.paid`) depois.

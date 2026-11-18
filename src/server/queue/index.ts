@@ -58,6 +58,9 @@ export interface JobAgente {
 /** Fila "stripe": um job por evento do webhook; o worker busca o objeto atual na API. */
 export const FILA_STRIPE = "stripe";
 
+/** Job diário de inadimplência (agendado pelo worker, 6h de Brasília). */
+export const FILA_INADIMPLENCIA = "inadimplencia";
+
 export interface JobStripe {
   eventId: string;
 }
@@ -102,6 +105,9 @@ export function fila(): Promise<PgBoss> {
     await b.createQueue(FILA_STRIPE, { policy: "stately" });
     // API do Stripe fora do ar: 5 novas tentativas a partir de 30 s.
     await b.updateQueue(FILA_STRIPE, { retryLimit: 5, retryDelay: 30, retryBackoff: true });
+    // Erro de um cliente fica no log (não derruba o job); falha geral tenta de novo em 1 h.
+    await b.createQueue(FILA_INADIMPLENCIA);
+    await b.updateQueue(FILA_INADIMPLENCIA, { retryLimit: 2, retryDelay: 3600 });
     return b;
   })().catch((e) => {
     boss = null;

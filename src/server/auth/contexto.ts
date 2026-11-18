@@ -1,6 +1,6 @@
-import { getRequestHeaders } from "@tanstack/react-start/server";
+import { getRequest, getRequestHeaders } from "@tanstack/react-start/server";
 import { sql } from "drizzle-orm";
-import { db } from "../db";
+import { db, schema as s, withTenant } from "../db";
 import { auth } from "./index";
 
 export interface Contexto {
@@ -34,11 +34,26 @@ export async function lerContexto(): Promise<Contexto | null> {
   };
 }
 
-/** Para server functions de /app: exige login e cliente. O tenant vem da sessão, nunca do navegador. */
-export async function exigirCliente(): Promise<Contexto & { tenantId: string }> {
+/**
+ * Para server functions de /app: exige login e cliente. O tenant vem da sessão, nunca do navegador.
+ * Inadimplência (#35): suspensão parcial deixa o painel só leitura (POST recusado); congelado
+ * recusa tudo. `mesmoSuspenso` libera as funções da tela de pagamento.
+ */
+export async function exigirCliente(
+  opcoes: { mesmoSuspenso?: boolean } = {},
+): Promise<Contexto & { tenantId: string }> {
   const c = await lerContexto();
   if (!c) throw new Error("Sessão expirada. Entre de novo.");
   if (!c.tenantId) throw new Error("Usuário sem cliente vinculado.");
+  if (!opcoes.mesmoSuspenso) {
+    const [t] = await withTenant(c.tenantId, (tx) =>
+      tx.select({ suspensao: s.tenants.suspensao }).from(s.tenants),
+    );
+    if (t?.suspensao === "integral")
+      throw new Error("Conta congelada por falta de pagamento. Regularize em Plano e cobrança.");
+    if (t?.suspensao === "parcial" && getRequest().method !== "GET")
+      throw new Error("Conta suspensa por falta de pagamento: o painel está só para leitura.");
+  }
   return c as Contexto & { tenantId: string };
 }
 

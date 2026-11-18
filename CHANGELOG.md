@@ -8,6 +8,15 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
 
 ### Adicionado
 
+- **Inadimplência automática (job diário)**: contada a partir do vencimento da fatura não paga.
+  D+1 aviso no painel e por e-mail; D+7 suspensão parcial (painel só leitura, agente sem IA,
+  urgências seguem); D+10 conta congelada (só a tela `/pagamento` abre e o WhatsApp responde
+  "atendimento indisponível"); D+20 e D+27 e-mail com a data da exclusão; D+30 exclusão
+  (cancela a assinatura no Stripe, desconecta o WhatsApp, apaga moradores, conversas, demandas,
+  documentos, arquivos e logins; mantém faturas e dados fiscais). Pagar a fatura reativa na
+  hora. E-mails pela Amazon SES (`SES_REMETENTE`, `SES_REGION`, `SES_ACCESS_KEY`,
+  `SES_SECRET_KEY`) (#91).
+
 - **Cobrança pelo Admin Master**: ao cadastrar um cliente, o admin escolhe mensal ou anual e
   cartão (gera o link do Stripe para o síndico) ou boleto (o Stripe envia a fatura por e-mail,
   com prazo escolhido), com 7 dias grátis se o CNPJ ainda não teve teste. No cliente: trocar de

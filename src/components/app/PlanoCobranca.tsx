@@ -19,7 +19,11 @@ const STATUS_ASSINATURA: Record<string, string> = {
 };
 
 const data = (iso: string | null) =>
-  iso ? new Date(iso.length === 10 ? `${iso}T12:00:00` : iso).toLocaleDateString("pt-BR") : "—";
+  iso
+    ? new Date(iso.length === 10 ? `${iso}T12:00:00Z` : iso).toLocaleDateString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+      })
+    : "—";
 
 function rotuloFatura(f: FaturaResumo): { texto: string; cor: string } {
   if (f.vencida) return { texto: "Vencida", cor: "bg-destructive/10 text-destructive" };
@@ -52,10 +56,10 @@ function Resumo({ p }: { p: MeuPlano }) {
     <div className="grid gap-4 sm:grid-cols-3">
       <div>
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Plano</p>
-        <p className="mt-1 flex flex-wrap items-center gap-2 text-lg font-semibold text-foreground">
+        <div className="mt-1 flex flex-wrap items-center gap-2 text-lg font-semibold text-foreground">
           {p.plano}
           <Badge variant="secondary">{STATUS_ASSINATURA[p.status] ?? p.status}</Badge>
-        </p>
+        </div>
         <p className="text-xs text-muted-foreground">
           {p.intervalo === "anual" ? "Anual" : "Mensal"} · até {num(p.limites.condominios)}{" "}
           {p.limites.condominios === 1 ? "condomínio" : "condomínios"}

@@ -1,0 +1,1 @@
+ALTER TABLE "tenants" ADD COLUMN "aviso_inadimplencia" integer DEFAULT 0 NOT NULL;

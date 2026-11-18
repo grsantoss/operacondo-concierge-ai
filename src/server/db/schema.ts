@@ -225,6 +225,8 @@ export const tenants = pgTable("tenants", {
   inadimplenteDesde: date("inadimplente_desde"),
   suspensao: suspensao("suspensao").notNull().default("nenhuma"),
   exclusaoPrevistaEm: date("exclusao_prevista_em"),
+  /** Último aviso de inadimplência enviado (dia: 1, 7, 10, 20, 27); 0 = nenhum. Zera ao pagar. */
+  avisoInadimplencia: integer("aviso_inadimplencia").notNull().default(0),
   excluidoEm: ts("excluido_em"),
   criadoEm: criadoEm(),
 });

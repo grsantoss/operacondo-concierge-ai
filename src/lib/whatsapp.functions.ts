@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { formatarTelefone, paraE164 } from "@/lib/telefone";
 import { exigirCliente } from "@/server/auth/contexto";
+import { aplicarTrialUnico } from "@/server/billing/trial";
 import { cifrar, decifrar, hashSegredo, novoSegredo } from "@/server/cripto";
 import { schema as s, withTenant, type Tx } from "@/server/db";
 import {
@@ -133,6 +134,11 @@ export const salvarCanal = createServerFn({ method: "POST" })
         throw new Error("Este número de WhatsApp já está em uso por outro cliente.");
       throw err;
     }
+    // Antiabuso: número que já deu trial a outro cliente encerra o trial deste. Se o Stripe
+    // falhar aqui, o espelho da assinatura confere o número de novo no próximo evento.
+    await aplicarTrialUnico(tenantId, [["whatsapp", phoneE164]]).catch((e) =>
+      console.error("[trial] whatsapp", e),
+    );
   });
 
 /** Pergunta à Z-API se o número está pareado; se não, devolve o QR Code para escanear. */

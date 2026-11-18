@@ -225,10 +225,10 @@ function LoginPage() {
           <p className="pt-2 text-center text-sm text-[var(--color-on-surface-variant)]">
             Não tem conta?{" "}
             <Link
-              to="/onboarding"
+              to="/planos"
               className="inline-flex items-center gap-1 font-semibold text-[var(--color-brand)] hover:underline"
             >
-              Solicite uma demo
+              Conheça os planos
               <Icon name="arrow_forward" className="text-[16px]" />
             </Link>
           </p>

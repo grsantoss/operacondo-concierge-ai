@@ -14,7 +14,7 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   atualiza `assinaturas` (com a quantidade de condomínios) e `faturas` (meio de pagamento e
   estorno). O status do cliente (trial, ativo, inadimplente, cancelado) e a data de início da
   inadimplência passam a ser derivados da cobrança. Objetos de outros produtos da mesma conta
-  Stripe são ignorados (#PR).
+  Stripe são ignorados (#85).
 
 - **Produtos e preços do Concierge no Stripe por script**: `bun run stripe:seed` cria ou atualiza
   os planos Essencial e Profissional (mensal e anual, anual = 10 × mensal) e o adicional WhatsApp

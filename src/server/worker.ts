@@ -12,6 +12,7 @@ import {
   enfileirarAlerta,
   enfileirarMidias,
   fila,
+  pararFila,
   FILA_AGENTE,
   FILA_ALERTA,
   FILA_MENSAGEM,
@@ -145,7 +146,7 @@ console.info(
 
 for (const sinal of ["SIGINT", "SIGTERM"] as const)
   process.on(sinal, async () => {
-    await boss.stop({ graceful: true });
+    await pararFila();
     await encerrarObservabilidade();
     process.exit(0);
   });

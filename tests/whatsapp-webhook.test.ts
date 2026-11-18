@@ -4,7 +4,7 @@ import { eq, sql } from "drizzle-orm";
 import { hashSegredo } from "../src/server/cripto";
 import { dbAdmin, schema as s } from "../src/server/db";
 import { processarConversa } from "../src/server/pipeline/processar";
-import { fila } from "../src/server/queue";
+import { pararFila } from "../src/server/queue";
 import { receberWebhookZapi } from "../src/server/whatsapp/webhook";
 
 const admin = dbAdmin();
@@ -62,7 +62,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await admin.execute(sql`delete from pgboss.job where singleton_key like ${canalId + ":%"}`);
   await admin.delete(s.tenants).where(eq(s.tenants.id, tenantId));
-  await (await fila()).stop({ graceful: false });
+  await pararFila(false);
 });
 
 describe("webhook Z-API", () => {

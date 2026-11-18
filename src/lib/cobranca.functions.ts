@@ -5,10 +5,11 @@
  */
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestUrl } from "@tanstack/react-start/server";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { exigirCliente } from "@/server/auth/contexto";
 import { APP, lookupKey } from "@/server/billing/catalogo";
+import { assinaturaAtual, type Limites } from "@/server/billing/limites";
 import { stripe, stripeConfigurado } from "@/server/billing/stripe";
 import { concluirCheckout } from "@/server/billing/sync";
 import { trialJaUsado } from "@/server/billing/trial";
@@ -209,3 +210,106 @@ export const confirmarCheckout = createServerFn({ method: "POST" })
     await concluirCheckout(sessao.id, st);
     return { concluido: true };
   });
+
+export interface FaturaResumo {
+  id: string;
+  numero: string | null;
+  status: string;
+  vencida: boolean;
+  valorTotal: number;
+  vencimento: string | null;
+  pagoEm: string | null;
+  urlFatura: string | null;
+  urlPdf: string | null;
+}
+
+export interface MeuPlano {
+  plano: string;
+  status: string;
+  intervalo: "mensal" | "anual";
+  trialFim: string | null;
+  periodoFim: string | null;
+  cancelaNoFim: boolean;
+  /** Estimativa a partir da tabela de planos; o cobrado é o do Stripe. */
+  proximaCobranca: number | null;
+  limites: Limites;
+  uso: { condominios: number; moradores: number; documentos: number; respostasIa: number };
+  faturas: FaturaResumo[];
+  podeGerenciar: boolean;
+}
+
+/** Aba "Plano e cobrança": plano, uso × limites, próxima cobrança e histórico (do espelho). */
+export const meuPlano = createServerFn({ method: "GET" }).handler(
+  async (): Promise<MeuPlano | null> => {
+    const c = await exigirCliente();
+    return withTenant(c.tenantId, async (tx) => {
+      const atual = await assinaturaAtual(tx);
+      if (!atual) return null;
+      const { assinatura: a, plano, limites } = atual;
+      const { rows: [uso] } = await tx.execute<{
+        condominios: string;
+        moradores: string;
+        documentos: string;
+        respostas_ia: string;
+      }>(sql`select condominios, moradores, documentos, respostas_ia from uso_mensal`);
+      const faturas = await tx
+        .select()
+        .from(s.faturas)
+        .orderBy(sql`${s.faturas.vencimento} desc nulls first`, desc(s.faturas.criadoEm))
+        .limit(12);
+      const hoje = new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
+      const adicionais = Math.max(0, a.quantidadeCondominios - plano.condominiosInclusos);
+      const mensal =
+        Number(plano.precoMensal) + adicionais * Number(plano.precoCondominioAdicional ?? 0);
+      const encerrada = a.status === "canceled" || a.status === "incomplete_expired";
+      return {
+        plano: plano.nome,
+        status: a.status,
+        intervalo: a.intervalo,
+        trialFim: a.trialFim?.toISOString() ?? null,
+        periodoFim: a.periodoFim?.toISOString() ?? null,
+        cancelaNoFim: a.cancelaNoFim,
+        proximaCobranca:
+          encerrada || a.cancelaNoFim ? null : a.intervalo === "anual" ? mensal * 10 : mensal,
+        limites,
+        uso: {
+          condominios: Number(uso?.condominios ?? 0),
+          moradores: Number(uso?.moradores ?? 0),
+          documentos: Number(uso?.documentos ?? 0),
+          respostasIa: Number(uso?.respostas_ia ?? 0),
+        },
+        faturas: faturas.map((f) => ({
+          id: f.id,
+          numero: f.numero,
+          status: f.status,
+          vencida: f.status === "open" && !!f.vencimento && f.vencimento < hoje,
+          valorTotal: Number(f.valorTotal),
+          vencimento: f.vencimento,
+          pagoEm: f.pagoEm?.toISOString() ?? null,
+          urlFatura: f.urlFatura,
+          urlPdf: f.urlPdf,
+        })),
+        podeGerenciar: c.papel !== "conselho",
+      };
+    });
+  },
+);
+
+/** Sessão do Customer Portal do Stripe (cartão, faturas, cancelamento). Devolve a URL. */
+export const abrirPortal = createServerFn({ method: "POST" }).handler(async () => {
+  const c = await exigirCliente();
+  if (c.papel === "conselho") throw new Error("Só o síndico pode gerenciar o pagamento.");
+  if (!stripeConfigurado())
+    throw new Error("Pagamento indisponível no momento. Tente de novo mais tarde.");
+  const [t] = await dbAdmin()
+    .select({ customer: s.tenants.stripeCustomerId })
+    .from(s.tenants)
+    .where(eq(s.tenants.id, c.tenantId));
+  if (!t?.customer) throw new Error("Este cliente ainda não tem cadastro de pagamento.");
+  const sessao = await stripe().billingPortal.sessions.create({
+    customer: t.customer,
+    locale: "pt-BR",
+    return_url: `${urlBase()}/app/configuracoes?aba=plano`,
+  });
+  return { url: sessao.url };
+});

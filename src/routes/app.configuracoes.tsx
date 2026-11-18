@@ -4,13 +4,22 @@ import { ConexaoWhatsApp } from "@/components/whatsapp/ConexaoWhatsApp";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
+import { PlanoCobranca } from "@/components/app/PlanoCobranca";
+import { meuPlanoQuery } from "@/data/cobranca";
 import { Icon } from "@/components/brand/Icon";
 import { configAgenteQuery, useSalvarConfigAgente } from "@/data/agente";
 import { condominiosQuery, useCondominios } from "@/data/moradores";
 import type { ConfigAgente } from "@/lib/agente.functions";
 
 export const Route = createFileRoute("/app/configuracoes")({
-  loader: ({ context: { queryClient } }) => queryClient.ensureQueryData(condominiosQuery),
+  validateSearch: (s: Record<string, unknown>): { aba?: TabId } => ({
+    aba: TABS.some((t) => t.id === s.aba) ? (s.aba as TabId) : undefined,
+  }),
+  loader: ({ context: { queryClient } }) =>
+    Promise.all([
+      queryClient.ensureQueryData(condominiosQuery),
+      queryClient.ensureQueryData(meuPlanoQuery),
+    ]),
   head: () => ({
     meta: [
       { title: "Configurações | OperaCondo Concierge" },
@@ -30,6 +39,7 @@ type TabId =
   | "agente"
   | "notificacoes"
   | "integracoes"
+  | "plano"
   | "aparencia"
   | "seguranca";
 
@@ -46,12 +56,13 @@ const TABS: TabDef[] = [
   { id: "agente", label: "Agente IA", icon: "smart_toy", hint: "Tom, escopo e limites" },
   { id: "notificacoes", label: "Notificações", icon: "notifications", hint: "Alertas e canais" },
   { id: "integracoes", label: "Integrações", icon: "hub", hint: "WhatsApp, e-mail, ERP" },
+  { id: "plano", label: "Plano e cobrança", icon: "credit_card", hint: "Uso, faturas e pagamento" },
   { id: "aparencia", label: "Aparência", icon: "palette", hint: "Densidade e idioma" },
   { id: "seguranca", label: "Segurança", icon: "lock", hint: "Senha e sessões" },
 ];
 
 function ConfiguracoesPage() {
-  const [tab, setTab] = useState<TabId>("perfil");
+  const [tab, setTab] = useState<TabId>(Route.useSearch().aba ?? "perfil");
   const [toast, setToast] = useState<string | null>(null);
 
   function showToast(msg: string) {
@@ -122,6 +133,7 @@ function ConfiguracoesPage() {
             {tab === "integracoes" && (
               <IntegracoesPanel onToast={(m) => showToast(m)} />
             )}
+            {tab === "plano" && <PlanoCobranca />}
             {tab === "aparencia" && (
               <AparenciaPanel onSave={() => showToast("Aparência atualizada")} />
             )}

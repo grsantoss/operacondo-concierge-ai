@@ -307,17 +307,30 @@ export const whatsappEntradas = pgTable(
 
 /* ------------------------------------------------------- Cobrança (Stripe) */
 
+/**
+ * Planos (trial | essencial | profissional). A quantidade da assinatura no Stripe é o número de
+ * condomínios: o preço mensal cobre os `condominios_inclusos` e cada um a mais custa
+ * `preco_condominio_adicional` (preço escalonado). Preços no Stripe pelos lookup_key
+ * `concierge_{id}_mensal` / `concierge_{id}_anual` (anual = 10 × mensal), criados por
+ * `scripts/stripe-seed.ts` a partir desta tabela.
+ */
 export const planos = pgTable("planos", {
-  /** trial | starter | pro | enterprise. Preços no Stripe: lookup_key `{id}_mensal` / `{id}_anual`. */
   id: text("id").primaryKey(),
   nome: text("nome").notNull(),
-  /** Só para exibir; o valor cobrado é o do Stripe. Anual = 10 × mensal. */
+  /** Preço dos condomínios inclusos. O cobrado é o do Stripe (o seed cria a partir deste valor). */
   precoMensal: dinheiro("preco_mensal").notNull(),
+  condominiosInclusos: integer("condominios_inclusos").notNull().default(1),
+  /** Preço mensal de cada condomínio acima dos inclusos; vazio = não vende adicional (trial). */
+  precoCondominioAdicional: dinheiro("preco_condominio_adicional"),
   stripeProductId: text("stripe_product_id"),
+  /** Máximo de condomínios do plano (com os adicionais). */
   limiteCondominios: integer("limite_condominios").notNull(),
+  /** Os limites abaixo são por condomínio da assinatura (multiplicados pela quantidade). */
   limiteMoradores: integer("limite_moradores").notNull(),
   limiteDocumentos: integer("limite_documentos").notNull(),
+  /** Respostas da IA no mês, somando todos os canais. */
   limiteRespostasIaMes: integer("limite_respostas_ia_mes").notNull(),
+  /** Teto técnico de custo de IA no mês (R$), por condomínio. */
   tetoCustoIaMes: dinheiro("teto_custo_ia_mes").notNull(),
   usaConselheiro: boolean("usa_conselheiro").notNull().default(false),
   vendavel: boolean("vendavel").notNull().default(true),

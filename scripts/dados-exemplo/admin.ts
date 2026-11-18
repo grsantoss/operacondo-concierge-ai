@@ -1,4 +1,4 @@
-/** Clientes, faturas e planos de exemplo do Admin Master (só para o seed). */
+/** Clientes e faturas de exemplo do Admin Master (só para o seed). Os planos vêm da migration 0015. */
 
 export const CLIENTES_EXEMPLO = [
   {
@@ -11,7 +11,7 @@ export const CLIENTES_EXEMPLO = [
     cidade: "São Paulo",
     uf: "SP",
     responsavel: "Roberto Silva",
-    plano: "pro",
+    plano: "profissional",
     status: "ativo",
     stripeCustomerId: "cus_AuroraMock",
     stripeSubscriptionId: "sub_AuroraMock",
@@ -26,7 +26,7 @@ export const CLIENTES_EXEMPLO = [
     cidade: "Rio de Janeiro",
     uf: "RJ",
     responsavel: "Fernanda Lopes",
-    plano: "enterprise",
+    plano: "profissional",
     status: "ativo",
     stripeCustomerId: "cus_VistaMock",
     stripeSubscriptionId: "sub_VistaMock",
@@ -41,7 +41,7 @@ export const CLIENTES_EXEMPLO = [
     cidade: "Porto Alegre",
     uf: "RS",
     responsavel: "Carlos Menezes",
-    plano: "starter",
+    plano: "essencial",
     status: "trial",
     stripeCustomerId: "cus_PortalMock",
     stripeSubscriptionId: "sub_PortalMock",
@@ -56,7 +56,7 @@ export const CLIENTES_EXEMPLO = [
     cidade: "Belo Horizonte",
     uf: "MG",
     responsavel: "Marta Nogueira",
-    plano: "pro",
+    plano: "profissional",
     status: "suspenso",
     stripeCustomerId: "cus_SolarMock",
     stripeSubscriptionId: "sub_SolarMock",
@@ -71,7 +71,7 @@ export const CLIENTES_EXEMPLO = [
     cidade: "Curitiba",
     uf: "PR",
     responsavel: "Renata Prado",
-    plano: "pro",
+    plano: "profissional",
     status: "ativo",
     stripeCustomerId: "cus_ColinaMock",
     stripeSubscriptionId: "sub_ColinaMock",
@@ -166,25 +166,5 @@ export const FATURAS_EXEMPLO = [
     vencimento: "2026-05-10",
     stripeInvoiceId: "in_aur_05",
     metodo: "card",
-  },
-] as const;
-
-export const PLANOS_EXEMPLO = [
-  {
-    id: "starter",
-    nome: "Starter",
-    precoMensal: 299,
-    moradores: 200,
-    msgsMes: 2000,
-    condominios: 1,
-  },
-  { id: "pro", nome: "Pro", precoMensal: 699, moradores: 800, msgsMes: 10000, condominios: 3 },
-  {
-    id: "enterprise",
-    nome: "Enterprise",
-    precoMensal: 1899,
-    moradores: 5000,
-    msgsMes: 60000,
-    condominios: 20,
   },
 ] as const;

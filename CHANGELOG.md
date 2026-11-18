@@ -8,11 +8,24 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
 
 ### Adicionado
 
+- **Produtos e preços do Concierge no Stripe por script**: `bun run stripe:seed` cria ou atualiza
+  os planos Essencial e Profissional (mensal e anual, anual = 10 × mensal) e o adicional WhatsApp
+  gerenciado, a partir da tabela `planos`. O preço é escalonado pelo número de condomínios e usa
+  `lookup_key` com prefixo `concierge_`, porque a conta Stripe é dividida com o Insights. Preço
+  alterado vira preço novo e o antigo é arquivado; com chave de produção, exige `--producao`.
+
 - **Aprovação dos cadastros feitos pelo WhatsApp**: quem se cadastra com o agente no 1º contato
   aparece em Moradores, num cartão "esperando aprovação", com o que informou da unidade e um selo
   no menu. O síndico aprova (informando bloco e apartamento, ou quadra e casa, quando o agente não
   achou a unidade) ou recusa. Aprovado, o morador passa a ver as regras de moradores, as próprias
   demandas e os dados da unidade; recusado, o agente continua só com as regras públicas (#77).
+
+### Alterado
+
+- **Planos novos: Essencial (R$ 197, 1 condomínio) e Profissional (R$ 547, 5 condomínios)**, com
+  condomínio adicional a R$ 97. Os limites de moradores, documentos, respostas da IA e o teto de
+  custo da IA passam a valer por condomínio da assinatura; o portal `/admin` mostra isso. Os
+  planos Starter, Pro e Enterprise saem da venda. Migrations `0014` e `0015`.
 
 ### Corrigido
 

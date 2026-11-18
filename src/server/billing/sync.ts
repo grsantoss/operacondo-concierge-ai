@@ -9,6 +9,7 @@ import { and, desc, eq, isNull, lt, min } from "drizzle-orm";
 import type Stripe from "stripe";
 import { dbAdmin, schema as s } from "@/server/db";
 import { stripe } from "./stripe";
+import { aplicarTrialUnico, type UsoTrial } from "./trial";
 
 type AssinaturaStatus = (typeof s.assinaturaStatus.enumValues)[number];
 type TenantStatus = (typeof s.tenantStatus.enumValues)[number];
@@ -135,6 +136,22 @@ export async function sincronizarAssinatura(subscriptionId: string, st: Stripe =
     .values({ ...valores, stripeSubscriptionId: sub.id })
     .onConflictDoUpdate({ target: s.assinaturas.stripeSubscriptionId, set: valores })
     .returning({ id: s.assinaturas.id });
+  if (sub.status === "trialing") {
+    // Antiabuso: CNPJ, WhatsApp e cartão que já deram trial a outro cliente encerram este agora.
+    const [t] = await db
+      .select({ cnpj: s.tenants.cnpj })
+      .from(s.tenants)
+      .where(eq(s.tenants.id, tenantId));
+    const [canal] = await db
+      .select({ phone: s.whatsappCanais.phoneE164 })
+      .from(s.whatsappCanais)
+      .where(eq(s.whatsappCanais.tenantId, tenantId));
+    const usos: UsoTrial[] = [];
+    if (t?.cnpj) usos.push(["cnpj", t.cnpj]);
+    if (canal) usos.push(["whatsapp", canal.phone]);
+    if (valores.cartaoFingerprint) usos.push(["cartao", valores.cartaoFingerprint]);
+    await aplicarTrialUnico(tenantId, usos, st);
+  }
   await derivarCliente(tenantId);
   return { tenantId, assinaturaId: linha!.id, faturaId: idDe(sub.latest_invoice) };
 }
@@ -200,8 +217,11 @@ export async function sincronizarFatura(invoiceId: string, st: Stripe = stripe()
   return { tenantId };
 }
 
-/** Checkout concluído: liga o cliente Stripe ao cliente do Concierge (`client_reference_id`). */
-async function concluirCheckout(sessionId: string, st: Stripe) {
+/**
+ * Checkout concluído: liga o cliente Stripe ao cliente do Concierge (`client_reference_id`) e
+ * espelha a assinatura. Chamado pelo webhook e pela volta do Checkout (sem esperar a fila).
+ */
+export async function concluirCheckout(sessionId: string, st: Stripe = stripe()) {
   const sessao = await st.checkout.sessions.retrieve(sessionId);
   const tenantId = sessao.client_reference_id ?? sessao.metadata?.tenant_id;
   const customer = idDe(sessao.customer);

@@ -12,7 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AppRouteImport } from './routes/app'
+import { Route as AssinarRouteImport } from './routes/assinar'
+import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as PlanosRouteImport } from './routes/planos'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAmbientesRouteImport } from './routes/admin.ambientes'
 import { Route as AdminConfiguracoesRouteImport } from './routes/admin.configuracoes'
@@ -58,9 +61,24 @@ const AppRoute = AppRouteImport.update({
   path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AssinarRoute = AssinarRouteImport.update({
+  id: '/assinar',
+  path: '/assinar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CadastroRoute = CadastroRouteImport.update({
+  id: '/cadastro',
+  path: '/cadastro',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlanosRoute = PlanosRouteImport.update({
+  id: '/planos',
+  path: '/planos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -213,7 +231,10 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
+  '/assinar': typeof AssinarRoute
+  '/cadastro': typeof CadastroRoute
   '/onboarding': typeof OnboardingRoute
+  '/planos': typeof PlanosRoute
   '/admin/ambientes': typeof AdminAmbientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/financeiro': typeof AdminFinanceiroRoute
@@ -246,7 +267,10 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/assinar': typeof AssinarRoute
+  '/cadastro': typeof CadastroRoute
   '/onboarding': typeof OnboardingRoute
+  '/planos': typeof PlanosRoute
   '/admin/ambientes': typeof AdminAmbientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/financeiro': typeof AdminFinanceiroRoute
@@ -277,7 +301,10 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
+  '/assinar': typeof AssinarRoute
+  '/cadastro': typeof CadastroRoute
   '/onboarding': typeof OnboardingRoute
+  '/planos': typeof PlanosRoute
   '/admin/ambientes': typeof AdminAmbientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/financeiro': typeof AdminFinanceiroRoute
@@ -314,7 +341,10 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/app'
+    | '/assinar'
+    | '/cadastro'
     | '/onboarding'
+    | '/planos'
     | '/admin/ambientes'
     | '/admin/configuracoes'
     | '/admin/financeiro'
@@ -347,7 +377,10 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/assinar'
+    | '/cadastro'
     | '/onboarding'
+    | '/planos'
     | '/admin/ambientes'
     | '/admin/configuracoes'
     | '/admin/financeiro'
@@ -377,7 +410,10 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/app'
+    | '/assinar'
+    | '/cadastro'
     | '/onboarding'
+    | '/planos'
     | '/admin/ambientes'
     | '/admin/configuracoes'
     | '/admin/financeiro'
@@ -413,7 +449,10 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   AppRoute: typeof AppRouteWithChildren
+  AssinarRoute: typeof AssinarRoute
+  CadastroRoute: typeof CadastroRoute
   OnboardingRoute: typeof OnboardingRoute
+  PlanosRoute: typeof PlanosRoute
   ApiEventosRoute: typeof ApiEventosRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
@@ -443,11 +482,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/assinar': {
+      id: '/assinar'
+      path: '/assinar'
+      fullPath: '/assinar'
+      preLoaderRoute: typeof AssinarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cadastro': {
+      id: '/cadastro'
+      path: '/cadastro'
+      fullPath: '/cadastro'
+      preLoaderRoute: typeof CadastroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/onboarding': {
       id: '/onboarding'
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/planos': {
+      id: '/planos'
+      path: '/planos'
+      fullPath: '/planos'
+      preLoaderRoute: typeof PlanosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -775,7 +835,10 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   AppRoute: AppRouteWithChildren,
+  AssinarRoute: AssinarRoute,
+  CadastroRoute: CadastroRoute,
   OnboardingRoute: OnboardingRoute,
+  PlanosRoute: PlanosRoute,
   ApiEventosRoute: ApiEventosRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiStripeWebhookRoute: ApiStripeWebhookRoute,

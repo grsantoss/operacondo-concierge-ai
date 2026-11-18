@@ -4,14 +4,14 @@
  * Cobrança de verdade (Stripe) é a Fase 6: aqui só leitura de faturas e troca de plano no espelho.
  */
 import { createServerFn } from "@tanstack/react-start";
-import { hashPassword } from "better-auth/crypto";
-import { randomBytes, randomUUID } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import { desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Fatura, FaturaStatus } from "@/data/faturas";
 import type { Plano } from "@/data/planos";
 import type { Tenant } from "@/data/tenants";
 import { lerContexto } from "@/server/auth/contexto";
+import { erroUnico, inserirCliente } from "@/server/clientes";
 import { dbAdmin, schema as s } from "@/server/db";
 
 async function exigirAdmin() {
@@ -28,21 +28,6 @@ const formatarCnpj = (v: string | null) =>
     : (v ?? "");
 const METODO = { cartao: "Cartão", boleto: "Boleto", pix: "Pix" } as const;
 const dia = (d: Date | string | null) => (d ? new Date(d).toISOString().slice(0, 10) : "");
-
-function erroUnico(err: unknown): never {
-  const e = err as {
-    code?: string;
-    constraint?: string;
-    cause?: { code?: string; constraint?: string };
-  };
-  const code = e.code ?? e.cause?.code;
-  const constraint = e.constraint ?? e.cause?.constraint ?? "";
-  if (code === "23505" && constraint.includes("cnpj"))
-    throw new Error("Já existe um cliente com este CNPJ.");
-  if (code === "23505" && constraint.includes("email"))
-    throw new Error("Já existe um usuário com este e-mail.");
-  throw err;
-}
 
 export const listarPlanos = createServerFn({ method: "GET" }).handler(
   async (): Promise<Plano[]> => {
@@ -218,7 +203,6 @@ export const criarCliente = createServerFn({ method: "POST" })
   .handler(async ({ data: { planoId, ...d } }) => {
     await exigirAdmin();
     const senha = `Oc-${randomBytes(9).toString("base64url")}`;
-    const hash = await hashPassword(senha);
     try {
       const id = await dbAdmin().transaction(async (tx) => {
         const [plano] = await tx
@@ -226,30 +210,19 @@ export const criarCliente = createServerFn({ method: "POST" })
           .from(s.planos)
           .where(eq(s.planos.id, planoId));
         if (!plano) throw new Error("Plano não encontrado.");
-        const [t] = await tx
-          .insert(s.tenants)
-          .values({ ...d, cnpj: d.cnpj || null, status: "trial" })
-          .returning({ id: s.tenants.id });
+        const id = await inserirCliente(
+          tx,
+          { ...d, cnpj: d.cnpj || null, status: "trial" },
+          { nome: d.responsavel, email: d.email, senha },
+        );
         await tx.insert(s.assinaturas).values({
-          tenantId: t.id,
+          tenantId: id,
           planoId,
           status: "trialing",
           formaCobranca: "cartao",
           trialFim: new Date(Date.now() + 7 * 864e5),
         });
-        const userId = randomUUID();
-        await tx
-          .insert(s.user)
-          .values({ id: userId, name: d.responsavel, email: d.email, emailVerified: true });
-        await tx.insert(s.account).values({
-          id: randomUUID(),
-          accountId: userId,
-          providerId: "credential",
-          userId,
-          password: hash,
-        });
-        await tx.insert(s.membros).values({ tenantId: t.id, userId, papel: "sindico" });
-        return t.id;
+        return id;
       });
       return { id, email: d.email, senha };
     } catch (err) {

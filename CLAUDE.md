@@ -323,6 +323,15 @@ Fluxos:
   `checkout.session.completed` ativa o cliente → `/onboarding` (inclui conectar o WhatsApp).
   Antiabuso: um trial por CNPJ, por número de WhatsApp e por cartão (fingerprint do cartão no
   Stripe).
+  Feito na #31: `src/lib/cobranca.functions.ts` (`listarPlanosPublicos`, `criarConta` com CNPJ
+  validado e `inserirCliente` de `src/server/clientes.ts`, `abrirCheckout`, `confirmarCheckout`)
+  e telas `/planos`, `/cadastro` e `/assinar`. Cliente sem nenhuma assinatura
+  (`getSessao().assinaturaPendente`) é mandado do `/app` para `/assinar`; a volta do Checkout
+  (`/assinar?sessao=cs_…`) espelha na hora por `concluirCheckout` e segue para `/onboarding`.
+  Antiabuso em `billing/trial.ts` + tabela `trial_usos` (hash de `tipo:valor`, sem FK, só
+  oc_admin, sobrevive à exclusão): CNPJ repetido → Checkout sem trial; cartão ou WhatsApp
+  repetido (no espelho da assinatura e ao salvar o canal) → `trial_end: now` no Stripe. Quem
+  repete pode assinar, só sem os dias grátis.
 - **Admin Master** (`/admin/usuarios/novo`): cria Customer + Subscription com trial; cartão → envia
   link do Checkout (`mode: subscription`); boleto → assinatura `send_invoice` com
   `days_until_due`. Ações no detalhe do cliente: trocar plano (com proration), cobrança avulsa

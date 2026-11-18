@@ -21,6 +21,7 @@ import {
   numeric,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   unique,
@@ -404,6 +405,22 @@ export const stripeEventos = pgTable("stripe_eventos", {
   erro: text("erro"),
   payload: jsonb("payload").notNull(),
 });
+
+/**
+ * Antiabuso do trial: um trial por CNPJ, por número de WhatsApp e por cartão (fingerprint do
+ * Stripe). Guarda só o hash do valor e sobrevive à exclusão do cliente. Sem RLS: só oc_admin.
+ */
+export const trialUsos = pgTable(
+  "trial_usos",
+  {
+    tipo: text("tipo", { enum: ["cnpj", "whatsapp", "cartao"] }).notNull(),
+    valorHash: text("valor_hash").notNull(),
+    /** Sem FK: o registro fica mesmo depois da exclusão do cliente. */
+    tenantId: uuid("tenant_id").notNull(),
+    criadoEm: criadoEm(),
+  },
+  (t) => [primaryKey({ columns: [t.tipo, t.valorHash] })],
+);
 
 /* ---------------------------------------------------- Condomínios e pessoas */
 

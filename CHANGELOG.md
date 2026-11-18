@@ -15,7 +15,7 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   anular ou estornar fatura e cancelar a assinatura (no fim do período ou na hora). Em
   `/admin/financeiro`, o card do Stripe mostra só modo, conta e último webhook (sem chaves na
   tela), faturas pagas mostram "nota pendente" e o admin registra número e data da NFS-e. Pix
-  nas faturas por e-mail fica desligado até o admin ligar (#PR).
+  nas faturas por e-mail fica desligado até o admin ligar (#90).
 
 - **Limites do plano e corte da IA**: cadastrar ou reativar morador e enviar documento acima do
   limite do plano (por condomínio contratado; no teste grátis, os limites reduzidos) é bloqueado

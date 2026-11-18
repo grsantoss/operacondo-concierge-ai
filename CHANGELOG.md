@@ -15,7 +15,7 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   (cancela a assinatura no Stripe, desconecta o WhatsApp, apaga moradores, conversas, demandas,
   documentos, arquivos e logins; mantém faturas e dados fiscais). Pagar a fatura reativa na
   hora. E-mails pela Amazon SES (`SES_REMETENTE`, `SES_REGION`, `SES_ACCESS_KEY`,
-  `SES_SECRET_KEY`) (#PR).
+  `SES_SECRET_KEY`) (#91).
 
 - **Cobrança pelo Admin Master**: ao cadastrar um cliente, o admin escolhe mensal ou anual e
   cartão (gera o link do Stripe para o síndico) ou boleto (o Stripe envia a fatura por e-mail,

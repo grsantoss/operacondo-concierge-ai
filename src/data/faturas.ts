@@ -1,4 +1,5 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
+import { statusStripe } from "@/lib/admin-cobranca.functions";
 import { listarFaturas } from "@/lib/admin.functions";
 
 /** Como a tela mostra a fatura. Vem do status do Stripe: "vencida" = open com vencimento passado. */
@@ -16,6 +17,8 @@ export interface Fatura {
   stripeInvoiceId: string;
   metodo: string;
   urlFatura: string;
+  nfseNumero: string;
+  nfseEmitidaEm: string;
 }
 
 export const faturasQuery = queryOptions({
@@ -46,3 +49,9 @@ export const STATUS_TONE: Record<FaturaStatus, string> = {
 export function formatBRL(v: number) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
+
+/** Card do Stripe no financeiro: modo, conta, último webhook e Pix. */
+export const statusStripeQuery = queryOptions({
+  queryKey: ["admin", "stripe"],
+  queryFn: () => statusStripe(),
+});

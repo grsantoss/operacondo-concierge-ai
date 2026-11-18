@@ -4,19 +4,15 @@
  * (`billing/sync.ts`), aqui ou pelo webhook.
  */
 import { createServerFn } from "@tanstack/react-start";
-import { getRequestUrl } from "@tanstack/react-start/server";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { exigirCliente } from "@/server/auth/contexto";
-import { APP, lookupKey } from "@/server/billing/catalogo";
+import { sessaoCheckout, urlBase } from "@/server/billing/checkout";
 import { assinaturaAtual, usoMensal, type Limites, type Uso } from "@/server/billing/limites";
 import { stripe, stripeConfigurado } from "@/server/billing/stripe";
 import { concluirCheckout } from "@/server/billing/sync";
-import { trialJaUsado } from "@/server/billing/trial";
 import { erroUnico, inserirCliente } from "@/server/clientes";
 import { db, dbAdmin, schema as s, withTenant } from "@/server/db";
-
-export const TRIAL_DIAS = 7;
 
 export interface PlanoPublico {
   id: string;
@@ -112,13 +108,6 @@ export const criarConta = createServerFn({ method: "POST" })
     }
   });
 
-const formatarCnpj = (v: string) =>
-  v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
-
-function urlBase(): string {
-  return (process.env.APP_URL || getRequestUrl().origin).replace(/\/+$/, "");
-}
-
 const Escolha = z.object({
   planoId: z.string().min(1),
   intervalo: z.enum(["mensal", "anual"]),
@@ -132,70 +121,9 @@ export const abrirCheckout = createServerFn({ method: "POST" })
     if (c.papel === "conselho") throw new Error("Só o síndico pode contratar o plano.");
     if (!stripeConfigurado())
       throw new Error("Pagamento indisponível no momento. Tente de novo mais tarde.");
-    const adm = dbAdmin();
-    const [plano] = await adm
-      .select()
-      .from(s.planos)
-      .where(
-        and(eq(s.planos.id, data.planoId), eq(s.planos.vendavel, true), eq(s.planos.ativo, true)),
-      );
-    if (!plano) throw new Error("Plano não disponível.");
     const temAssinatura = await withTenant(c.tenantId, (tx) => tx.$count(s.assinaturas));
     if (temAssinatura) throw new Error("Este cliente já tem uma assinatura.");
-    const [t] = await adm.select().from(s.tenants).where(eq(s.tenants.id, c.tenantId));
-    if (!t) throw new Error("Cliente não encontrado.");
-
-    const st = stripe();
-    let customer = t.stripeCustomerId;
-    if (!customer) {
-      const novo = await st.customers.create(
-        {
-          name: t.razaoSocial,
-          email: t.email ?? c.email,
-          phone: t.telefone ?? undefined,
-          metadata: { app: APP, tenant_id: t.id },
-          ...(t.cnpj ? { tax_id_data: [{ type: "br_cnpj", value: formatarCnpj(t.cnpj) }] } : {}),
-        },
-        { idempotencyKey: `concierge-cliente-${t.id}` },
-      );
-      customer = novo.id;
-      await adm.update(s.tenants).set({ stripeCustomerId: customer }).where(eq(s.tenants.id, t.id));
-    }
-
-    const precos = await st.prices.list({
-      lookup_keys: [lookupKey(plano.id, data.intervalo)],
-      active: true,
-      limit: 1,
-    });
-    const preco = precos.data[0];
-    if (!preco)
-      throw new Error("Preço do plano não encontrado no Stripe (rode bun run stripe:seed).");
-
-    // Antiabuso: CNPJ que já teve trial assina sem os dias grátis (WhatsApp e cartão: no espelho).
-    const semTrial = t.cnpj ? await trialJaUsado(t.id, [["cnpj", t.cnpj]]) : false;
-    const base = urlBase();
-    const sessao = await st.checkout.sessions.create({
-      mode: "subscription",
-      customer,
-      client_reference_id: t.id,
-      line_items: [{ price: preco.id, quantity: 1 }],
-      payment_method_collection: "always",
-      locale: "pt-BR",
-      metadata: { app: APP, tenant_id: t.id },
-      subscription_data: {
-        metadata: { app: APP, tenant_id: t.id },
-        ...(semTrial
-          ? {}
-          : {
-              trial_period_days: TRIAL_DIAS,
-              trial_settings: { end_behavior: { missing_payment_method: "cancel" } },
-            }),
-      },
-      success_url: `${base}/assinar?sessao={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${base}/assinar?plano=${plano.id}&intervalo=${data.intervalo}`,
-    });
-    if (!sessao.url) throw new Error("O Stripe não devolveu o endereço do pagamento.");
-    return { url: sessao.url, semTrial };
+    return sessaoCheckout(stripe(), c.tenantId, data.planoId, data.intervalo, urlBase());
   });
 
 /** Volta do Checkout: espelha na hora (sem esperar o webhook) para o /app já abrir. */

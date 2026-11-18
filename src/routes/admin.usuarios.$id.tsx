@@ -2,6 +2,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { Icon } from "@/components/brand/Icon";
+import {
+  AssinaturaAcoes,
+  CobrancaAvulsaForm,
+  FaturaAcoes,
+  NotaFiscal,
+} from "@/components/admin/CobrancaAdmin";
 import { faturasQuery, formatBRL, STATUS_LABEL, STATUS_TONE, useFaturas } from "@/data/faturas";
 import { planosQuery, usePlanos } from "@/data/planos";
 import {
@@ -266,11 +272,19 @@ function Cobranca({ t }: { t: Tenant }) {
   const [erro, setErro] = useState<string | null>(null);
   const atual = planos.find((x) => x.id === t.plano);
   const proxima = faturas.find((f) => f.status === "open" || f.status === "past_due");
+  const ativa = !!t.assinaturaStatus && !["canceled", "incomplete_expired"].includes(t.assinaturaStatus);
+  // Sem assinatura ativa, o clique só escolhe o plano da nova assinatura.
+  const [escolhido, setEscolhido] = useState(t.plano || "essencial");
+  const selecionado = ativa ? t.plano : escolhido;
 
   async function trocar(planoId: string) {
     setErro(null);
+    if (!ativa) return setEscolhido(planoId);
+    if (planoId === t.plano) return;
+    if (!confirm("Trocar o plano no Stripe? A diferença é cobrada (ou creditada) proporcionalmente."))
+      return;
     try {
-      await trocarPlano(t.id, planoId);
+      await trocarPlano({ tenantId: t.id, planoId });
     } catch (err) {
       setErro(erroAmigavel(err));
     }
@@ -289,7 +303,7 @@ function Cobranca({ t }: { t: Tenant }) {
                   <span className="font-mono text-xs">{t.stripeSubscriptionId}</span>
                 </>
               ) : (
-                "Sem assinatura no Stripe ainda (a cobrança entra na Fase 6)."
+                "Sem assinatura no Stripe."
               )}
             </p>
           </div>
@@ -303,10 +317,10 @@ function Cobranca({ t }: { t: Tenant }) {
             .map((pl) => (
               <button
                 key={pl.id}
-                aria-pressed={pl.id === t.plano}
+                aria-pressed={pl.id === selecionado}
                 onClick={() => trocar(pl.id)}
                 className={`rounded-xl border-2 p-3 text-left text-sm transition ${
-                  pl.id === t.plano
+                  pl.id === selecionado
                     ? "border-[var(--color-brand)] bg-[var(--color-info-soft)]"
                     : "border-[var(--color-outline-variant)] hover:border-[var(--color-brand)]/40"
                 }`}
@@ -323,7 +337,14 @@ function Cobranca({ t }: { t: Tenant }) {
             {erro}
           </p>
         ) : null}
+        {ativa ? (
+          <div className="mt-4">
+            <AssinaturaAcoes t={t} planoId={selecionado} />
+          </div>
+        ) : null}
       </div>
+
+      {!ativa ? <AssinaturaAcoes t={t} planoId={selecionado} /> : null}
 
       {proxima && (
         <div className="rounded-2xl border border-[var(--color-outline-variant)] bg-white p-6">
@@ -346,10 +367,13 @@ function Cobranca({ t }: { t: Tenant }) {
         </div>
       )}
 
+      <CobrancaAvulsaForm tenantId={t.id} />
+
       <div className="rounded-2xl border border-[var(--color-outline-variant)] bg-white">
         <div className="border-b border-[var(--color-outline-variant)] p-5">
           <h3 className="text-base font-bold text-[var(--color-navy)]">Histórico de faturas</h3>
         </div>
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-[var(--color-surface-low)] text-left text-xs uppercase text-[var(--color-on-surface-variant)]">
             <tr>
@@ -357,7 +381,8 @@ function Cobranca({ t }: { t: Tenant }) {
               <th className="px-5 py-3">Valor</th>
               <th className="px-5 py-3">Método</th>
               <th className="px-5 py-3">Status</th>
-              <th className="px-5 py-3">Stripe ID</th>
+              <th className="px-5 py-3">NFS-e</th>
+              <th className="px-5 py-3 text-right">Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -373,15 +398,18 @@ function Cobranca({ t }: { t: Tenant }) {
                     {STATUS_LABEL[f.status]}
                   </span>
                 </td>
-                <td className="px-5 py-3 font-mono text-[11px] text-[var(--color-on-surface-variant)]">
-                  {f.stripeInvoiceId}
+                <td className="px-5 py-3">
+                  <NotaFiscal f={f} />
+                </td>
+                <td className="px-5 py-3 text-right">
+                  <FaturaAcoes f={f} />
                 </td>
               </tr>
             ))}
             {faturas.length === 0 && (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={6}
                   className="px-5 py-6 text-center text-sm text-[var(--color-on-surface-variant)]"
                 >
                   Sem faturas registradas.
@@ -390,6 +418,7 @@ function Cobranca({ t }: { t: Tenant }) {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

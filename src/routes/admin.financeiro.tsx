@@ -2,12 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { Icon } from "@/components/brand/Icon";
+import { FaturaAcoes, NotaFiscal } from "@/components/admin/CobrancaAdmin";
 import { StripeConnectCard } from "@/components/admin/StripeSection";
 import {
   faturasQuery,
   formatBRL,
   STATUS_LABEL,
   STATUS_TONE,
+  statusStripeQuery,
   useFaturas,
   type FaturaStatus,
 } from "@/data/faturas";
@@ -18,6 +20,7 @@ export const Route = createFileRoute("/admin/financeiro")({
     Promise.all([
       queryClient.ensureQueryData(clientesQuery),
       queryClient.ensureQueryData(faturasQuery),
+      queryClient.ensureQueryData(statusStripeQuery),
     ]),
   head: () => ({
     meta: [
@@ -33,14 +36,17 @@ function FinanceiroPage() {
   const tenants = useTenants();
   const [status, setStatus] = useState<"todos" | FaturaStatus>("todos");
   const [tenantId, setTenantId] = useState<string>("todos");
+  const [soPendentes, setSoPendentes] = useState(false);
 
   const filtered = useMemo(() => {
     return faturas.filter((f) => {
       if (status !== "todos" && f.status !== status) return false;
       if (tenantId !== "todos" && f.tenantId !== tenantId) return false;
+      if (soPendentes && (f.status !== "paid" || f.nfseNumero)) return false;
       return true;
     });
-  }, [faturas, status, tenantId]);
+  }, [faturas, status, tenantId, soPendentes]);
+  const notasPendentes = faturas.filter((f) => f.status === "paid" && !f.nfseNumero).length;
 
   const total = filtered.reduce((a, f) => a + f.valor, 0);
   const pagas = filtered.filter((f) => f.status === "paid").reduce((a, f) => a + f.valor, 0);
@@ -48,7 +54,7 @@ function FinanceiroPage() {
   const inadimplencia = filtered.filter((f) => f.status === "past_due").reduce((a, f) => a + f.valor, 0);
 
   const exportCSV = () => {
-    const header = ["ID", "Cliente", "Período", "Valor", "Método", "Status", "Emissão", "Vencimento", "Stripe ID"];
+    const header = ["ID", "Cliente", "Período", "Valor", "Método", "Status", "Emissão", "Vencimento", "Stripe ID", "NFS-e", "NFS-e emitida em"];
     const rows = filtered.map((f) => {
       const t = tenants.find((x) => x.id === f.tenantId);
       return [
@@ -61,6 +67,8 @@ function FinanceiroPage() {
         f.emissao,
         f.vencimento,
         f.stripeInvoiceId,
+        f.nfseNumero,
+        f.nfseEmitidaEm,
       ];
     });
     const csv = [header, ...rows].map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
@@ -98,6 +106,15 @@ function FinanceiroPage() {
       </div>
 
       <div className="mb-4 grid gap-3 rounded-2xl border border-[var(--color-outline-variant)] bg-white p-4 md:grid-cols-[auto_auto_1fr]">
+        <label className="flex items-center gap-2 text-sm text-[var(--color-navy)] md:order-last">
+          <input
+            type="checkbox"
+            className="accent-[var(--color-brand)]"
+            checked={soPendentes}
+            onChange={(e) => setSoPendentes(e.target.checked)}
+          />
+          Só notas pendentes ({notasPendentes})
+        </label>
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value as typeof status)}
@@ -135,6 +152,7 @@ function FinanceiroPage() {
                 <th className="px-5 py-3">Método</th>
                 <th className="px-5 py-3">Vencimento</th>
                 <th className="px-5 py-3">Status</th>
+                <th className="px-5 py-3">NFS-e</th>
                 <th className="px-5 py-3 text-right">Ações</th>
               </tr>
             </thead>
@@ -153,8 +171,12 @@ function FinanceiroPage() {
                         {STATUS_LABEL[f.status]}
                       </span>
                     </td>
+                    <td className="px-5 py-3">
+                      <NotaFiscal f={f} />
+                    </td>
                     <td className="px-5 py-3 text-right">
-                      <div className="inline-flex items-center gap-1">
+                      <div className="inline-flex items-start gap-1">
+                        <FaturaAcoes f={f} />
                         {f.stripeInvoiceId && (
                         <a
                           href={f.urlFatura || `https://dashboard.stripe.com/invoices/${f.stripeInvoiceId}`}
@@ -173,7 +195,7 @@ function FinanceiroPage() {
               })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-5 py-10 text-center text-sm text-[var(--color-on-surface-variant)]">
+                  <td colSpan={8} className="px-5 py-10 text-center text-sm text-[var(--color-on-surface-variant)]">
                     Nenhuma cobrança encontrada.
                   </td>
                 </tr>

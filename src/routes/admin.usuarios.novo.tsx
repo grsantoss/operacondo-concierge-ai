@@ -4,6 +4,7 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import { Icon } from "@/components/brand/Icon";
 import { formatBRL } from "@/data/faturas";
 import { planosQuery, usePlanos } from "@/data/planos";
+import { EscolhaCobranca, type Cobranca } from "@/components/admin/CobrancaAdmin";
 import { erroAmigavel, useClientesAcoes } from "@/data/tenants";
 
 export const Route = createFileRoute("/admin/usuarios/novo")({
@@ -31,7 +32,16 @@ function NovoTenant() {
     responsavel: "",
   });
   const planos = usePlanos().filter((p) => p.vendavel);
-  const { criar } = useClientesAcoes();
+  const { criar, assinar } = useClientesAcoes();
+  const [cobranca, setCobranca] = useState<Cobranca>({
+    intervalo: "mensal",
+    forma: "cartao",
+    diasParaPagar: 7,
+  });
+  const [assinatura, setAssinatura] = useState<{ link: string | null; erro: string | null }>({
+    link: null,
+    erro: null,
+  });
   const [plano, setPlano] = useState("essencial");
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -43,7 +53,15 @@ function NovoTenant() {
     setErro(null);
     setEnviando(true);
     try {
-      setCreated(await criar({ ...dados, planoId: plano }));
+      const c = await criar(dados);
+      // A conta existe mesmo se o Stripe falhar: a assinatura pode ser criada depois no cliente.
+      try {
+        const r = await assinar({ tenantId: c.id, planoId: plano, ...cobranca });
+        setAssinatura({ link: r.link, erro: null });
+      } catch (err) {
+        setAssinatura({ link: null, erro: erroAmigavel(err) });
+      }
+      setCreated(c);
       setStep(3);
     } catch (err) {
       setErro(erroAmigavel(err));
@@ -74,7 +92,19 @@ function NovoTenant() {
           <div className="mt-6 space-y-3 text-left">
             <Credential label="E-mail de acesso" value={created.email} />
             <Credential label="Senha temporária" value={created.senha} mono />
+            {assinatura.link ? (
+              <Credential label="Link de pagamento (cartão) para o síndico" value={assinatura.link} />
+            ) : null}
           </div>
+          {assinatura.erro ? (
+            <p role="alert" className="mt-4 rounded-lg bg-[var(--color-danger-soft)] p-3 text-left text-sm text-destructive">
+              A assinatura não foi criada: {assinatura.erro} Crie na aba Cobrança do cliente.
+            </p>
+          ) : !assinatura.link ? (
+            <p className="mt-4 text-sm text-[var(--color-on-surface-variant)]">
+              Assinatura por boleto criada: o Stripe envia as faturas para o e-mail do cliente.
+            </p>
+          ) : null}
 
           <div className="mt-6 flex justify-center gap-2">
             <button
@@ -184,11 +214,16 @@ function NovoTenant() {
                 })}
               </div>
 
+              <div className="mt-5">
+                <EscolhaCobranca valor={cobranca} onChange={setCobranca} />
+              </div>
               <p className="mt-5 flex items-start gap-3 rounded-lg border border-[var(--color-outline-variant)] bg-[var(--color-surface-low)] p-3 text-xs text-[var(--color-on-surface-variant)]">
-                <Icon name="info" className="mt-0.5 text-[16px] text-[var(--color-brand)]" />
+                <Icon name="tips_and_updates" className="mt-0.5 text-[16px] text-[var(--color-brand)]" />
                 <span>
                   O cliente começa em <strong>trial de 7 dias</strong> com limites reduzidos (1 condomínio,
-                  50 moradores, 150 respostas da IA). A cobrança pelo Stripe entra numa próxima fase.
+                  50 moradores, 150 respostas da IA), se o CNPJ ainda não teve teste. Cartão: o síndico
+                  recebe um link do Stripe para cadastrar o cartão. Boleto: o Stripe envia a fatura por
+                  e-mail.
                 </span>
               </p>
               {erro ? (

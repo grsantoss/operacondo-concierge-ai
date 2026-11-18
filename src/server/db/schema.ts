@@ -396,6 +396,13 @@ export const faturas = pgTable(
   ],
 );
 
+/** Ajustes da plataforma ligados pelo Admin Master (ex.: `pix_ativo`). Sem RLS: só oc_admin. */
+export const plataformaConfig = pgTable("plataforma_config", {
+  chave: text("chave").primaryKey(),
+  valor: jsonb("valor").notNull(),
+  atualizadoEm: ts("atualizado_em").notNull().defaultNow(),
+});
+
 /** Todo evento recebido do Stripe (idempotência e auditoria). Sem RLS: só oc_admin acessa. */
 export const stripeEventos = pgTable("stripe_eventos", {
   eventId: text("event_id").primaryKey(),

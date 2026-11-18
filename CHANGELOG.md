@@ -8,6 +8,15 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
 
 ### Adicionado
 
+- **Cobrança pelo Admin Master**: ao cadastrar um cliente, o admin escolhe mensal ou anual e
+  cartão (gera o link do Stripe para o síndico) ou boleto (o Stripe envia a fatura por e-mail,
+  com prazo escolhido), com 7 dias grátis se o CNPJ ainda não teve teste. No cliente: trocar de
+  plano com cobrança proporcional, cobrança avulsa, reenviar, marcar como paga fora do Stripe,
+  anular ou estornar fatura e cancelar a assinatura (no fim do período ou na hora). Em
+  `/admin/financeiro`, o card do Stripe mostra só modo, conta e último webhook (sem chaves na
+  tela), faturas pagas mostram "nota pendente" e o admin registra número e data da NFS-e. Pix
+  nas faturas por e-mail fica desligado até o admin ligar (#PR).
+
 - **Limites do plano e corte da IA**: cadastrar ou reativar morador e enviar documento acima do
   limite do plano (por condomínio contratado; no teste grátis, os limites reduzidos) é bloqueado
   com uma mensagem clara. Ao chegar ao limite de respostas da IA do mês, ou ao teto técnico de

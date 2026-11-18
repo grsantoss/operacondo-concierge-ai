@@ -1,7 +1,7 @@
 /**
  * Portal do Admin Master (/admin): clientes, planos e faturas de todos os clientes.
  * Conecta como `oc_admin`, que vê tudo pela política RLS `plataforma` (não por BYPASSRLS).
- * Cobrança de verdade (Stripe) é a Fase 6: aqui só leitura de faturas e troca de plano no espelho.
+ * Ações de cobrança (Stripe) ficam em `admin-cobranca.functions.ts`.
  */
 import { createServerFn } from "@tanstack/react-start";
 import { randomBytes } from "node:crypto";
@@ -10,16 +10,9 @@ import { z } from "zod";
 import type { Fatura, FaturaStatus } from "@/data/faturas";
 import type { Plano } from "@/data/planos";
 import type { Tenant } from "@/data/tenants";
-import { lerContexto } from "@/server/auth/contexto";
+import { exigirAdmin } from "@/server/auth/contexto";
 import { erroUnico, inserirCliente } from "@/server/clientes";
 import { dbAdmin, schema as s } from "@/server/db";
-
-async function exigirAdmin() {
-  const c = await lerContexto();
-  if (!c) throw new Error("Sessão expirada. Entre de novo.");
-  if (!c.admin) throw new Error("Acesso restrito ao Admin Master.");
-  return c;
-}
 
 const soDigitos = (v: string) => v.replace(/\D/g, "");
 const formatarCnpj = (v: string | null) =>
@@ -170,6 +163,8 @@ export const listarFaturas = createServerFn({ method: "GET" }).handler(
         stripeInvoiceId: f.stripeInvoiceId ?? "",
         metodo: f.metodoPagamento ? METODO[f.metodoPagamento] : "",
         urlFatura: f.urlFatura ?? "",
+        nfseNumero: f.nfseNumero ?? "",
+        nfseEmitidaEm: f.nfseEmitidaEm ?? "",
       };
     });
   },
@@ -194,36 +189,23 @@ const Dados = z.object({
 });
 
 /**
- * Cria o cliente em trial de 7 dias (limites do plano interno `trial`), a assinatura no plano
- * escolhido e o acesso do síndico com senha temporária (devolvida uma única vez).
- * ponytail: sem Stripe ainda; na Fase 6 o Customer/Subscription nascem aqui (ou pelo Checkout).
+ * Cria o cliente e o acesso do síndico com senha temporária (devolvida uma única vez). A
+ * assinatura nasce no Stripe em seguida (`assinarCliente`: link do Checkout ou boleto); sem ela,
+ * o síndico é levado ao pagamento ao entrar.
  */
 export const criarCliente = createServerFn({ method: "POST" })
-  .inputValidator(Dados.extend({ planoId: z.string().min(1) }))
-  .handler(async ({ data: { planoId, ...d } }) => {
+  .inputValidator(Dados)
+  .handler(async ({ data: d }) => {
     await exigirAdmin();
     const senha = `Oc-${randomBytes(9).toString("base64url")}`;
     try {
-      const id = await dbAdmin().transaction(async (tx) => {
-        const [plano] = await tx
-          .select({ id: s.planos.id })
-          .from(s.planos)
-          .where(eq(s.planos.id, planoId));
-        if (!plano) throw new Error("Plano não encontrado.");
-        const id = await inserirCliente(
+      const id = await dbAdmin().transaction((tx) =>
+        inserirCliente(
           tx,
           { ...d, cnpj: d.cnpj || null, status: "trial" },
           { nome: d.responsavel, email: d.email, senha },
-        );
-        await tx.insert(s.assinaturas).values({
-          tenantId: id,
-          planoId,
-          status: "trialing",
-          formaCobranca: "cartao",
-          trialFim: new Date(Date.now() + 7 * 864e5),
-        });
-        return id;
-      });
+        ),
+      );
       return { id, email: d.email, senha };
     } catch (err) {
       erroUnico(err);
@@ -242,31 +224,6 @@ export const atualizarCliente = createServerFn({ method: "POST" })
     } catch (err) {
       erroUnico(err);
     }
-  });
-
-/** ponytail: troca só no espelho; com o Stripe (Fase 6) vira update da subscription com proration. */
-export const trocarPlano = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ id: z.string().uuid(), planoId: z.string().min(1) }))
-  .handler(async ({ data }) => {
-    await exigirAdmin();
-    await dbAdmin().transaction(async (tx) => {
-      const [p] = await tx
-        .select({ vendavel: s.planos.vendavel })
-        .from(s.planos)
-        .where(eq(s.planos.id, data.planoId));
-      if (!p?.vendavel) throw new Error("Plano não disponível.");
-      const [a] = await tx
-        .select({ id: s.assinaturas.id })
-        .from(s.assinaturas)
-        .where(eq(s.assinaturas.tenantId, data.id))
-        .orderBy(desc(s.assinaturas.criadoEm))
-        .limit(1);
-      if (!a) throw new Error("Cliente sem assinatura.");
-      await tx
-        .update(s.assinaturas)
-        .set({ planoId: data.planoId, atualizadoEm: new Date() })
-        .where(eq(s.assinaturas.id, a.id));
-    });
   });
 
 const limite = z.number().int().min(0).max(10_000_000);

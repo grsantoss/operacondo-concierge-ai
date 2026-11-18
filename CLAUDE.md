@@ -273,8 +273,10 @@ Nenhum dado de cartão passa pela aplicação (Checkout e Portal hospedados pelo
 
 Meios de pagamento (conta Stripe brasileira, BRL): **cartão** com cobrança automática recorrente e
 **boleto** via fatura (`collection_method = send_invoice`). Pix: a documentação do Stripe é
-contraditória sobre Pix recorrente para conta brasileira; até confirmar com o suporte do Stripe,
-tratar Pix só como pagamento avulso, se a conta liberar.
+contraditória sobre Pix recorrente para conta brasileira. Decidido em 18/11/2026 (#45): Pix
+recorrente fica para depois; Pix só nas faturas enviadas por e-mail (boleto e avulsa), e só se o
+Admin Master ligar em `/admin/financeiro` (`plataforma_config.pix_ativo`, desligado por padrão;
+`billing/checkout.ts` `metodosFatura`). Ativar o Pix na conta Stripe antes de ligar.
 
 Banco:
 - `planos` (linhas criadas pela migration `0015`, não pelo seed): `trial | essencial |
@@ -332,11 +334,15 @@ Fluxos:
   oc_admin, sobrevive à exclusão): CNPJ repetido → Checkout sem trial; cartão ou WhatsApp
   repetido (no espelho da assinatura e ao salvar o canal) → `trial_end: now` no Stripe. Quem
   repete pode assinar, só sem os dias grátis.
-- **Admin Master** (`/admin/usuarios/novo`): cria Customer + Subscription com trial; cartão → envia
+- **Admin Master** (feito na #32: `lib/admin-cobranca.functions.ts`, `components/admin/CobrancaAdmin.tsx`,
+  peças comuns com o autoatendimento em `billing/checkout.ts`; cada ação já chama o espelho, e o
+  webhook confirma; `criarCliente` não cria mais assinatura no espelho: em seguida o admin chama
+  `assinarCliente`, e se falhar a conta fica sem assinatura e o síndico cai em `/assinar`)
+  (`/admin/usuarios/novo`): cria Customer + Subscription com trial; cartão → envia
   link do Checkout (`mode: subscription`); boleto → assinatura `send_invoice` com
   `days_until_due`. Ações no detalhe do cliente: trocar plano (com proration), cobrança avulsa
   (invoice item + invoice), reenviar fatura, marcar paga fora do Stripe (`paid_out_of_band`),
-  estornar, cancelar. `StripeSection` deixa de ter campos de chave: mostra só modo (teste/produção),
+  estornar (total), anular, cancelar (fim do período ou agora). `StripeSection` deixa de ter campos de chave: mostra só modo (teste/produção),
   conta conectada e último webhook recebido.
 - **Síndico** (`/app/configuracoes?aba=plano`, aba "Plano e cobrança", feita na #33:
   `components/app/PlanoCobranca.tsx`, `meuPlano`/`abrirPortal` em `cobranca.functions.ts`; limites
@@ -400,6 +406,9 @@ produção só no ambiente de produção; nada de chave no banco nem na tela. Lo
 --forward-to localhost:8080/api/stripe/webhook`. Produtos e preços criados por
 `bun run stripe:seed` (`scripts/stripe-seed.ts`, idempotente; preço que mudou vira preço novo com
 `transfer_lookup_key` e o antigo é arquivado; com chave de produção exige `--producao`).
+
+**E-mail transacional e de notificação: Amazon SES** (decidido em 18/11/2026, #43; o dono do
+projeto já usa nos outros projetos). Usado pelos avisos de inadimplência (#35), trial e cadastro.
 
 O Stripe **não emite NFS-e**. Decidido: emissão manual no início; integração com emissor
 (disparada no `invoice.paid`) depois.
@@ -472,5 +481,4 @@ Segue o `DESIGN.md` do OperaCondo Insights (`../operacondo-insights/DESIGN.md`, 
 ## Decisões em aberto
 
 - Decisões de cobrança listadas na seção "Cobrança".
-- Pix recorrente no Stripe para conta brasileira: confirmar com o suporte do Stripe.
 - Provedor do Postgres de produção (fica com o dono do projeto).

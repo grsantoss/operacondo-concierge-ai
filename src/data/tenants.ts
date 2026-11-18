@@ -1,5 +1,13 @@
 import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
-import { atualizarCliente, criarCliente, listarClientes, trocarPlano } from "@/lib/admin.functions";
+import {
+  acaoFatura,
+  assinarCliente,
+  cancelarAssinatura,
+  cobrancaAvulsa,
+  registrarNfse,
+  trocarPlanoStripe,
+} from "@/lib/admin-cobranca.functions";
+import { atualizarCliente, criarCliente, listarClientes } from "@/lib/admin.functions";
 
 /** Derivado da assinatura e da fatura (webhook e job diário da Fase 6); não se edita à mão. */
 export type TenantStatus =
@@ -71,9 +79,19 @@ export function useTenants(): Tenant[] {
 
 export function useClientesAcoes() {
   const qc = useQueryClient();
-  const recarregar = () => qc.invalidateQueries({ queryKey: clientesQuery.queryKey });
+  // Clientes, faturas e planos do admin ficam sob a chave "admin".
+  const recarregar = () => qc.invalidateQueries({ queryKey: ["admin"] });
+  const comRecarga =
+    <A, R>(fn: (a: { data: A }) => Promise<R>) =>
+    async (data: A) => {
+      try {
+        return await fn({ data });
+      } finally {
+        await recarregar();
+      }
+    };
   return {
-    async criar(dados: DadosCliente & { planoId: string }) {
+    async criar(dados: DadosCliente) {
       const r = await criarCliente({ data: dados });
       await recarregar();
       return r!;
@@ -82,10 +100,12 @@ export function useClientesAcoes() {
       await atualizarCliente({ data: { id, ...dados } });
       await recarregar();
     },
-    async trocarPlano(id: string, planoId: string) {
-      await trocarPlano({ data: { id, planoId } });
-      await recarregar();
-    },
+    assinar: comRecarga(assinarCliente),
+    trocarPlano: comRecarga(trocarPlanoStripe),
+    cobrancaAvulsa: comRecarga(cobrancaAvulsa),
+    acaoFatura: comRecarga(acaoFatura),
+    cancelar: comRecarga(cancelarAssinatura),
+    registrarNfse: comRecarga(registrarNfse),
   };
 }
 

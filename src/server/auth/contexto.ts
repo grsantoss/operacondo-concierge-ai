@@ -41,3 +41,11 @@ export async function exigirCliente(): Promise<Contexto & { tenantId: string }> 
   if (!c.tenantId) throw new Error("Usuário sem cliente vinculado.");
   return c as Contexto & { tenantId: string };
 }
+
+/** Só o Admin Master (papel `admin` no usuário) usa o portal /admin. */
+export async function exigirAdmin() {
+  const c = await lerContexto();
+  if (!c) throw new Error("Sessão expirada. Entre de novo.");
+  if (!c.admin) throw new Error("Acesso restrito ao Admin Master.");
+  return c;
+}

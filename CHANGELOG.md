@@ -8,6 +8,14 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
 
 ### Adicionado
 
+- **Webhook do Stripe e espelho da cobrança no banco**: `POST /api/stripe/webhook` confere a
+  assinatura (`STRIPE_WEBHOOK_SECRET`), grava o evento uma vez só em `stripe_eventos` e responde
+  na hora; o worker (fila `stripe`) busca no Stripe o estado atual da assinatura e da fatura e
+  atualiza `assinaturas` (com a quantidade de condomínios) e `faturas` (meio de pagamento e
+  estorno). O status do cliente (trial, ativo, inadimplente, cancelado) e a data de início da
+  inadimplência passam a ser derivados da cobrança. Objetos de outros produtos da mesma conta
+  Stripe são ignorados (#85).
+
 - **Produtos e preços do Concierge no Stripe por script**: `bun run stripe:seed` cria ou atualiza
   os planos Essencial e Profissional (mensal e anual, anual = 10 × mensal) e o adicional WhatsApp
   gerenciado, a partir da tabela `planos`. O preço é escalonado pelo número de condomínios e usa

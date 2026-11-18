@@ -306,7 +306,10 @@ Banco:
   `processado_em`, `erro`, `payload`. Garante idempotência e auditoria.
 - RLS: o síndico lê `assinaturas` e `faturas` do próprio cliente; só o worker (`oc_admin`) escreve.
 
-Webhook `POST /api/stripe/webhook`: corpo cru + verificação de assinatura com
+Webhook `POST /api/stripe/webhook` (feito na #30: `billing/webhook.ts` → fila `stripe`, política `stately` → `billing/sync.ts`
+`processarEventoStripe`; `assinaturas.quantidade_condominios` = quantidade do item do plano; cliente Stripe
+sem `tenants.stripe_customer_id` é ignorado, pois a conta é dividida com o Insights; `derivarCliente` calcula
+`tenants.status` e `inadimplente_desde`, e o job diário da #35 aplica `suspensao`): corpo cru + verificação de assinatura com
 `STRIPE_WEBHOOK_SECRET` → `INSERT stripe_eventos ON CONFLICT DO NOTHING` → 200 → fila pg-boss
 `stripe`. O worker **busca o objeto atual na API do Stripe** (eventos chegam fora de ordem) e faz
 upsert. Eventos: `checkout.session.completed`, `customer.subscription.created|updated|deleted|

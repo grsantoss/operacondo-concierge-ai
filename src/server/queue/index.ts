@@ -55,6 +55,13 @@ export interface JobAgente {
   conversaId: string;
 }
 
+/** Fila "stripe": um job por evento do webhook; o worker busca o objeto atual na API. */
+export const FILA_STRIPE = "stripe";
+
+export interface JobStripe {
+  eventId: string;
+}
+
 /** Novas tentativas por fila (o worker sabe quando é a última). */
 export const TENTATIVAS = { midia: 5, agente: 2 };
 
@@ -91,6 +98,10 @@ export function fila(): Promise<PgBoss> {
     await b.createQueue(FILA_ALERTA);
     // Urgência: tenta logo de novo (5 vezes, a partir de 5 s).
     await b.updateQueue(FILA_ALERTA, { retryLimit: 5, retryDelay: 5, retryBackoff: true });
+    // stately: o mesmo evento reenviado pelo Stripe não vira um segundo job na fila.
+    await b.createQueue(FILA_STRIPE, { policy: "stately" });
+    // API do Stripe fora do ar: 5 novas tentativas a partir de 30 s.
+    await b.updateQueue(FILA_STRIPE, { retryLimit: 5, retryDelay: 30, retryBackoff: true });
     return b;
   })().catch((e) => {
     boss = null;
@@ -126,6 +137,11 @@ export async function enfileirarIngestao(jobs: JobIngestao[]) {
   if (!jobs.length) return;
   const b = await fila();
   for (const job of jobs) await b.send(FILA_INGESTAO, job, { singletonKey: job.documentoId });
+}
+
+export async function enfileirarStripe(job: JobStripe) {
+  const b = await fila();
+  await b.send(FILA_STRIPE, job, { singletonKey: job.eventId });
 }
 
 export async function enfileirarAgente(job: JobAgente) {

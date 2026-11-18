@@ -349,6 +349,8 @@ export const assinaturas = pgTable(
     status: assinaturaStatus("status").notNull(),
     formaCobranca: formaCobranca("forma_cobranca").notNull(),
     intervalo: intervalo("intervalo").notNull().default("mensal"),
+    /** Quantidade do item do plano no Stripe = condomínios contratados (multiplica os limites). */
+    quantidadeCondominios: integer("quantidade_condominios").notNull().default(1),
     cartaoFingerprint: text("cartao_fingerprint"),
     periodoInicio: ts("periodo_inicio"),
     periodoFim: ts("periodo_fim"),

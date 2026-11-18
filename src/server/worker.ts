@@ -17,13 +17,16 @@ import {
   FILA_MENSAGEM,
   FILA_INGESTAO,
   FILA_MIDIA,
+  FILA_STRIPE,
   TENTATIVAS,
   type JobAgente,
   type JobAlerta,
   type JobMensagem,
   type JobIngestao,
   type JobMidia,
+  type JobStripe,
 } from "@/server/queue";
+import { processarEventoStripe } from "@/server/billing/sync";
 import { ingerirDocumento } from "@/server/ingest";
 import { enviarAlerta } from "@/server/pipeline/alerta";
 import { processarMidia } from "@/server/pipeline/midia";
@@ -121,6 +124,15 @@ await boss.work<JobAlerta>(
     }
   }),
 );
+await boss.work<JobStripe>(
+  FILA_STRIPE,
+  comErros(FILA_STRIPE, async (jobs) => {
+    for (const job of jobs) {
+      await processarEventoStripe(job.data.eventId);
+      console.info(`[stripe] evento ${job.data.eventId} processado`);
+    }
+  }),
+);
 console.info(
   "[worker] ouvindo as filas:",
   FILA_MENSAGEM,
@@ -128,6 +140,7 @@ console.info(
   FILA_AGENTE,
   FILA_ALERTA,
   FILA_INGESTAO,
+  FILA_STRIPE,
 );
 
 for (const sinal of ["SIGINT", "SIGTERM"] as const)

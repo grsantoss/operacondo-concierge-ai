@@ -1,0 +1,1 @@
+ALTER TABLE "assinaturas" ADD COLUMN "quantidade_condominios" integer DEFAULT 1 NOT NULL;

@@ -19,6 +19,7 @@ import {
   FILA_INGESTAO,
   FILA_MIDIA,
   FILA_STRIPE,
+  FILA_INADIMPLENCIA,
   TENTATIVAS,
   type JobAgente,
   type JobAlerta,
@@ -27,6 +28,7 @@ import {
   type JobMidia,
   type JobStripe,
 } from "@/server/queue";
+import { aplicarInadimplencia } from "@/server/billing/inadimplencia";
 import { processarEventoStripe } from "@/server/billing/sync";
 import { ingerirDocumento } from "@/server/ingest";
 import { enviarAlerta } from "@/server/pipeline/alerta";
@@ -134,6 +136,15 @@ await boss.work<JobStripe>(
     }
   }),
 );
+// Uma vez por dia; o schedule do pg-boss é único por fila (vários workers não duplicam).
+await boss.schedule(FILA_INADIMPLENCIA, "0 6 * * *", {}, { tz: "America/Sao_Paulo" });
+await boss.work(
+  FILA_INADIMPLENCIA,
+  comErros(FILA_INADIMPLENCIA, async () => {
+    await aplicarInadimplencia();
+    console.info("[inadimplencia] fases aplicadas");
+  }),
+);
 console.info(
   "[worker] ouvindo as filas:",
   FILA_MENSAGEM,
@@ -142,6 +153,7 @@ console.info(
   FILA_ALERTA,
   FILA_INGESTAO,
   FILA_STRIPE,
+  FILA_INADIMPLENCIA,
 );
 
 for (const sinal of ["SIGINT", "SIGTERM"] as const)

@@ -5,7 +5,7 @@ import { carregarContexto } from "../src/server/agent/contexto";
 import { mensagens, SEM_BASE } from "../src/server/agent/prompt";
 import { AVISO_SINDICO, responder } from "../src/server/agent/run";
 import { acharUnidade } from "../src/server/agent/tools";
-import { exigirLimite } from "../src/server/billing/limites";
+import { ATENDIMENTO_INDISPONIVEL, exigirLimite } from "../src/server/billing/limites";
 import { avaliarRascunho } from "../src/lib/conversas.functions";
 import { cifrar } from "../src/server/cripto";
 import { dbAdmin, schema as s, withTenant } from "../src/server/db";
@@ -398,6 +398,28 @@ describe("responder", () => {
 });
 
 describe("limites do plano", () => {
+  test("inadimplência: parcial não chama o modelo; congelado responde só a mensagem fixa", async () => {
+    const suspender = (suspensao: "nenhuma" | "parcial" | "integral") =>
+      admin.update(s.tenants).set({ suspensao }).where(eq(s.tenants.id, tenantId));
+    try {
+      await suspender("parcial");
+      const r = await receber("a academia abre domingo?");
+      const antes = pedidos.length;
+      await responder(r.agente!);
+      expect(pedidos.length).toBe(antes);
+      expect(enviados.at(-1)!.message).toBe(AVISO_SINDICO);
+
+      await suspender("integral");
+      const c = await receber("oi, preciso de ajuda");
+      expect(c.agente).toBeNull();
+      expect(enviados.at(-1)!.message).toBe(ATENDIMENTO_INDISPONIVEL);
+      // Urgência continua alertando o síndico.
+      expect((await receber("cheiro de gás no hall!")).alerta?.regra).toBe("gas");
+    } finally {
+      await suspender("nenhuma");
+    }
+  });
+
   test("teto do mês atingido: nenhuma chamada ao modelo, aviso fixo e conversa com o síndico", async () => {
     // Trial: limites do plano `trial` (teto de custo de R$ 15); US$ 50 passa do teto.
     const [a] = await admin

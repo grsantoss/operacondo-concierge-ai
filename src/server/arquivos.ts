@@ -8,6 +8,8 @@ import {
   GetObjectCommand,
   HeadBucketCommand,
   PutObjectCommand,
+  DeleteObjectsCommand,
+  ListObjectsV2Command,
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
@@ -97,4 +99,28 @@ export async function lerArquivo(caminho: string): Promise<Uint8Array<ArrayBuffe
 
 export async function apagarArquivo(caminho: string) {
   await s3().send(new DeleteObjectCommand({ Bucket: bucket(), Key: caminho }));
+}
+
+/** Apaga tudo sob um prefixo (ex.: `{tenant_id}/` na exclusão do cliente). */
+export async function apagarPasta(prefixo: string) {
+  if (!prefixo.endsWith("/")) throw new Error("prefixo precisa terminar em /");
+  let token: string | undefined;
+  do {
+    const r = await s3()
+      .send(
+        new ListObjectsV2Command({ Bucket: bucket(), Prefix: prefixo, ContinuationToken: token }),
+      )
+      .catch((e: { name?: string }) => {
+        // Bucket ainda não criado (nenhum arquivo gravado): não há o que apagar.
+        if (e.name === "NoSuchBucket") return null;
+        throw e;
+      });
+    if (!r) return;
+    const chaves = (r.Contents ?? []).flatMap((o) => (o.Key ? [{ Key: o.Key }] : []));
+    if (chaves.length)
+      await s3().send(
+        new DeleteObjectsCommand({ Bucket: bucket(), Delete: { Objects: chaves, Quiet: true } }),
+      );
+    token = r.NextContinuationToken;
+  } while (token);
 }

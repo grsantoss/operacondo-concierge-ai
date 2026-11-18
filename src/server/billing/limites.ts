@@ -81,6 +81,16 @@ export async function usoMensal(tx: Tx): Promise<Uso> {
 /** ponytail: câmbio fixo por variável; trocar por cotação diária se o teto ficar apertado. */
 const USD_BRL = Number(process.env.USD_BRL || 5.5);
 
+/** Suspensão por inadimplência do cliente (job diário). Dentro de `withTenant`. */
+export async function suspensaoDo(tx: Tx) {
+  const [t] = await tx.select({ suspensao: s.tenants.suspensao }).from(s.tenants);
+  return t?.suspensao ?? "nenhuma";
+}
+
+/** Resposta fixa do WhatsApp com a conta congelada (D+10), sem IA. */
+export const ATENDIMENTO_INDISPONIVEL =
+  "No momento o atendimento por aqui está indisponível. Procure a administração do condomínio.";
+
 /** A partir de quanto do limite de respostas o síndico é avisado. */
 export const AVISO_USO = 0.8;
 

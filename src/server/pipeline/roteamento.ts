@@ -8,6 +8,7 @@
  */
 import { and, asc, desc, eq, isNull, ne, sql } from "drizzle-orm";
 import { schema as s, withTenant, type Tx } from "@/server/db";
+import { ATENDIMENTO_INDISPONIVEL, suspensaoDo } from "@/server/billing/limites";
 import { iaConfigurada } from "@/server/llm";
 import type { JobAgente, JobAlerta, JobMensagem, JobMidia } from "@/server/queue";
 import { detectarUrgencia } from "@/server/pipeline/regras-urgencia";
@@ -157,6 +158,17 @@ export async function rotear(job: JobMensagem, entradas: Entrada[]): Promise<Rot
         : [];
     });
     const res: Roteado = { alerta, midias, agente: null };
+    // Conta congelada por inadimplência (D+10): sem agente nem menu, só a resposta fixa (uma por
+    // lote de mensagens). O alerta de urgência ao síndico continua.
+    if ((await suspensaoDo(tx)) === "integral") {
+      await tx
+        .update(s.conversas)
+        .set({ estado: "aguardando_sindico" })
+        .where(eq(s.conversas.id, conversa.id));
+      if (novas.length)
+        await enviarNaConversa(tx, conversa, ATENDIMENTO_INDISPONIVEL, "sistema");
+      return { ...res, midias: [] };
+    }
     // Com IA: responde se a conversa segue com ela. Áudio novo espera a transcrição (a fila
     // "midia" chama o agente depois).
     const comIa = iaConfigurada();

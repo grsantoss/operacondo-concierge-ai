@@ -169,7 +169,7 @@ export interface MeuPlano {
 /** Aba "Plano e cobrança": plano, uso × limites, próxima cobrança e histórico (do espelho). */
 export const meuPlano = createServerFn({ method: "GET" }).handler(
   async (): Promise<MeuPlano | null> => {
-    const c = await exigirCliente();
+    const c = await exigirCliente({ mesmoSuspenso: true });
     return withTenant(c.tenantId, async (tx) => {
       const atual = await assinaturaAtual(tx);
       if (!atual) return null;
@@ -215,7 +215,7 @@ export const meuPlano = createServerFn({ method: "GET" }).handler(
 
 /** Sessão do Customer Portal do Stripe (cartão, faturas, cancelamento). Devolve a URL. */
 export const abrirPortal = createServerFn({ method: "POST" }).handler(async () => {
-  const c = await exigirCliente();
+  const c = await exigirCliente({ mesmoSuspenso: true });
   if (c.papel === "conselho") throw new Error("Só o síndico pode gerenciar o pagamento.");
   if (!stripeConfigurado())
     throw new Error("Pagamento indisponível no momento. Tente de novo mais tarde.");

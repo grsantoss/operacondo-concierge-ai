@@ -95,6 +95,8 @@ export async function derivarCliente(tenantId: string, hoje = dataSP(new Date())
       status: statusDoCliente(a?.status ?? null, t.status, Boolean(desde), suspensao),
       inadimplenteDesde: emAtraso ? (t.inadimplenteDesde ?? desde ?? hoje) : null,
       suspensao,
+      // Pagou: reativa na hora e zera os avisos e a data de exclusão do job diário.
+      ...(emAtraso ? {} : { avisoInadimplencia: 0, exclusaoPrevistaEm: null }),
     })
     .where(eq(s.tenants.id, tenantId));
 }

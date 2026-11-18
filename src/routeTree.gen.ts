@@ -15,6 +15,7 @@ import { Route as AppRouteImport } from './routes/app'
 import { Route as AssinarRouteImport } from './routes/assinar'
 import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as PagamentoRouteImport } from './routes/pagamento'
 import { Route as PlanosRouteImport } from './routes/planos'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAmbientesRouteImport } from './routes/admin.ambientes'
@@ -74,6 +75,11 @@ const CadastroRoute = CadastroRouteImport.update({
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PagamentoRoute = PagamentoRouteImport.update({
+  id: '/pagamento',
+  path: '/pagamento',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PlanosRoute = PlanosRouteImport.update({
@@ -234,6 +240,7 @@ export interface FileRoutesByFullPath {
   '/assinar': typeof AssinarRoute
   '/cadastro': typeof CadastroRoute
   '/onboarding': typeof OnboardingRoute
+  '/pagamento': typeof PagamentoRoute
   '/planos': typeof PlanosRoute
   '/admin/ambientes': typeof AdminAmbientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
@@ -270,6 +277,7 @@ export interface FileRoutesByTo {
   '/assinar': typeof AssinarRoute
   '/cadastro': typeof CadastroRoute
   '/onboarding': typeof OnboardingRoute
+  '/pagamento': typeof PagamentoRoute
   '/planos': typeof PlanosRoute
   '/admin/ambientes': typeof AdminAmbientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
@@ -304,6 +312,7 @@ export interface FileRoutesById {
   '/assinar': typeof AssinarRoute
   '/cadastro': typeof CadastroRoute
   '/onboarding': typeof OnboardingRoute
+  '/pagamento': typeof PagamentoRoute
   '/planos': typeof PlanosRoute
   '/admin/ambientes': typeof AdminAmbientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
@@ -344,6 +353,7 @@ export interface FileRouteTypes {
     | '/assinar'
     | '/cadastro'
     | '/onboarding'
+    | '/pagamento'
     | '/planos'
     | '/admin/ambientes'
     | '/admin/configuracoes'
@@ -380,6 +390,7 @@ export interface FileRouteTypes {
     | '/assinar'
     | '/cadastro'
     | '/onboarding'
+    | '/pagamento'
     | '/planos'
     | '/admin/ambientes'
     | '/admin/configuracoes'
@@ -413,6 +424,7 @@ export interface FileRouteTypes {
     | '/assinar'
     | '/cadastro'
     | '/onboarding'
+    | '/pagamento'
     | '/planos'
     | '/admin/ambientes'
     | '/admin/configuracoes'
@@ -452,6 +464,7 @@ export interface RootRouteChildren {
   AssinarRoute: typeof AssinarRoute
   CadastroRoute: typeof CadastroRoute
   OnboardingRoute: typeof OnboardingRoute
+  PagamentoRoute: typeof PagamentoRoute
   PlanosRoute: typeof PlanosRoute
   ApiEventosRoute: typeof ApiEventosRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
@@ -501,6 +514,13 @@ declare module '@tanstack/react-router' {
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pagamento': {
+      id: '/pagamento'
+      path: '/pagamento'
+      fullPath: '/pagamento'
+      preLoaderRoute: typeof PagamentoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/planos': {
@@ -838,6 +858,7 @@ const rootRouteChildren: RootRouteChildren = {
   AssinarRoute: AssinarRoute,
   CadastroRoute: CadastroRoute,
   OnboardingRoute: OnboardingRoute,
+  PagamentoRoute: PagamentoRoute,
   PlanosRoute: PlanosRoute,
   ApiEventosRoute: ApiEventosRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,

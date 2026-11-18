@@ -7,6 +7,8 @@ export const Route = createFileRoute("/app")({
     if (!sessao) throw redirect({ to: "/", search: { redirect: location.href } });
     if (!sessao.tenantId) throw redirect({ to: sessao.admin ? "/admin" : "/" });
     if (sessao.assinaturaPendente) throw redirect({ to: "/assinar" });
+    // Congelado por inadimplência (D+10): só a tela de pagamento abre.
+    if (sessao.cobranca?.suspensao === "integral") throw redirect({ to: "/pagamento" });
     return { sessao };
   },
   component: () => <Outlet />,

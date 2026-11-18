@@ -151,10 +151,10 @@ function FlagRow({ flag, onToggle, noBg }: { flag: Flag; onToggle: () => void; n
 }
 
 const CAMPOS: { k: keyof LimitesPlano; label: string }[] = [
-  { k: "condominios", label: "Condomínios" },
-  { k: "moradores", label: "Moradores" },
-  { k: "documentos", label: "Documentos" },
-  { k: "respostasIaMes", label: "Respostas da IA/mês" },
+  { k: "condominios", label: "Condomínios (máx.)" },
+  { k: "moradores", label: "Moradores/condomínio" },
+  { k: "documentos", label: "Documentos/condomínio" },
+  { k: "respostasIaMes", label: "Respostas da IA/mês por condomínio" },
 ];
 
 /** Limites de cada plano, lidos e gravados na tabela `planos`. */
@@ -165,7 +165,7 @@ function PlanosLimites() {
       <div className="border-b border-[var(--color-outline-variant)] p-5">
         <h2 className="text-base font-bold text-[var(--color-navy)]">Planos e limites</h2>
         <p className="mt-1 text-sm text-[var(--color-on-surface-variant)]">
-          Valem para todos os clientes do plano. O preço é só para exibir: o valor cobrado é o do Stripe.
+          Valem para todos os clientes do plano e multiplicam pelos condomínios da assinatura. O preço é só para exibir: o valor cobrado é o do Stripe.
         </p>
       </div>
       <div className="overflow-x-auto">

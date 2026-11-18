@@ -18,8 +18,9 @@ Responda sempre em português do Brasil, com acentuação correta.
   `src/lib/admin.functions.ts` com `dbAdmin()`/`oc_admin` e `exigirAdmin()`; Stripe na Fase 6).
 - **Fase 2 (WhatsApp, #15–#20) e Fase 3 (#21, leitura dos documentos) concluídas**, uma issue
   por PR. **Fase 4 (agente v1, #22–#27) concluída** (`v0.6.0`). **Fase 5 (#28, cadastro com
-  aprovação)** fecha a primeira rodada. Testes reais (instância Z-API, transcrição, Claude,
-  pagamento) ficam para depois de todas as issues.
+  aprovação)** fecha a primeira rodada. **Fase 6 (cobrança Stripe, #29–#35) em andamento**;
+  depois vem a Fase 6.5 (canal de e-mail, #78–#83). Testes reais (instância Z-API, transcrição,
+  Claude, pagamento) ficam para depois de todas as issues.
 - Rodar localmente: `cp .env.example .env` → `bun run db:reset` (sobe containers, migrations e
   seed) → `bun run dev` (e `bun run worker` para a fila; `bun run docling:up` para ler documentos). Login: `sindico@operacondo.local` (cliente Aurora) ou
   `admin@operacondo.local` (Admin Master), senha `SEED_SENHA` (padrão `operacondo123`).
@@ -148,7 +149,7 @@ temperatura (cold/warm/hot) saiu de todas as telas (#14).
   `ingest/trechos.ts` (um trecho por artigo/cláusula com o capítulo como contexto; sem artigos,
   por título e tamanho) → `documento_trechos`. Status: `treinado`; `revisao` (páginas ilegíveis
   ou sem `ANTHROPIC_API_KEY`); `erro` (motivo em `documentos.leitura_aviso`, a fila tenta de novo).
-  Embeddings (Voyage) ficam para a busca vetorial (Fase 6).
+  Embeddings (Voyage) ficam para a busca vetorial (#39, Fase 8).
 - **Agente (núcleo, #22):** ligado por `ANTHROPIC_API_KEY` (`iaConfigurada()` em
   `src/server/llm.ts`, que também calcula o custo). Com IA, a conversa com condomínio definido fica
   em `ia` e o roteamento devolve `agente` → fila `agente` (stately por conversa, 2 novas
@@ -276,10 +277,16 @@ contraditória sobre Pix recorrente para conta brasileira; até confirmar com o 
 tratar Pix só como pagamento avulso, se a conta liberar.
 
 Banco:
-- `planos`: + `stripe_product_id`, `ativo`, `vendavel` (o plano `trial` não é vendável), limites
-  (`limite_condominios`, `limite_moradores`, `limite_documentos`, `limite_respostas_ia_mes`,
-  `teto_custo_ia_mes`, `usa_conselheiro`). Preços resolvidos pelos `lookup_key`
-  `{plano}_mensal` / `{plano}_anual`, nunca por `price_id` fixo no código.
+- `planos` (linhas criadas pela migration `0015`, não pelo seed): `trial | essencial |
+  profissional`, + `stripe_product_id`, `ativo`, `vendavel` (o `trial` não é vendável),
+  `condominios_inclusos`, `preco_condominio_adicional`, `limite_condominios` (máximo com os
+  adicionais) e limites **por condomínio da assinatura** (`limite_moradores`,
+  `limite_documentos`, `limite_respostas_ia_mes`, `teto_custo_ia_mes`), `usa_conselheiro`.
+  A conta Stripe é dividida com o OperaCondo Insights: produtos `concierge_{item}` com
+  `metadata.app = operacondo-concierge`, preços pelos `lookup_key` `concierge_{item}_mensal` /
+  `concierge_{item}_anual`, nunca por `price_id` fixo no código. Catálogo em
+  `src/server/billing/catalogo.ts`; cliente em `billing/stripe.ts` (SDK `stripe` 23.1.0 sem `^`,
+  API `2026-10-28.endive`).
 - `tenants`: + `stripe_customer_id` (único), `cnpj` (único; vai para o Stripe como `tax_id`
   `br_cnpj`), `inadimplente_desde`, `suspensao` (`nenhuma | parcial | integral`),
   `exclusao_prevista_em`, `excluido_em`. `tenants.status` (`trial | ativo | inadimplente |
@@ -333,8 +340,21 @@ Fluxos:
 - **Trial (7 dias, reduzido):** durante `trialing` valem os limites do plano interno `trial`
   (não vendável), não os do plano escolhido: 1 condomínio, 50 moradores, 5 documentos na base,
   150 respostas da IA, só Haiku (sem conselheiro Opus). Números ajustáveis na tabela `planos`.
-- **Plano anual: paga 10, leva 12.** Cada plano tem dois preços no Stripe (`{plano}_mensal` e
-  `{plano}_anual`, anual = 10 × mensal, intervalo de 1 ano). Anual pode ser cartão ou boleto
+- **Planos e preços (18/11/2026):** Essencial R$ 197/mês (1 condomínio, até 4 com adicionais) e
+  Profissional R$ 547/mês (5 condomínios, até 50; conselheiro Opus na Fase 8); condomínio
+  adicional R$ 97/mês nos dois. Limites por condomínio: 1.000 respostas da IA/mês (WhatsApp +
+  e-mail somados), 300 moradores, 20 documentos, teto técnico de custo de IA R$ 90 (R$ 0,09 por
+  resposta da cota). No Stripe, um preço **escalonado (graduated)** por plano e intervalo, com a
+  **quantidade = número de condomínios**: 1º degrau com valor fixo para os inclusos, 2º degrau
+  com o adicional por condomínio. Cadastrar condomínio ajusta a quantidade (cobrança
+  proporcional). Sem plano Escritório: carteiras grandes usam o Profissional com adicionais ou
+  proposta pelo Admin Master.
+- **WhatsApp é contratado pelo cliente** (Z-API na validação; API oficial da Meta na conta do
+  cliente quando a #65 entrar). Se o cliente quiser o nosso número, paga o adicional
+  **WhatsApp gerenciado** (R$ 119/mês por número, repasse da Z-API + taxas;
+  `concierge_whatsapp_gerenciado_{mensal|anual}`).
+- **Plano anual: paga 10, leva 12.** Cada plano tem dois preços no Stripe
+  (`concierge_{plano}_mensal` e `concierge_{plano}_anual`, anual = 10 × mensal, intervalo de 1 ano). Anual pode ser cartão ou boleto
   único. Cancelamento do anual vale no fim do período, sem reembolso proporcional.
 - **Inadimplência** (contada a partir do vencimento da fatura não paga, guardada em
   `tenants.inadimplente_desde`; job diário do pg-boss aplica as fases):
@@ -358,7 +378,8 @@ Configuração: só variáveis de ambiente — `STRIPE_SECRET_KEY` (preferir *re
 `STRIPE_WEBHOOK_SECRET`, versão da API fixada no cliente. Chaves de teste em dev/homologação,
 produção só no ambiente de produção; nada de chave no banco nem na tela. Local: `stripe listen
 --forward-to localhost:8080/api/stripe/webhook`. Produtos e preços criados por
-`scripts/stripe-seed.ts`.
+`bun run stripe:seed` (`scripts/stripe-seed.ts`, idempotente; preço que mudou vira preço novo com
+`transfer_lookup_key` e o antigo é arquivado; com chave de produção exige `--producao`).
 
 O Stripe **não emite NFS-e**. Decidido: emissão manual no início; integração com emissor
 (disparada no `invoice.paid`) depois.
@@ -369,7 +390,12 @@ D+10 integral, D+30 exclusão; NFS-e manual; anual paga 10 leva 12. Também conf
 exigido no trial; limites do trial (1 condomínio, 50 moradores, 5 documentos, 150 respostas da IA,
 só Haiku); unidade de uso = resposta da IA; no congelamento o agente só envia a resposta fixa
 "atendimento indisponível" (sem IA); a exclusão mantém faturas e dados fiscais; anual cancela no
-fim do período, sem reembolso proporcional.
+fim do período, sem reembolso proporcional. Em 18/11/2026: planos Essencial e Profissional por
+condomínio, adicional de condomínio, WhatsApp por conta do cliente e e-mail como segundo canal
+(milestone "Fase 6.5 — Canal de e-mail", #78–#83, depois da Fase 6 e antes do piloto). Análise:
+documento "Precificação do OperaCondo Concierge" (https://claude.ai/artifact/5ePVPyiGsacKobq7sHBR9Y).
+Pendente na conta Stripe: está como pessoa física (passar para o CNPJ) e o prefixo do extrato do
+cartão é "BLOG TSV" (trocar para OPERACONDO).
 
 ## Entrega e versionamento
 

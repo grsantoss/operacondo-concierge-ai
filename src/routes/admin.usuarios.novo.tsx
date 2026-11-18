@@ -32,7 +32,7 @@ function NovoTenant() {
   });
   const planos = usePlanos().filter((p) => p.vendavel);
   const { criar } = useClientesAcoes();
-  const [plano, setPlano] = useState("pro");
+  const [plano, setPlano] = useState("essencial");
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [created, setCreated] = useState<{ id: string; email: string; senha: string } | null>(null);

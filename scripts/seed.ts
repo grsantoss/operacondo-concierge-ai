@@ -5,7 +5,7 @@
  */
 import { hashPassword } from "better-auth/crypto";
 import { sql } from "drizzle-orm";
-import { CLIENTES_EXEMPLO, FATURAS_EXEMPLO, PLANOS_EXEMPLO } from "./dados-exemplo/admin";
+import { CLIENTES_EXEMPLO, FATURAS_EXEMPLO } from "./dados-exemplo/admin";
 import { DEMANDAS_EXEMPLO as DEMANDAS } from "./dados-exemplo/demandas";
 import { FORNECEDORES_EXEMPLO } from "./dados-exemplo/fornecedores";
 import { CONDOMINIOS, MORADORES_EXEMPLO } from "./dados-exemplo/moradores";
@@ -52,35 +52,9 @@ async function main() {
   // Apaga tudo (as tabelas de cliente caem em cascata a partir de tenants).
   await db.execute(sql`delete from tenants`);
   await db.execute(sql`delete from "user"`);
-  await db.execute(sql`delete from planos`);
   await db.execute(sql`delete from stripe_eventos`);
 
-  // Planos: os de venda vêm do mock; o trial (não vendável) segue o CLAUDE.md.
-  await db.insert(s.planos).values([
-    {
-      id: "trial",
-      nome: "Trial",
-      precoMensal: 0,
-      limiteCondominios: 1,
-      limiteMoradores: 50,
-      limiteDocumentos: 5,
-      limiteRespostasIaMes: 150,
-      tetoCustoIaMes: 15,
-      usaConselheiro: false,
-      vendavel: false,
-    },
-    ...PLANOS_EXEMPLO.map((p) => ({
-      id: p.id,
-      nome: p.nome,
-      precoMensal: p.precoMensal,
-      limiteCondominios: p.condominios,
-      limiteMoradores: p.moradores,
-      limiteDocumentos: p.condominios * 50,
-      limiteRespostasIaMes: p.msgsMes,
-      tetoCustoIaMes: p.precoMensal * 0.3,
-      usaConselheiro: p.id !== "starter",
-    })),
-  ]);
+  // Planos: vêm da migration 0015 (trial, essencial, profissional), não do seed.
 
   // Clientes, assinaturas e faturas.
   const tenantId = new Map<string, string>();

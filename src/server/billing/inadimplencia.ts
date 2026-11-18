@@ -89,7 +89,11 @@ export function textoAviso(dia: number, d: Datas): { assunto: string; texto: str
 }
 
 /** Roda uma vez por dia (fila `inadimplencia`, agendada no worker). */
-export async function aplicarInadimplencia(hoje = dataSP(new Date()), st?: Stripe) {
+export async function aplicarInadimplencia(
+  hoje = dataSP(new Date()),
+  st?: Stripe,
+  apagar: (prefixo: string) => Promise<void> = apagarPasta,
+) {
   const db = dbAdmin();
   const clientes = await db
     .select()
@@ -102,7 +106,7 @@ export async function aplicarInadimplencia(hoje = dataSP(new Date()), st?: Strip
       const exclusao = somarDias(desde, DIAS.exclusao);
       const f = fase(dias);
       if (f === "exclusao") {
-        await excluirCliente(t.id, st);
+        await excluirCliente(t.id, st, apagar);
         continue;
       }
       const aviso = avisoDevido(dias, t.avisoInadimplencia);
@@ -160,7 +164,11 @@ export const TABELAS_APAGADAS = [
  * D+30: cancela a assinatura no Stripe, desconecta o WhatsApp, apaga os dados e os arquivos.
  * Mantém faturas, assinaturas e os dados fiscais (razão social, CNPJ) com o resto anonimizado.
  */
-export async function excluirCliente(tenantId: string, st?: Stripe) {
+export async function excluirCliente(
+  tenantId: string,
+  st?: Stripe,
+  apagar: (prefixo: string) => Promise<void> = apagarPasta,
+) {
   const db = dbAdmin();
   const assinaturas = await db
     .select()
@@ -196,7 +204,7 @@ export async function excluirCliente(tenantId: string, st?: Stripe) {
     }
   }
 
-  await apagarPasta(`${tenantId}/`);
+  await apagar(`${tenantId}/`);
 
   const membros = await db
     .select({ userId: s.membros.userId })

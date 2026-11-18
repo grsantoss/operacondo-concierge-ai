@@ -15,6 +15,11 @@ const userId = `usr_inad_${Date.now()}`;
 const HOJE = "2026-11-18";
 const menos = (n: number) =>
   new Date(Date.parse(`${HOJE}T00:00:00Z`) - n * 864e5).toISOString().slice(0, 10);
+// Sem S3 no CI: registra o prefixo que seria apagado.
+const apagadas: string[] = [];
+const apagar = async (prefixo: string) => {
+  apagadas.push(prefixo);
+};
 const cliente = async () =>
   (await admin.select().from(s.tenants).where(eq(s.tenants.id, tenantId)))[0]!;
 
@@ -84,7 +89,7 @@ test("fases e avisos por dia de atraso", () => {
 });
 
 test("D+8: suspensão parcial, aviso do D+7 e data da exclusão", async () => {
-  await aplicarInadimplencia(HOJE);
+  await aplicarInadimplencia(HOJE, undefined, apagar);
   expect(await cliente()).toMatchObject({
     suspensao: "parcial",
     status: "inadimplente",
@@ -99,7 +104,7 @@ test("D+10: congelado (status suspenso)", async () => {
     .update(s.tenants)
     .set({ inadimplenteDesde: menos(10) })
     .where(eq(s.tenants.id, tenantId));
-  await aplicarInadimplencia(HOJE);
+  await aplicarInadimplencia(HOJE, undefined, apagar);
   expect(await cliente()).toMatchObject({
     suspensao: "integral",
     status: "suspenso",
@@ -112,10 +117,11 @@ test("D+30: apaga os dados e o login, mantém faturas e dados fiscais", async ()
     .update(s.tenants)
     .set({ inadimplenteDesde: menos(30) })
     .where(eq(s.tenants.id, tenantId));
-  await aplicarInadimplencia(HOJE);
+  await aplicarInadimplencia(HOJE, undefined, apagar);
   const t = await cliente();
   expect(t).toMatchObject({ status: "excluido", email: null, razaoSocial: "Inadimplente Ltda" });
   expect(t.excluidoEm).not.toBeNull();
+  expect(apagadas).toEqual([`${tenantId}/`]);
   const conta = (tabela: Parameters<typeof admin.$count>[0]) =>
     admin.$count(tabela, eq((tabela as typeof s.moradores).tenantId, tenantId));
   expect(await conta(s.moradores)).toBe(0);
@@ -124,6 +130,6 @@ test("D+30: apaga os dados e o login, mantém faturas e dados fiscais", async ()
   expect(await conta(s.faturas)).toBe(1);
   expect(await admin.$count(s.user, eq(s.user.id, userId))).toBe(0);
   // Excluído não volta a ser processado.
-  await aplicarInadimplencia(HOJE);
+  await aplicarInadimplencia(HOJE, undefined, apagar);
   expect((await cliente()).status).toBe("excluido");
 });

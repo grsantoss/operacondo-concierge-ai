@@ -12,7 +12,7 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   cadastro em `/cadastro` (seus dados, empresa e CNPJ validado) e pagamento no Stripe Checkout
   com cartão exigido e 7 dias de teste. A volta do pagamento ativa a conta na hora e abre o
   onboarding; quem ainda não pagou é levado para `/assinar` ao entrar. Um teste grátis por CNPJ,
-  por número de WhatsApp e por cartão: quem repete assina sem os dias grátis (#PR).
+  por número de WhatsApp e por cartão: quem repete assina sem os dias grátis (#86).
 
 - **Webhook do Stripe e espelho da cobrança no banco**: `POST /api/stripe/webhook` confere a
   assinatura (`STRIPE_WEBHOOK_SECRET`), grava o evento uma vez só em `stripe_eventos` e responde

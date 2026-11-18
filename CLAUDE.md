@@ -338,7 +338,11 @@ Fluxos:
   (invoice item + invoice), reenviar fatura, marcar paga fora do Stripe (`paid_out_of_band`),
   estornar, cancelar. `StripeSection` deixa de ter campos de chave: mostra só modo (teste/produção),
   conta conectada e último webhook recebido.
-- **Síndico** (`/app/configuracoes`, nova aba "Plano e cobrança"): plano, uso x limites, próxima
+- **Síndico** (`/app/configuracoes?aba=plano`, aba "Plano e cobrança", feita na #33:
+  `components/app/PlanoCobranca.tsx`, `meuPlano`/`abrirPortal` em `cobranca.functions.ts`; limites
+  efetivos em `billing/limites.ts` `assinaturaAtual`/`calcularLimites`: trial = plano `trial`;
+  senão limite × max(quantidade, inclusos); portal padrão do Stripe já configurado na conta:
+  cancela no fim do período, sem troca de plano): plano, uso x limites, próxima
   fatura, histórico (do banco) e botão "Gerenciar pagamento" → sessão do **Customer Portal**
   (trocar cartão, baixar faturas, cancelar conforme configuração do portal).
 - **Limites do plano** (`billing/limites.ts`, lendo `uso_mensal`): moradores e condomínios

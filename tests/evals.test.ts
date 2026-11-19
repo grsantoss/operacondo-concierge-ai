@@ -16,7 +16,10 @@ describe("perguntas.jsonl", () => {
       expect(c.pergunta.length).toBeGreaterThan(0);
       expect(["aprovado", "pendente", "desconhecido"]).toContain(c.cadastro);
       if (c.espera.resultado)
-        expect(["resposta", "sindico", "demanda"]).toContain(c.espera.resultado);
+        expect(["resposta", "sindico", "demanda", "ignorado"]).toContain(c.espera.resultado);
+      if (c.canal) expect(["whatsapp", "email"]).toContain(c.canal);
+      if (c.canal !== "email")
+        expect(c.assunto ?? c.de ?? c.dkim ?? c.cabecalhos).toBeUndefined();
     }
     expect(readdirSync(`${PASTA}/documentos`).sort()).toEqual([
       "ata-2026.md",
@@ -64,6 +67,32 @@ describe("avaliar", () => {
     ]);
     expect(notas[0]!.detalhe).toBe("sindico (Sem base documental)");
     expect(notas[1]!.detalhe).toBe("sem fonte");
+  });
+
+  test("motivo: categoria do e-mail no motivo de ir ao síndico", () => {
+    const e = { ...caso, espera: { motivo: "[fornecedor]" } };
+    const [ok] = avaliar(e, {
+      resultado: "sindico",
+      texto: "",
+      motivo: "[Fornecedor] Proposta de limpeza",
+    });
+    const [falha] = avaliar(e, { resultado: "sindico", texto: "", motivo: null });
+    expect([ok!.ok, falha!.ok, falha!.detalhe]).toEqual([true, false, "sem motivo"]);
+  });
+
+  test("casos de e-mail cobrem os exemplos do protótipo e a segurança", () => {
+    const email = casos.filter((c) => c.canal === "email").map((c) => c.id);
+    for (const id of [
+      "email-vazamento",
+      "email-fornecedor-proposta",
+      "email-boleto-administradora",
+      "email-barulho-reclamacao",
+      "email-reserva-salao",
+      "email-forjado-sem-dkim",
+      "email-resposta-automatica",
+      "email-historico-citado",
+    ])
+      expect(email).toContain(id);
   });
 
   test("fonte vem só da linha 📄, não do corpo", () => {

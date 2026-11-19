@@ -8,6 +8,9 @@
  * configurado, as perguntas viram o dataset `concierge-perguntas` e cada execução vira um
  * experimento com as notas por critério. No fim, apaga o cliente temporário.
  *
+ * Casos com `"canal": "email"` (#83) passam por entrada → limpeza → roteamento → agente
+ * (`processarEmail` com bucket falso; nada é enviado no e-mail, a resposta é o rascunho).
+ *
  * `bun run evals piscina mudanca` roda só os casos cujo id contém um desses textos.
  */
 import { readFile } from "node:fs/promises";
@@ -17,6 +20,7 @@ import { fileURLToPath } from "node:url";
 import { and, desc, eq, sum } from "drizzle-orm";
 import { MODELO_AGENTE, responder } from "@/server/agent/run";
 import { cifrar } from "@/server/cripto";
+import { processarEmail } from "@/server/email-entrada/processar";
 import { dbAdmin, schema as s } from "@/server/db";
 import { cortarTrechos } from "@/server/ingest/trechos";
 import { iaConfigurada } from "@/server/llm";
@@ -32,18 +36,26 @@ export interface Caso {
   id: string;
   pergunta: string;
   cadastro: "aprovado" | "pendente" | "desconhecido";
+  /** E-mail: assunto, remetente, DKIM/DMARC (padrão PASS) e cabeçalhos extras. */
+  canal?: "whatsapp" | "email";
+  assunto?: string;
+  de?: string;
+  dkim?: "PASS" | "FAIL";
+  cabecalhos?: Record<string, string>;
   espera: {
     resultado?: Resultado;
+    /** Trecho do motivo de ir ao síndico (ex.: "[fornecedor]"). */
+    motivo?: string;
     /** Trecho da linha "📄 …" (ex.: "Regimento Interno, Art. 2"). */
     fonte?: string;
     contem?: string[];
     nao_contem?: string[];
   };
 }
-type Resultado = "resposta" | "sindico" | "demanda";
+type Resultado = "resposta" | "sindico" | "demanda" | "ignorado";
 export interface Saida {
   resultado: Resultado;
-  /** O que o morador recebeu (todas as mensagens de saída, em ordem). */
+  /** O que o morador recebeu (mensagens de saída, em ordem; no e-mail, o rascunho). */
   texto: string;
   /** Motivo de ter ido ao síndico (`conversas.rascunho_motivo`). */
   motivo: string | null;
@@ -64,6 +76,12 @@ export function avaliar(caso: Caso, saida: Saida): Nota[] {
       nome: "resultado",
       ok: saida.resultado === e.resultado,
       detalhe: saida.motivo ? `${saida.resultado} (${saida.motivo})` : saida.resultado,
+    });
+  if (e.motivo)
+    notas.push({
+      nome: "motivo",
+      ok: (saida.motivo ?? "").toLowerCase().includes(e.motivo.toLowerCase()),
+      detalhe: saida.motivo ?? "sem motivo",
     });
   if (e.fonte) {
     const linha = saida.texto.split("\n").find((l) => l.startsWith("📄")) ?? "";
@@ -133,6 +151,13 @@ async function main() {
         credenciaisCifradas: cifrar(JSON.stringify({ token: "eval" })),
       })
       .returning();
+    const [canalEmail] = await admin
+      .insert(s.emailCanais)
+      .values({
+        tenantId,
+        endereco: `avaliacao-${tenantId.slice(0, 8)}@avaliacao.operacondo.local`,
+      })
+      .returning();
     for (const [arquivo, titulo, colecao, visibilidade] of DOCUMENTOS) {
       const [d] = await admin
         .insert(s.documentos)
@@ -160,8 +185,85 @@ async function main() {
     }
 
     let n = 0;
+    /** Resultado da conversa: demanda aberta, ida ao síndico ou resposta. */
+    async function saidaDa(conversaId: string, email: boolean): Promise<Saida> {
+      const [cv] = await admin.select().from(s.conversas).where(eq(s.conversas.id, conversaId));
+      const saidas = await admin
+        .select({ texto: s.mensagens.texto })
+        .from(s.mensagens)
+        .where(and(eq(s.mensagens.conversaId, conversaId), eq(s.mensagens.direcao, "saida")))
+        .orderBy(s.mensagens.criadoEm);
+      const [demanda] = await admin
+        .select({ id: s.demandas.id })
+        .from(s.demandas)
+        .where(eq(s.demandas.conversaId, conversaId))
+        .limit(1);
+      // No e-mail a resposta vira rascunho para o síndico aprovar: conta como resposta.
+      const rascunhoEmail =
+        email && cv?.rascunhoMotivo === "Resposta por e-mail aguardando aprovação";
+      return {
+        resultado: demanda
+          ? "demanda"
+          : cv?.estado === "aguardando_sindico" && !rascunhoEmail
+            ? "sindico"
+            : "resposta",
+        texto: [...saidas.map((m) => m.texto ?? ""), email ? (cv?.rascunho ?? "") : ""]
+          .filter(Boolean)
+          .join("\n\n"),
+        motivo: cv?.rascunhoMotivo ?? null,
+      };
+    }
+
+    /** E-mail novo de um remetente novo, pelo caminho real a partir da entrada da SES. */
+    async function rodarEmail(caso: Caso): Promise<Saida> {
+      const de = caso.de ?? `morador-${++n}@exemplo.com`;
+      if (caso.cadastro !== "desconhecido")
+        await admin
+          .insert(s.moradores)
+          .values({
+            tenantId,
+            condominioId,
+            nome: "Morador Teste",
+            cadastro: caso.cadastro,
+            email: de,
+          });
+      const messageId = `<eval-${caso.id}-${crypto.randomUUID()}@exemplo.com>`;
+      const bruto = [
+        `From: ${de}`,
+        `To: ${canalEmail!.endereco}`,
+        `Subject: ${caso.assunto ?? ""}`,
+        `Message-ID: ${messageId}`,
+        ...Object.entries(caso.cabecalhos ?? {}).map(([k, v]) => `${k}: ${v}`),
+        "Content-Type: text/plain; charset=utf-8",
+        "",
+        caso.pergunta,
+      ].join("\r\n");
+      const dkim = caso.dkim ?? "PASS";
+      const [entrada] = await admin
+        .insert(s.emailEntradas)
+        .values({
+          tenantId,
+          emailCanalId: canalEmail!.id,
+          messageId,
+          s3Chave: `avaliacao/${caso.id}`,
+          autenticacao: { spf: dkim, dkim, dmarc: dkim, spam: "PASS", virus: "PASS" },
+          payload: {},
+        })
+        .returning();
+      const r = await processarEmail(
+        entrada!.id,
+        { ler: async () => new TextEncoder().encode(bruto), apagar: async () => {} },
+        async () => {},
+      );
+      if (r.ignorado) return { resultado: "ignorado", texto: "", motivo: r.ignorado };
+      if (!r.conversaId) return { resultado: "resposta", texto: "", motivo: "sem conversa" };
+      if (r.agente) await responder(r.agente, true);
+      return saidaDa(r.conversaId, true);
+    }
+
     /** Uma conversa nova por caso, de um telefone novo. */
     async function rodar(caso: Caso): Promise<Saida> {
+      if (caso.canal === "email") return rodarEmail(caso);
       const telefone = `+55119555${String(++n).padStart(5, "0")}`;
       if (caso.cadastro !== "desconhecido") {
         const [m] = await admin
@@ -200,26 +302,7 @@ async function main() {
         conversaId = cv?.id ?? null;
       }
       if (!conversaId) return { resultado: "resposta", texto: "", motivo: "sem conversa" };
-      const [cv] = await admin.select().from(s.conversas).where(eq(s.conversas.id, conversaId));
-      const saidas = await admin
-        .select({ texto: s.mensagens.texto })
-        .from(s.mensagens)
-        .where(and(eq(s.mensagens.conversaId, conversaId), eq(s.mensagens.direcao, "saida")))
-        .orderBy(s.mensagens.criadoEm);
-      const [demanda] = await admin
-        .select({ id: s.demandas.id })
-        .from(s.demandas)
-        .where(eq(s.demandas.conversaId, conversaId))
-        .limit(1);
-      return {
-        resultado: demanda
-          ? "demanda"
-          : cv?.estado === "aguardando_sindico"
-            ? "sindico"
-            : "resposta",
-        texto: saidas.map((m) => m.texto ?? "").join("\n\n"),
-        motivo: cv?.rascunhoMotivo ?? null,
-      };
+      return saidaDa(conversaId, false);
     }
 
     const resultados: { caso: Caso; saida: Saida; notas: Nota[] }[] = [];
@@ -248,7 +331,13 @@ async function main() {
         await langfuse.api.datasetItems.create({
           datasetName: nome,
           id: `${nome}-${caso.id}`,
-          input: { id: caso.id, pergunta: caso.pergunta, cadastro: caso.cadastro },
+          input: {
+            id: caso.id,
+            pergunta: caso.pergunta,
+            cadastro: caso.cadastro,
+            canal: caso.canal ?? "whatsapp",
+            ...(caso.assunto ? { assunto: caso.assunto } : {}),
+          },
           expectedOutput: caso.espera,
         });
       const ids = new Set(casos.map((c) => c.id));

@@ -8,6 +8,12 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
 
 ### Adicionado
 
+- **Avaliação do canal de e-mail**: `bun run evals email` manda 8 e-mails pelo caminho real
+  (entrada, limpeza, roteamento e agente): vazamento, proposta de fornecedor, boleto da
+  administradora, reclamação de barulho, reserva do salão, remetente forjado sem DKIM, resposta
+  automática e e-mail com histórico citado. Confere também a categoria no motivo de ir ao
+  síndico (#98).
+
 - **Conversas de WhatsApp e e-mail na mesma caixa**: `/app/agente` mostra o ícone do canal, filtra
   por canal e exibe o assunto do e-mail; no e-mail, Ctrl+Enter envia. O endereço de atendimento
   por e-mail aparece no onboarding (passo "Canais de atendimento") e em Configurações →

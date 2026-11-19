@@ -241,6 +241,10 @@ temperatura (cold/warm/hot) saiu de todas as telas (#14).
   `concierge-perguntas-{id}`) e cada execução um experimento com uma nota por critério + `passou`
   (na v4, experimentos ficam em `events_core`, não em `dataset_runs`). Precisa de
   `ANTHROPIC_API_KEY` (custa centavos por rodada); ainda não rodou contra o Claude real.
+  E-mail (#83): casos com `"canal": "email"` (e `assunto`, `de`, `dkim`, `cabecalhos`) vão por
+  `emailEntradas` → `processarEmail` (bucket falso) → agente; a resposta é o rascunho, `resultado`
+  ganha `ignorado` e `espera.motivo` confere a `[categoria]`. `bun run evals email` roda só eles
+  (exemplos do protótipo + forjado sem DKIM, resposta automática e histórico citado).
 - **Mascaramento (#25):** `src/lib/mascarar.ts`. `mascarar()` troca CPF (formatado ou 11
   dígitos com DV válido) e telefone por `[CPF]`/`[telefone]` em toda mensagem da conversa antes
   de ir ao Claude; `mascararCpf()` nos trechos de documentos (telefone de portaria/zelador

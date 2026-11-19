@@ -106,7 +106,7 @@ temperatura (cold/warm/hot) saiu de todas as telas (#14).
   e-mail minúsculo); `canal_id` aponta para `whatsapp_canais` e `email_canal_id` para
   `email_canais` (um por cliente, segredo do webhook cifrado), com o check `conversas_canal`
   garantindo um só. `mensagens.assunto`/`message_id`/`in_reply_to` guardam a thread do e-mail.
-  O alerta de urgência sai sempre pelo WhatsApp do cliente; envio por e-mail na #81.
+  O alerta de urgência sai sempre pelo WhatsApp do cliente.
   Recebimento (#79): SES (sa-east-1 recebe) grava o bruto num bucket e avisa o SNS →
   `POST /api/email/ses` (`src/server/email-entrada/webhook.ts`: assinatura do SNS em `sns.ts`,
   tópico `SES_ENTRADA_TOPICO`, cliente pelo destinatário em `email_canais.endereco`) →
@@ -124,6 +124,12 @@ temperatura (cold/warm/hot) saiu de todas as telas (#14).
   quem não é morador vai ao síndico com `[categoria]` no motivo (`CATEGORIAS_EMAIL`). Cadastro pelo
   e-mail grava `moradores.email` e `consentimentos.email` (versão `email-v1`). A cota conta também
   cada execução do agente em conversa de e-mail (view `uso_mensal`, migration 0028).
+  Envio (#81): `enviarNaConversa` (`whatsapp/send.ts`) escolhe o canal; no e-mail,
+  `enviarRespostaEmail` (`src/server/email.ts`, MIME bruto pela SES, texto + HTML) sai do endereço
+  do canal com o nome do condomínio, `Re: <assunto>`, `In-Reply-To` = último e-mail do morador e
+  `References` = a thread; grava `messageId`/`assunto`/`inReplyTo` e o id da SES em
+  `providerMsgId`. `SES_URL` troca a API nos testes. `opcoes.emailAutomatico` (desligado; tela de
+  configurações) deixa a resposta com base sair sem aprovação. Checklist da SES: `docs/email-ses.md`.
   O número identifica o cliente; o telefone do remetente identifica o condomínio:
   1 condomínio → segue; vários → pergunta qual; desconhecido → lista os condomínios do síndico,
   pergunta a unidade e cria cadastro pendente. Enquanto o condomínio não estiver definido, o agente

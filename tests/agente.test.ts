@@ -11,6 +11,7 @@ import { cifrar } from "../src/server/cripto";
 import { dbAdmin, schema as s, withTenant } from "../src/server/db";
 import { processarConversa } from "../src/server/pipeline/processar";
 import { rotear } from "../src/server/pipeline/roteamento";
+import { enviarNaConversa } from "../src/server/whatsapp/send";
 
 process.env.CREDENCIAIS_CHAVE ??= Buffer.alloc(32, 7).toString("base64");
 const admin = dbAdmin();
@@ -23,6 +24,8 @@ type Pedido = {
 };
 const pedidos: Pedido[] = [];
 const enviados: { phone: string; message: string }[] = [];
+/** E-mails brutos (MIME) recebidos pela SES falsa. */
+const emails: string[] = [];
 type Texto = { texto: string; citar?: [number, number]; citarBusca?: boolean };
 let resposta: Texto = { texto: "" };
 /** Respostas em ordem (antes de `resposta`): pedido de ferramenta ou texto final. */
@@ -38,6 +41,11 @@ beforeAll(async () => {
       if (u.pathname.endsWith("/send-text")) {
         enviados.push((await req.json()) as { phone: string; message: string });
         return Response.json({ messageId: `OUT-${Date.now()}-${Math.random()}` });
+      }
+      if (u.pathname === "/v2/email/outbound-emails") {
+        const b = (await req.json()) as { Content: { Raw: { Data: string } } };
+        emails.push(Buffer.from(b.Content.Raw.Data, "base64").toString("utf8"));
+        return Response.json({ MessageId: `SES-${emails.length}-${Date.now()}` });
       }
       if (u.pathname === "/v1/messages") {
         if (falhar)
@@ -145,6 +153,9 @@ beforeAll(async () => {
   const base = `http://localhost:${srv.port}`;
   Object.assign(process.env, {
     ZAPI_URL: base,
+    SES_URL: base,
+    SES_ACCESS_KEY: "teste",
+    SES_SECRET_KEY: "teste",
     ANTHROPIC_BASE_URL: base,
     ANTHROPIC_API_KEY: "chave-teste",
     // Sem novas tentativas do SDK: o teste de falha fica rápido.
@@ -232,7 +243,15 @@ beforeAll(async () => {
 
 afterAll(async () => {
   srv.stop();
-  for (const k of ["ZAPI_URL", "ANTHROPIC_BASE_URL", "ANTHROPIC_API_KEY", "ANTHROPIC_MAX_RETRIES"])
+  for (const k of [
+    "ZAPI_URL",
+    "SES_URL",
+    "SES_ACCESS_KEY",
+    "SES_SECRET_KEY",
+    "ANTHROPIC_BASE_URL",
+    "ANTHROPIC_API_KEY",
+    "ANTHROPIC_MAX_RETRIES",
+  ])
     delete process.env[k];
   await admin.delete(s.tenants).where(eq(s.tenants.id, tenantId));
 });
@@ -380,6 +399,7 @@ describe("responder", () => {
       autor: "morador",
       texto: "Até que horas posso fazer barulho?",
       assunto: "Dúvida sobre barulho",
+      messageId: "<pergunta-1@exemplo.com>",
     });
     const uso = () =>
       withTenant(tenantId, (tx) =>
@@ -402,6 +422,81 @@ describe("responder", () => {
         "Olá, Bia,\n\nO silêncio vale a partir das 22h.\n\n📄 Regimento Interno, Art. 2\n\n— OperaCondo Concierge",
     });
     expect(await uso()).toBe(antesUso + 1);
+
+    // "Aprovar e enviar": sai pela SES na mesma thread, do endereço de atendimento do cliente.
+    const rascunho = (await conversa(cv!.id)).rascunho!;
+    await withTenant(tenantId, (tx) => enviarNaConversa(tx, cv!, rascunho, "sindico", "aprovado"));
+    const bruto = emails.at(-1)!;
+    expect(bruto).toContain(
+      `From: =?UTF-8?B?${Buffer.from("Edifício Sol").toString("base64")}?= <${canalEmail.endereco}>`,
+    );
+    expect(bruto).toContain("To: bia@exemplo.com");
+    expect(bruto).toContain(
+      `Subject: =?UTF-8?B?${Buffer.from("Re: Dúvida sobre barulho").toString("base64")}?=`,
+    );
+    expect(bruto).toContain("In-Reply-To: <pergunta-1@exemplo.com>");
+    expect(bruto).toContain("References: <pergunta-1@exemplo.com>");
+    expect(bruto).toContain("Content-Type: text/html");
+    const [saida] = await admin
+      .select()
+      .from(s.mensagens)
+      .where(eq(s.mensagens.conversaId, cv!.id))
+      .orderBy(desc(s.mensagens.criadoEm))
+      .limit(1);
+    expect(saida).toMatchObject({
+      direcao: "saida",
+      autor: "sindico",
+      assunto: "Re: Dúvida sobre barulho",
+      inReplyTo: "<pergunta-1@exemplo.com>",
+      avaliacaoRascunho: "aprovado",
+    });
+    expect(saida!.messageId).toMatch(/^<.+@atendimento\.operacondo\.local>$/);
+    expect(saida!.providerMsgId).toMatch(/^SES-/);
+  });
+
+  test("e-mail com envio automático ligado: resposta com base sai sem aprovação", async () => {
+    await admin
+      .insert(s.agenteConfig)
+      .values({ tenantId, condominioId: condo, opcoes: { emailAutomatico: true } })
+      .onConflictDoUpdate({
+        target: s.agenteConfig.condominioId,
+        set: { opcoes: { emailAutomatico: true } },
+      });
+    const [canalEmail] = await admin
+      .select()
+      .from(s.emailCanais)
+      .where(eq(s.emailCanais.tenantId, tenantId));
+    const [cv] = await admin
+      .insert(s.conversas)
+      .values({
+        tenantId,
+        canal: "email",
+        emailCanalId: canalEmail!.id,
+        endereco: "bia2@exemplo.com",
+        condominioId: condo,
+        moradorId,
+        estado: "ia",
+      })
+      .returning();
+    await admin.insert(s.mensagens).values({
+      tenantId,
+      conversaId: cv!.id,
+      direcao: "entrada",
+      autor: "morador",
+      texto: "Até que horas posso fazer barulho?",
+    });
+    const antes = emails.length;
+    resposta = { texto: "Olá, Bia,\n\nO silêncio vale a partir das 22h.", citar: [1, 2] };
+    try {
+      await responder({ tenantId, conversaId: cv!.id });
+    } finally {
+      await admin.delete(s.agenteConfig).where(eq(s.agenteConfig.condominioId, condo));
+    }
+    expect(emails.length).toBe(antes + 1);
+    expect(emails.at(-1)).toContain(
+      `Subject: =?UTF-8?B?${Buffer.from("Resposta da administração do condomínio").toString("base64")}?=`,
+    );
+    expect(await conversa(cv!.id)).toMatchObject({ estado: "ia", rascunho: null });
   });
 
   test("sem base documental: vai para o síndico com aviso ao morador; rascunho não é enviado", async () => {

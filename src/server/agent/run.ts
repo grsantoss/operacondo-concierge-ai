@@ -271,8 +271,9 @@ async function responderNoRastro(
       fim(`síndico: ${efeitos.escalar}`, mensagem);
       return escalar(tx, ctx, efeitos.escalar, null, mensagem);
     }
-    // E-mail: no início toda resposta passa pelo síndico (rascunho para aprovar e enviar).
-    if (ctx.conversa.canal === "email") {
+    // E-mail: a resposta com base vira rascunho para o síndico, salvo se ele ligou o envio
+    // automático (#81). Sem base, recusa ou corte já foram ao síndico acima.
+    if (ctx.conversa.canal === "email" && !ctx.config.opcoes.emailAutomatico) {
       fim("síndico: rascunho de e-mail", mensagem);
       return escalar(tx, ctx, "Resposta por e-mail aguardando aprovação", null, mensagem);
     }

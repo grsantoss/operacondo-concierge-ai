@@ -42,7 +42,7 @@ const aviso = (chave: string, messageId: string, dkim = "PASS") =>
       action: { type: "S3", bucketName: "ses-entrada", objectKey: chave },
       spfVerdict: { status: "PASS" },
       dkimVerdict: { status: dkim },
-      dmarcVerdict: { status: "PASS" },
+      dmarcVerdict: { status: dkim },
       spamVerdict: { status: "PASS" },
       virusVerdict: { status: "PASS" },
     },
@@ -260,5 +260,76 @@ describe("processamento", () => {
     expect((await processarEmail(e.id, bruto, gravar)).ignorado).toBe("resposta automática");
     expect(await admin.$count(s.conversas, eq(s.conversas.tenantId, tenantId))).toBe(antes);
     expect(apagados).toContain("ses-entrada/auto-1");
+  });
+});
+
+describe("roteamento pelo remetente", () => {
+  let condo: string;
+  let carla: string;
+  const simples = (de: string, assunto: string, id: string) =>
+    `From: ${de}\nSubject: ${assunto}\nMessage-ID: <${id}@exemplo.com>\n\nOlá, preciso de ajuda.\n`;
+  async function receber(chave: string, de: string, assunto: string, dkim: string) {
+    brutos.set(`ses-entrada/${chave}`, simples(de, assunto, chave));
+    await post(sns({ Message: aviso(chave, `<${chave}@exemplo.com>`, dkim) }));
+    const e = (await entradas()).find((x) => x.messageId === `<${chave}@exemplo.com>`)!;
+    return processarEmail(e.id, bruto, gravar);
+  }
+  const conversa = async (id: string) =>
+    (await admin.select().from(s.conversas).where(eq(s.conversas.id, id)))[0]!;
+
+  beforeAll(async () => {
+    process.env.ANTHROPIC_API_KEY = "teste";
+    const [c] = await admin
+      .insert(s.condominios)
+      .values({ tenantId, nome: "Edifício Ipê", tipo: "vertical" })
+      .returning();
+    condo = c!.id;
+    const [m] = await admin
+      .insert(s.moradores)
+      .values({
+        tenantId,
+        condominioId: condo,
+        nome: "Carla",
+        cadastro: "aprovado",
+        email: "Carla@Exemplo.com",
+      })
+      .returning();
+    carla = m!.id;
+  });
+  afterAll(() => {
+    delete process.env.ANTHROPIC_API_KEY;
+  });
+
+  test("DKIM aprovado: reconhece o morador e o condomínio e pede o rascunho ao agente", async () => {
+    const r = await receber("carla-1", "Carla <carla@exemplo.com>", "Reserva do salão", "PASS");
+    expect(r.agente).toEqual({ tenantId, conversaId: r.conversaId! });
+    expect(await conversa(r.conversaId!)).toMatchObject({
+      condominioId: condo,
+      moradorId: carla,
+      estado: "ia",
+    });
+    await admin
+      .update(s.conversas)
+      .set({ estado: "resolvida" })
+      .where(eq(s.conversas.id, r.conversaId!));
+  });
+
+  test("sem DKIM nem DMARC: o mesmo e-mail vira remetente desconhecido (só regras públicas)", async () => {
+    const r = await receber("carla-2", "carla@exemplo.com", "Reserva do salão", "FAIL");
+    expect(await conversa(r.conversaId!)).toMatchObject({
+      condominioId: condo,
+      moradorId: null,
+      estado: "ia",
+    });
+  });
+
+  test("urgência no assunto: alerta o síndico e não chama o agente", async () => {
+    const r = await receber("eva-1", "eva@exemplo.com", "Cheiro de gás no hall", "PASS");
+    expect(r.alerta?.regra).toBe("gas");
+    expect(r.agente).toBeNull();
+    expect(await conversa(r.conversaId!)).toMatchObject({
+      prioridade: "critica",
+      estado: "aguardando_sindico",
+    });
   });
 });

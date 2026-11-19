@@ -19,6 +19,9 @@ import { escolherCondominio } from "@/server/pipeline/roteamento";
 export const LGPD_VERSAO = "whatsapp-v1";
 export const LGPD_TEXTO =
   "Para te atender, a administração do condomínio guarda seu nome, unidade e telefone, conforme a LGPD. Você concorda?";
+export const LGPD_VERSAO_EMAIL = "email-v1";
+export const LGPD_TEXTO_EMAIL =
+  "Para te atender, a administração do condomínio guarda seu nome, unidade e e-mail, conforme a LGPD. Você concorda?";
 
 /** O que as ferramentas pedem para o fim da execução (run.ts decide o que fazer). */
 export interface Efeitos {
@@ -65,8 +68,11 @@ export function acharUnidade<U extends typeof s.unidades.$inferSelect>(
 export function ferramentas(ctx: Contexto, efeitos: Efeitos) {
   const { tenantId } = ctx.conversa;
   const condominioId = ctx.conversa.condominioId!;
-  // ponytail: só WhatsApp chega ao agente; o e-mail (identificação pelo remetente) entra na #80.
-  const telefone = ctx.conversa.endereco;
+  // Telefone (WhatsApp) ou e-mail do remetente, sempre do contexto.
+  const endereco = ctx.conversa.endereco;
+  const email = ctx.conversa.canal === "email";
+  const telefone = email ? null : endereco;
+  const lgpd = email ? LGPD_TEXTO_EMAIL : LGPD_TEXTO;
   const aprovado = ctx.morador?.cadastro === "aprovado";
   const visiveis: (typeof s.visibilidade.enumValues)[number][] = aprovado
     ? ["publico", "moradores"]
@@ -135,8 +141,12 @@ export function ferramentas(ctx: Contexto, efeitos: Efeitos) {
     }),
     run: async ({ condominio }) =>
       tx(async (t) => {
-        // Opções: os condomínios deste telefone; número sem cadastro → todos do cliente.
-        const meus = await t
+        // Opções: os condomínios deste telefone; número sem cadastro → todos do cliente. No
+        // e-mail, sempre todos e sem morador: a identificação pelo remetente exige DKIM/DMARC,
+        // conferidos só na entrada.
+        const meus = !telefone
+          ? []
+          : await t
           .select({
             condominioId: s.condominios.id,
             nome: s.condominios.nome,
@@ -172,7 +182,7 @@ export function ferramentas(ctx: Contexto, efeitos: Efeitos) {
     inputSchema: z.object({}),
     run: async () => {
       if (!ctx.conversa.moradorId)
-        return "Número sem cadastro neste condomínio. Se o morador quiser, faça o cadastro com registrar_cadastro.";
+        return `${email ? "Remetente" : "Número"} sem cadastro neste condomínio. Se o morador quiser, faça o cadastro com registrar_cadastro.`;
       const [m] = await tx((t) =>
         t
           .select({ m: s.moradores, u: s.unidades })
@@ -198,7 +208,7 @@ export function ferramentas(ctx: Contexto, efeitos: Efeitos) {
 
   const registrar_cadastro = betaZodTool({
     name: "registrar_cadastro",
-    description: `Cadastra o morador de um número desconhecido, como PENDENTE (o síndico aprova). Antes, pergunte nome, unidade, vínculo e peça o aceite exatamente com este texto: "${LGPD_TEXTO}". Só chame com o aceite dado.`,
+    description: `Cadastra o morador de um ${email ? "remetente" : "número"} desconhecido, como PENDENTE (o síndico aprova). Antes, pergunte nome, unidade, vínculo e peça o aceite exatamente com este texto: "${lgpd}". Só chame com o aceite dado.`,
     inputSchema: z.object({
       nome: z.string().min(3).max(120),
       unidade: z
@@ -210,7 +220,8 @@ export function ferramentas(ctx: Contexto, efeitos: Efeitos) {
       aceite_lgpd: z.literal(true).describe("true somente se o morador aceitou o texto da LGPD"),
     }),
     run: async ({ nome, unidade, vinculo }) => {
-      if (ctx.conversa.moradorId) return "Este número já tem cadastro neste condomínio.";
+      if (ctx.conversa.moradorId)
+        return `Este ${email ? "remetente" : "número"} já tem cadastro neste condomínio.`;
       return tx(async (t) => {
         const unidades = await t
           .select()
@@ -229,17 +240,19 @@ export function ferramentas(ctx: Contexto, efeitos: Efeitos) {
             unidadeInformada: unidade,
             status: vinculo,
             cadastro: "pendente",
+            email: email ? endereco : null,
           })
           .returning({ id: s.moradores.id });
-        await t
-          .insert(s.moradorContatos)
-          .values({ tenantId, moradorId: m!.id, condominioId, phoneE164: telefone })
-          .onConflictDoNothing();
+        if (telefone)
+          await t
+            .insert(s.moradorContatos)
+            .values({ tenantId, moradorId: m!.id, condominioId, phoneE164: telefone })
+            .onConflictDoNothing();
         await t.insert(s.consentimentos).values({
           tenantId,
-          phoneE164: telefone,
-          finalidade: "atendimento_whatsapp",
-          textoVersao: LGPD_VERSAO,
+          ...(email ? { email: endereco } : { phoneE164: telefone }),
+          finalidade: email ? "atendimento_email" : "atendimento_whatsapp",
+          textoVersao: email ? LGPD_VERSAO_EMAIL : LGPD_VERSAO,
         });
         await t
           .update(s.conversas)

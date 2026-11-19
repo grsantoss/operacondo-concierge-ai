@@ -1,6 +1,6 @@
 /** Núcleo do agente: contexto, prompt com documentos em cache, citações e escalonamento. Banco local. */
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:test";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { carregarContexto } from "../src/server/agent/contexto";
 import { mensagens, SEM_BASE } from "../src/server/agent/prompt";
 import { AVISO_SINDICO, responder } from "../src/server/agent/run";
@@ -352,6 +352,58 @@ describe("responder", () => {
     });
   });
 
+  test("e-mail: nada é enviado; a resposta com a fonte vira rascunho e conta na cota", async () => {
+    const [canal] = await admin
+      .insert(s.emailCanais)
+      .values({ tenantId, endereco: `sol-${Date.now()}@atendimento.operacondo.local` })
+      .onConflictDoNothing()
+      .returning();
+    const canalEmail =
+      canal ??
+      (await admin.select().from(s.emailCanais).where(eq(s.emailCanais.tenantId, tenantId)))[0]!;
+    const [cv] = await admin
+      .insert(s.conversas)
+      .values({
+        tenantId,
+        canal: "email",
+        emailCanalId: canalEmail.id,
+        endereco: "bia@exemplo.com",
+        condominioId: condo,
+        moradorId,
+        estado: "ia",
+      })
+      .returning();
+    await admin.insert(s.mensagens).values({
+      tenantId,
+      conversaId: cv!.id,
+      direcao: "entrada",
+      autor: "morador",
+      texto: "Até que horas posso fazer barulho?",
+      assunto: "Dúvida sobre barulho",
+    });
+    const uso = () =>
+      withTenant(tenantId, (tx) =>
+        tx.execute<{ n: number }>(sql`select respostas_ia::int as n from uso_mensal`),
+      ).then((r) => r.rows[0]!.n);
+    const antesUso = await uso();
+    const antes = enviados.length;
+    resposta = { texto: "Olá, Bia,\n\nO silêncio vale a partir das 22h.", citar: [1, 2] };
+    await responder({ tenantId, conversaId: cv!.id });
+
+    const p = pedidos.at(-1)!;
+    expect(p.system).toContain("assistente de e-mail");
+    expect(p.system).toContain("[fornecedor]");
+    expect(JSON.stringify(p.messages)).toContain("Assunto: Dúvida sobre barulho");
+    expect(enviados.length).toBe(antes);
+    expect(await conversa(cv!.id)).toMatchObject({
+      estado: "aguardando_sindico",
+      rascunhoMotivo: "Resposta por e-mail aguardando aprovação",
+      rascunho:
+        "Olá, Bia,\n\nO silêncio vale a partir das 22h.\n\n📄 Regimento Interno, Art. 2\n\n— OperaCondo Concierge",
+    });
+    expect(await uso()).toBe(antesUso + 1);
+  });
+
   test("sem base documental: vai para o síndico com aviso ao morador; rascunho não é enviado", async () => {
     const r = await receber("Posso trocar o piso da varanda?");
     resposta = { texto: `${SEM_BASE} Olá, Bia! Vou verificar com o síndico.` };
@@ -441,9 +493,9 @@ describe("limites do plano", () => {
         rascunhoMotivo: "Teto de custo da IA do mês atingido",
       });
       // Cadastro acima do limite do trial (50 moradores) é bloqueado.
-      await expect(
-        withTenant(tenantId, (tx) => exigirLimite(tx, "moradores", 50)),
-      ).rejects.toThrow("O plano permite até 50 moradores");
+      await expect(withTenant(tenantId, (tx) => exigirLimite(tx, "moradores", 50))).rejects.toThrow(
+        "O plano permite até 50 moradores",
+      );
       await withTenant(tenantId, (tx) => exigirLimite(tx, "moradores", 1));
     } finally {
       await admin.delete(s.llmExecucoes).where(eq(s.llmExecucoes.id, l!.id));
@@ -531,6 +583,47 @@ describe("ferramentas", () => {
       .from(s.consentimentos)
       .where(eq(s.consentimentos.phoneE164, "+5511922220000"));
     expect(aceite).toBeDefined();
+  });
+
+  test("registrar_cadastro no e-mail: grava o e-mail do morador e o aceite por e-mail", async () => {
+    const [canalEmail] = await admin
+      .select()
+      .from(s.emailCanais)
+      .where(eq(s.emailCanais.tenantId, tenantId));
+    const [cv] = await admin
+      .insert(s.conversas)
+      .values({
+        tenantId,
+        canal: "email",
+        emailCanalId: canalEmail!.id,
+        endereco: "davi@exemplo.com",
+        condominioId: condo,
+        estado: "ia",
+      })
+      .returning();
+    await admin.insert(s.mensagens).values({
+      tenantId,
+      conversaId: cv!.id,
+      direcao: "entrada",
+      autor: "morador",
+      texto: "Moro no A 302 e quero me cadastrar.",
+    });
+    roteiro.push(
+      {
+        ferramenta: "registrar_cadastro",
+        entrada: { nome: "Davi Rocha", unidade: "A 302", vinculo: "residente", aceite_lgpd: true },
+      },
+      { texto: "Olá, Davi,\n\nSeu cadastro foi registrado e o síndico vai conferir." },
+    );
+    await responder({ tenantId, conversaId: cv!.id });
+    const [m] = await admin.select().from(s.moradores).where(eq(s.moradores.nome, "Davi Rocha"));
+    expect(m).toMatchObject({ cadastro: "pendente", email: "davi@exemplo.com" });
+    expect(await admin.$count(s.moradorContatos, eq(s.moradorContatos.moradorId, m!.id))).toBe(0);
+    const [aceite] = await admin
+      .select()
+      .from(s.consentimentos)
+      .where(eq(s.consentimentos.email, "davi@exemplo.com"));
+    expect(aceite).toMatchObject({ finalidade: "atendimento_email", textoVersao: "email-v1" });
   });
 
   test("registrar_cadastro sem aceite: o SDK recusa a entrada e nada é gravado", async () => {

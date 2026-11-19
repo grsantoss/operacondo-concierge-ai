@@ -1,6 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AlertaUrgencia } from "@/components/whatsapp/AlertaUrgencia";
 import { ConexaoWhatsApp } from "@/components/whatsapp/ConexaoWhatsApp";
+import { CanalEmail, canalEmailQuery } from "@/components/app/CanalEmail";
+import { useQuery } from "@tanstack/react-query";
 import { useCanal } from "@/data/whatsapp";
 import { useState } from "react";
 import { Logo } from "@/components/brand/Logo";
@@ -18,7 +20,7 @@ const STEPS = [
   { n: 1, title: "Configuração do gestor", desc: "Tom de voz e comportamento" },
   { n: 2, title: "Dados do condomínio", desc: "CNPJ, endereço, unidades" },
   { n: 3, title: "Regras específicas", desc: "Silêncio, reclamações e chamados" },
-  { n: 4, title: "Conectar WhatsApp", desc: "Z-API, com QR Code" },
+  { n: 4, title: "Canais de atendimento", desc: "WhatsApp e e-mail" },
   { n: 5, title: "Revisão final", desc: "Verificação e ativação" },
 ];
 const TOTAL_STEPS = 5;
@@ -435,13 +437,16 @@ function StepWhatsApp() {
     <>
       <StepHeader
         kicker="Passo 4"
-        title="Conectar o WhatsApp"
-        desc="O WhatsApp é o canal principal do Concierge: um número atende todos os seus condomínios. A conexão é pela Z-API, com QR Code."
+        title="Canais de atendimento"
+        desc="Os moradores falam com o Concierge pelo WhatsApp (um número para todos os seus condomínios, pela Z-API) e pelo e-mail. Pode começar só pelo e-mail e conectar o WhatsApp depois."
       />
-      <ConexaoWhatsApp />
-      <AlertaUrgencia />
+      <div className="space-y-5">
+        <CanalEmail />
+        <ConexaoWhatsApp />
+        <AlertaUrgencia />
+      </div>
       <p className="mt-5 text-xs text-[var(--color-on-surface-variant)]">
-        Pode pular este passo e conectar depois em Configurações → Integrações.
+        Nada aqui é obrigatório: os canais ficam em Configurações → Integrações.
       </p>
     </>
   );
@@ -449,6 +454,7 @@ function StepWhatsApp() {
 
 function StepRevisao({ onEdit }: { onEdit: (step: number) => void }) {
   const { canal } = useCanal();
+  const { data: email } = useQuery(canalEmailQuery);
   return (
     <>
       <StepHeader
@@ -468,6 +474,14 @@ function StepRevisao({ onEdit }: { onEdit: (step: number) => void }) {
             t: "WhatsApp",
             v: canal ? `Z-API ${canal.telefone} — ${canal.status === "conectado" ? "conectado" : "não conectado"}` : "Não configurado (pendente)",
             i: "chat",
+            step: 4,
+          },
+          {
+            t: "E-mail",
+            v: email
+              ? `${email.endereco} — ${email.recebendo ? "recebendo" : "aguardando o 1º e-mail"}`
+              : "Não disponível",
+            i: "mail",
             step: 4,
           },
         ].map((r) => (
@@ -498,7 +512,8 @@ function StepRevisao({ onEdit }: { onEdit: (step: number) => void }) {
           <div>
             <p className="text-sm font-semibold text-success-strong">Tudo pronto para ativação</p>
             <p className="mt-1 text-xs text-success-strong/80">
-              Ao ativar, o Concierge começará a responder moradores via WhatsApp em até 5 minutos.
+              Ao ativar, o Concierge começará a atender moradores pelos canais conectados em até 5
+              minutos.
             </p>
           </div>
         </div>

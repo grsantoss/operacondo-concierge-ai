@@ -12,7 +12,7 @@ import { and, asc, desc, eq, isNull, ne, sql } from "drizzle-orm";
 import PostalMime from "postal-mime";
 import { gravarArquivo, nomeSeguro } from "@/server/arquivos";
 import { dbAdmin, schema as s } from "@/server/db";
-import { motivoIgnorar, textoDoEmail } from "@/server/email-entrada/limpar";
+import { CONFIRMACAO_GMAIL, motivoIgnorar, textoDoEmail } from "@/server/email-entrada/limpar";
 import { iaConfigurada } from "@/server/llm";
 import { detectarUrgencia } from "@/server/pipeline/regras-urgencia";
 import { subirUrgencia } from "@/server/pipeline/roteamento";
@@ -166,6 +166,7 @@ export async function processarEmail(
       const autenticado =
         entrada.autenticacao.dkim === "PASS" || entrada.autenticacao.dmarc === "PASS";
       const quem = await identificarRemetente(tx, tenantId, remetente, autenticado);
+      const gmail = remetente === CONFIRMACAO_GMAIL;
       // Sem condomínio definido (vários e remetente desconhecido) o agente não responde: o
       // síndico vê a conversa e define.
       conversa = (
@@ -177,7 +178,8 @@ export async function processarEmail(
             emailCanalId: canal.id,
             endereco: remetente,
             ...quem,
-            estado: comIa && quem.condominioId ? "ia" : "aguardando_sindico",
+            estado: comIa && quem.condominioId && !gmail ? "ia" : "aguardando_sindico",
+            rascunhoMotivo: gmail ? "Confirmação de encaminhamento do Gmail" : null,
           })
           .returning()
       )[0]!;

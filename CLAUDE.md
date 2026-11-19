@@ -34,7 +34,7 @@ Responda sempre em português do Brasil, com acentuação correta.
 
 | Rota | Papel |
 |---|---|
-| `/app/agente` | Caixa de conversas do WhatsApp: urgência, estado (IA atendendo / Aguardando síndico / Síndico no controle / Resolvido), assumir conversa |
+| `/app/agente` | Caixa de conversas do WhatsApp e do e-mail (ícone do canal e filtro): urgência, estado (IA atendendo / Aguardando síndico / Síndico no controle / Resolvido), assumir conversa |
 | `/app/base` e `/app/base/enviar` | Base de conhecimento: coleções + visibilidade (`interno/conselho/moradores/publico`) |
 | `/app/configuracoes` | Config do agente por condomínio (tom, autonomia, escalonamento, limite R$, Z-API/Meta) |
 | `/app/demandas` | Kanban (novas → triagem → execução → resolvidas) |
@@ -130,6 +130,12 @@ temperatura (cold/warm/hot) saiu de todas as telas (#14).
   `References` = a thread; grava `messageId`/`assunto`/`inReplyTo` e o id da SES em
   `providerMsgId`. `SES_URL` troca a API nos testes. `opcoes.emailAutomatico` (desligado; tela de
   configurações) deixa a resposta com base sair sem aprovação. Checklist da SES: `docs/email-ses.md`.
+  Telas (#82): `/app/agente` com os dois canais (filtro Todos/WhatsApp/E-mail, assunto na
+  mensagem; no e-mail Ctrl+Enter envia). Cartão `CanalEmail` (`components/app/CanalEmail.tsx`,
+  `obterCanalEmail` em `lib/email.functions.ts`, cria o endereço na 1ª visita; sem
+  `EMAIL_DOMINIO` mostra "não disponível") no passo "Canais de atendimento" do onboarding e em
+  Integrações. Nada exige WhatsApp conectado. A confirmação de encaminhamento do Gmail
+  (`CONFIRMACAO_GMAIL`) não é descartada: entra para o síndico, sem IA.
   O número identifica o cliente; o telefone do remetente identifica o condomínio:
   1 condomínio → segue; vários → pergunta qual; desconhecido → lista os condomínios do síndico,
   pergunta a unidade e cria cadastro pendente. Enquanto o condomínio não estiver definido, o agente

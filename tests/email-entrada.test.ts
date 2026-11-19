@@ -332,4 +332,19 @@ describe("roteamento pelo remetente", () => {
       estado: "aguardando_sindico",
     });
   });
+
+  test("confirmação de encaminhamento do Gmail: entra para o síndico, sem IA", async () => {
+    const r = await receber(
+      "gmail-1",
+      "Gmail Team <forwarding-noreply@google.com>",
+      "(#123456) Confirmação de encaminhamento do Gmail",
+      "PASS",
+    );
+    expect(r.ignorado).toBeNull();
+    expect(r.agente).toBeNull();
+    expect(await conversa(r.conversaId!)).toMatchObject({
+      estado: "aguardando_sindico",
+      rascunhoMotivo: "Confirmação de encaminhamento do Gmail",
+    });
+  });
 });

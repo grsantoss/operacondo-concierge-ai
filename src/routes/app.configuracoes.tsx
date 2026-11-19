@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AlertaUrgencia } from "@/components/whatsapp/AlertaUrgencia";
 import { ConexaoWhatsApp } from "@/components/whatsapp/ConexaoWhatsApp";
+import { CanalEmail } from "@/components/app/CanalEmail";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
@@ -924,13 +925,6 @@ function NotificacoesPanel({ onSave }: { onSave: () => void }) {
 function IntegracoesPanel({ onToast }: { onToast: (m: string) => void }) {
   const [integrations, setIntegrations] = useState([
     {
-      id: "email",
-      name: "E-mail (SMTP)",
-      desc: "Envio de comunicados e boletos.",
-      icon: "mail",
-      connected: true,
-    },
-    {
       id: "erp",
       name: "ERP administrativo",
       desc: "Sincroniza inadimplência e boletos.",
@@ -1012,6 +1006,7 @@ function WhatsAppIntegrationCard(_: { onToast: (m: string) => void }) {
   return (
     <>
       <ConexaoWhatsApp />
+      <CanalEmail />
       <AlertaUrgencia />
     </>
   );

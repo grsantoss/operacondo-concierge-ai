@@ -64,6 +64,12 @@ export function textoDoEmail(email: Pick<Email, "text" | "html">): string {
   return limparTexto(email.text?.trim() ? email.text : htmlParaTexto(email.html ?? ""));
 }
 
+/**
+ * Confirmação de encaminhamento do Gmail: automática, mas o síndico precisa do código para ligar
+ * o encaminhamento (#82). Entra na caixa, direto para o síndico, sem IA.
+ */
+export const CONFIRMACAO_GMAIL = "forwarding-noreply@google.com";
+
 const REMETENTE_AUTOMATICO =
   /^(mailer-daemon|postmaster|no-?reply|do-?not-?reply|nao-?responda|naoresponda)@/i;
 const ASSUNTO_AUTOMATICO =
@@ -83,6 +89,7 @@ export function motivoIgnorar(
       .find((x) => x.key === k)
       ?.value.trim()
       .toLowerCase();
+  if (remetente === CONFIRMACAO_GMAIL) return null;
   const auto = h("auto-submitted");
   if (auto && auto !== "no") return "resposta automática";
   if (h("x-autoreply") || h("x-autorespond")) return "resposta automática";

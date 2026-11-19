@@ -1,6 +1,6 @@
 /**
- * Conversas do WhatsApp para /app/agente: lista, mensagens e ações do síndico
- * (responder, assumir, resolver). O envio usa src/server/whatsapp/send.ts.
+ * Conversas do WhatsApp e do e-mail para /app/agente: lista, mensagens e ações do síndico
+ * (responder, assumir, resolver). O envio usa src/server/whatsapp/send.ts (escolhe o canal).
  */
 import { createServerFn } from "@tanstack/react-start";
 import { and, asc, desc, eq, isNotNull, sql } from "drizzle-orm";
@@ -20,9 +20,11 @@ export type EstadoConversa = "ia" | "aguardando_sindico" | "sindico" | "resolvid
 
 export interface ConversaResumo {
   id: string;
-  /** Nome do morador ou, se desconhecido, o telefone. */
+  canal: "whatsapp" | "email";
+  /** Nome do morador ou, se desconhecido, o telefone ou e-mail. */
   nome: string;
-  telefone: string;
+  /** Telefone formatado (WhatsApp) ou e-mail do remetente. */
+  contato: string;
   conhecido: boolean;
   /** Cadastro do morador (pendente = aguarda aprovação do síndico). */
   cadastro: "pendente" | "aprovado" | "recusado" | null;
@@ -46,6 +48,8 @@ export interface MensagemConversa {
   autor: "morador" | "ia" | "sindico" | "sistema";
   tipo: "texto" | "audio" | "imagem" | "documento";
   texto: string | null;
+  /** Assunto (e-mail). */
+  assunto: string | null;
   /** Áudio transcrito (quando há provedor de transcrição configurado). */
   transcricao: string | null;
   /** Link temporário (15 min) do arquivo no S3; null enquanto não foi baixado. */
@@ -72,8 +76,13 @@ export const listarConversas = createServerFn({ method: "GET" }).handler(
           morador: s.moradores,
           unidade: s.unidades,
           condominio: s.condominios.nome,
-          ultima: sql<{ texto: string | null; tipo: MensagemConversa["tipo"] } | null>`(
-            select json_build_object('texto', m.texto, 'tipo', m.tipo) from mensagens m
+          ultima: sql<{
+            texto: string | null;
+            tipo: MensagemConversa["tipo"];
+            assunto: string | null;
+          } | null>`(
+            select json_build_object('texto', m.texto, 'tipo', m.tipo, 'assunto', m.assunto)
+            from mensagens m
             where m.conversa_id = ${c.id} order by m.criado_em desc limit 1)`,
           prioridades: sql<("normal" | "alta" | "critica")[] | null>`(
             select array_agg(d.prioridade::text) from demandas d
@@ -86,27 +95,32 @@ export const listarConversas = createServerFn({ method: "GET" }).handler(
         .orderBy(desc(c.ultimaMsgEm))
         // ponytail: as 200 mais recentes; paginar quando um cliente passar disso.
         .limit(200);
-      return linhas.map(({ conversa: cv, morador, unidade, condominio, ultima, prioridades }) => ({
-        id: cv.id,
-        nome: morador?.nome ?? formatarTelefone(cv.endereco),
-        canal: cv.canal,
-        telefone: formatarTelefone(cv.endereco),
-        conhecido: !!morador,
-        cadastro: morador?.cadastro ?? null,
-        unidade: morador?.unidadeId ? unidadeTexto(unidade) : null,
-        condominio,
-        condominioId: cv.condominioId,
-        moradorId: cv.moradorId,
-        estado: cv.estado,
-        urgencia: maiorPrioridade(
-          PRIO_TELA[cv.prioridade],
-          ...(prioridades ?? []).map((p) => PRIO_TELA[p]),
-        ),
-        preview: ultima ? ultima.texto || ROTULO_TIPO[ultima.tipo] : "",
-        ultimaMsgEm: cv.ultimaMsgEm.toISOString(),
-        rascunho: cv.rascunho,
-        rascunhoMotivo: cv.rascunhoMotivo,
-      }));
+      return linhas.map(({ conversa: cv, morador, unidade, condominio, ultima, prioridades }) => {
+        const contato = cv.canal === "email" ? cv.endereco : formatarTelefone(cv.endereco);
+        return {
+          id: cv.id,
+          canal: cv.canal,
+          nome: morador?.nome ?? contato,
+          contato,
+          conhecido: !!morador,
+          cadastro: morador?.cadastro ?? null,
+          unidade: morador?.unidadeId ? unidadeTexto(unidade) : null,
+          condominio,
+          condominioId: cv.condominioId,
+          moradorId: cv.moradorId,
+          estado: cv.estado,
+          urgencia: maiorPrioridade(
+            PRIO_TELA[cv.prioridade],
+            ...(prioridades ?? []).map((p) => PRIO_TELA[p]),
+          ),
+          preview: ultima
+            ? [ultima.assunto, ultima.texto || ROTULO_TIPO[ultima.tipo]].filter(Boolean).join(" — ")
+            : "",
+          ultimaMsgEm: cv.ultimaMsgEm.toISOString(),
+          rascunho: cv.rascunho,
+          rascunhoMotivo: cv.rascunhoMotivo,
+        };
+      });
     });
   },
 );
@@ -134,6 +148,7 @@ export const listarMensagens = createServerFn({ method: "GET" })
         autor: m.autor,
         tipo: m.tipo,
         texto: m.texto ?? (m.midiaPath ? null : ROTULO_TIPO[m.tipo] || null),
+        assunto: m.assunto,
         transcricao: m.transcricao,
         midiaUrl: m.midiaPath ? await linkTemporario(m.midiaPath) : null,
         criadoEm: m.criadoEm.toISOString(),

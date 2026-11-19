@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, Pencil, Sparkles } from "lucide-react";
+import { Check, Mail, MessageCircle, Pencil, Sparkles } from "lucide-react";
 import { AppShell } from "@/components/app/AppShell";
 import { Icon } from "@/components/brand/Icon";
 import {
@@ -16,7 +16,7 @@ import { URGENCIA } from "@/lib/urgencia";
 
 export const Route = createFileRoute("/app/agente")({
   head: () => ({
-    meta: [{ title: "Conversas do WhatsApp | OperaCondo Concierge" }],
+    meta: [{ title: "Conversas | OperaCondo Concierge" }],
   }),
   loader: ({ context }) => context.queryClient.ensureQueryData(conversasQuery),
   component: AgentePage,
@@ -33,6 +33,16 @@ function quando(iso: string) {
   if (min < 24 * 60) return hora(iso);
   return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
 }
+
+const CANAL = {
+  whatsapp: { rotulo: "WhatsApp", Icone: MessageCircle },
+  email: { rotulo: "E-mail", Icone: Mail },
+} as const;
+const FILTROS = [
+  { id: "todos", rotulo: "Todos" },
+  { id: "whatsapp", rotulo: "WhatsApp" },
+  { id: "email", rotulo: "E-mail" },
+] as const;
 
 const iniciais = (c: ConversaResumo) =>
   c.conhecido
@@ -61,6 +71,7 @@ function AgentePage() {
   const acoes = useConversaAcoes();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [filtroCanal, setFiltroCanal] = useState<(typeof FILTROS)[number]["id"]>("todos");
   const [draft, setDraft] = useState("");
   const [ocupado, setOcupado] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -72,13 +83,14 @@ function AgentePage() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return convs;
-    return convs.filter((c) =>
-      [c.nome, c.telefone, c.unidade, c.condominio, c.preview].some((x) =>
+    const doCanal = filtroCanal === "todos" ? convs : convs.filter((c) => c.canal === filtroCanal);
+    if (!q) return doCanal;
+    return doCanal.filter((c) =>
+      [c.nome, c.contato, c.unidade, c.condominio, c.preview].some((x) =>
         x?.toLowerCase().includes(q),
       ),
     );
-  }, [convs, search]);
+  }, [convs, search, filtroCanal]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -108,7 +120,7 @@ function AgentePage() {
     void executar(async () => {
       await acoes.responder(selected.id, text);
       setDraft("");
-    }, "Mensagem enviada");
+    }, selected.canal === "email" ? "E-mail enviado" : "Mensagem enviada");
   }
 
   const kpis = [
@@ -124,7 +136,7 @@ function AgentePage() {
 
   return (
     <AppShell
-      title="Conversas do WhatsApp"
+      title="Conversas"
       breadcrumbs={[{ label: "OperaCondo" }, { label: "Agente IA" }]}
     >
       <section className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -172,8 +184,8 @@ function AgentePage() {
             Nenhuma conversa ainda
           </p>
           <p className="mx-auto mt-1 max-w-md text-xs text-[var(--color-on-surface-variant)]">
-            Quando um morador mandar mensagem para o WhatsApp do condomínio, a conversa aparece aqui
-            na hora. Confira se o WhatsApp está conectado em Configurações → Integrações.
+            Quando um morador mandar mensagem pelo WhatsApp ou e-mail do condomínio, a conversa
+            aparece aqui na hora. Confira os canais em Configurações → Integrações.
           </p>
         </div>
       ) : (
@@ -193,11 +205,29 @@ function AgentePage() {
                   className="w-full rounded-lg border border-[var(--color-outline-variant)] bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand)]/15"
                 />
               </div>
+              <div className="mt-2 flex gap-1.5" role="group" aria-label="Filtrar por canal">
+                {FILTROS.map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    aria-pressed={filtroCanal === f.id}
+                    onClick={() => setFiltroCanal(f.id)}
+                    className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+                      filtroCanal === f.id
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground hover:bg-accent"
+                    }`}
+                  >
+                    {f.rotulo}
+                  </button>
+                ))}
+              </div>
             </div>
             <ul className="custom-scrollbar max-h-[640px] overflow-y-auto">
               {filtered.map((c) => {
                 const tc = URGENCIA[c.urgencia];
                 const active = c.id === selected.id;
+                const { Icone, rotulo } = CANAL[c.canal];
                 return (
                   <li key={c.id}>
                     <button
@@ -218,7 +248,8 @@ function AgentePage() {
                           <p className="truncate text-sm font-semibold text-[var(--color-navy)]">
                             {c.nome}
                           </p>
-                          <span className="shrink-0 text-[10px] text-[var(--color-on-surface-variant)]">
+                          <span className="flex shrink-0 items-center gap-1 text-[10px] text-[var(--color-on-surface-variant)]">
+                            <Icone className="size-3.5" aria-label={rotulo} />
                             {quando(c.ultimaMsgEm)}
                           </span>
                         </div>
@@ -268,7 +299,7 @@ function AgentePage() {
                     {selected.conhecido ? (
                       <span className="font-normal text-[var(--color-on-surface-variant)]">
                         {" "}
-                        • {selected.telefone}
+                        • {selected.contato}
                       </span>
                     ) : null}
                   </p>
@@ -276,13 +307,25 @@ function AgentePage() {
                     {[
                       selected.condominio ?? "Condomínio ainda não definido",
                       selected.unidade,
-                      !selected.conhecido ? "Número não cadastrado" : null,
+                      !selected.conhecido
+                        ? selected.canal === "email"
+                          ? "Remetente não cadastrado"
+                          : "Número não cadastrado"
+                        : null,
                       selected.cadastro === "pendente" ? "Cadastro pendente" : null,
                     ]
                       .filter(Boolean)
                       .join(" • ")}
                   </p>
                   <p className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] text-[var(--color-on-surface-variant)]">
+                    <span className="inline-flex items-center gap-1">
+                      {selected.canal === "email" ? (
+                        <Mail className="size-3" aria-hidden />
+                      ) : (
+                        <MessageCircle className="size-3" aria-hidden />
+                      )}
+                      {CANAL[selected.canal].rotulo}
+                    </span>
                     <span className="inline-flex items-center gap-1">
                       <Icon
                         name={selected.estado === "sindico" ? "person" : "smart_toy"}
@@ -429,17 +472,24 @@ function AgentePage() {
             <footer className="border-t border-[var(--color-outline-variant)] bg-white p-3">
               <div className="flex items-end gap-2">
                 <textarea
-                  rows={1}
+                  rows={selected.canal === "email" ? 4 : 1}
                   value={draft}
                   aria-label="Mensagem para o morador"
                   onChange={(e) => setDraft(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
+                    // E-mail tem parágrafos: Enter quebra linha e Ctrl+Enter envia.
+                    const envia =
+                      selected.canal === "email"
+                        ? e.ctrlKey || e.metaKey
+                        : !e.shiftKey;
+                    if (e.key === "Enter" && envia) {
                       e.preventDefault();
                       handleSend();
                     }
                   }}
-                  placeholder="Responder pelo WhatsApp…"
+                  placeholder={
+                    selected.canal === "email" ? "Responder por e-mail…" : "Responder pelo WhatsApp…"
+                  }
                   className="max-h-28 min-w-0 flex-1 resize-none rounded-lg border border-[var(--color-outline-variant)] bg-white px-3 py-2.5 text-sm outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand)]/15"
                 />
                 <button
@@ -451,7 +501,10 @@ function AgentePage() {
                 </button>
               </div>
               <p className="mt-2 px-1 text-[10px] text-[var(--color-on-surface-variant)]">
-                Enter envia • Shift+Enter quebra linha • Ao responder, você assume a conversa
+                {selected.canal === "email"
+                  ? "Ctrl+Enter envia • A resposta sai na mesma conversa de e-mail"
+                  : "Enter envia • Shift+Enter quebra linha"}{" "}
+                • Ao responder, você assume a conversa
               </p>
             </footer>
           </div>
@@ -472,7 +525,13 @@ function AgentePage() {
 
 /** Texto, imagem, áudio (com transcrição) ou link do arquivo. */
 function Conteudo({ m }: { m: MensagemConversa }) {
-  if (!m.midiaUrl) return <>{m.texto}</>;
+  if (!m.midiaUrl)
+    return (
+      <>
+        {m.assunto ? <p className="mb-1 font-semibold">{m.assunto}</p> : null}
+        {m.texto}
+      </>
+    );
   if (m.tipo === "imagem")
     return (
       <>

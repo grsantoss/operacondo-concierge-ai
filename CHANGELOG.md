@@ -13,7 +13,7 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   mensagem nova (sem histórico citado, assinatura e HTML), e os anexos ficam guardados.
   Respostas automáticas, listas, "fora do escritório" e e-mails do próprio Concierge são
   ignorados; o resultado de SPF, DKIM e DMARC fica registrado. Rota `POST /api/email/ses`
-  (aviso do SNS com assinatura conferida), variáveis `EMAIL_DOMINIO` e `SES_ENTRADA_TOPICO` (#PR).
+  (aviso do SNS com assinatura conferida), variáveis `EMAIL_DOMINIO` e `SES_ENTRADA_TOPICO` (#94).
 
 ### Alterado
 

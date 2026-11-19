@@ -282,7 +282,8 @@ export const whatsappCanais = pgTable(
 
 /**
  * Canal de e-mail do cliente (#78): endereço de atendimento, um por cliente, como o número do
- * WhatsApp. O recebimento (webhook do provedor) entra na #79.
+ * WhatsApp. Recebimento pela SES (#79): a chamada é autenticada pela assinatura do SNS, então
+ * não há segredo por cliente. `status` vira `conectado` no primeiro e-mail recebido.
  */
 export const emailCanais = pgTable(
   "email_canais",
@@ -292,10 +293,7 @@ export const emailCanais = pgTable(
     /** Endereço de atendimento, minúsculo (ex.: aurora@atendimento.operacondo.com.br). */
     endereco: text("endereco").notNull().unique(),
     status: canalStatus("status").notNull().default("desconectado"),
-    /** Segredo do webhook cifrado (AES-256-GCM, `src/server/cripto.ts`). Nunca em texto. */
-    segredoCifrado: text("segredo_cifrado"),
-    /** sha256 do segredo da URL do webhook. */
-    webhookHash: text("webhook_hash").unique(),
+    /** Último e-mail recebido. */
     verificadoEm: ts("verificado_em"),
     criadoEm: criadoEm(),
   },
@@ -331,6 +329,42 @@ export const whatsappEntradas = pgTable(
     }).onDelete("cascade"),
     index().on(t.canalId, t.telefone, t.processadoEm),
     e164("telefone"),
+  ],
+);
+
+/**
+ * E-mail recebido pela SES (#79), antes de virar mensagem. O bruto fica no bucket da SES
+ * (`s3_chave`) até o worker copiar o original para o S3 do cliente. Só oc_admin.
+ */
+export const emailEntradas = pgTable(
+  "email_entradas",
+  {
+    id: id(),
+    tenantId: tenantId(),
+    emailCanalId: uuid("email_canal_id").notNull(),
+    /** Cabeçalho Message-ID (ou o id da SES, se faltar): deduplica reentregas. */
+    messageId: text("message_id").notNull(),
+    /** Chave do e-mail bruto no bucket da SES. */
+    s3Chave: text("s3_chave").notNull(),
+    /** Veredictos da SES: spf, dkim, dmarc, spam, virus (PASS | FAIL | GRAY | PROCESSING_FAILED). */
+    autenticacao: jsonb("autenticacao").$type<Record<string, string>>().notNull(),
+    /** Notificação da SES (cabeçalhos e recebimento, sem o corpo). */
+    payload: jsonb("payload").notNull(),
+    /** Original (.eml) no S3 do cliente, depois de processado. */
+    originalPath: text("original_path"),
+    /** Mensagem criada (sem FK: a conversa pode ser apagada antes da entrada). */
+    mensagemId: uuid("mensagem_id"),
+    /** Por que não virou mensagem (resposta automática, lista, loop…). */
+    ignorado: text("ignorado"),
+    recebidoEm: ts("recebido_em").notNull().defaultNow(),
+    processadoEm: ts("processado_em"),
+  },
+  (t) => [
+    unique().on(t.emailCanalId, t.messageId),
+    foreignKey({
+      columns: [t.tenantId, t.emailCanalId],
+      foreignColumns: [emailCanais.tenantId, emailCanais.id],
+    }).onDelete("cascade"),
   ],
 );
 

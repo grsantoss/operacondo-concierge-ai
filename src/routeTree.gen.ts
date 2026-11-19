@@ -34,6 +34,7 @@ import { Route as AdminUsuariosIndexRouteImport } from './routes/admin.usuarios.
 import { Route as AdminUsuariosIdRouteImport } from './routes/admin.usuarios.$id'
 import { Route as AdminUsuariosNovoRouteImport } from './routes/admin.usuarios.novo'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiEmailSesRouteImport } from './routes/api/email/ses'
 import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
 import { Route as AppBaseIndexRouteImport } from './routes/app.base.index'
 import { Route as AppBaseEnviarRouteImport } from './routes/app.base.enviar'
@@ -172,6 +173,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiEmailSesRoute = ApiEmailSesRouteImport.update({
+  id: '/api/email/ses',
+  path: '/api/email/ses',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiStripeWebhookRoute = ApiStripeWebhookRouteImport.update({
   id: '/api/stripe/webhook',
   path: '/api/stripe/webhook',
@@ -258,6 +264,7 @@ export interface FileRoutesByFullPath {
   '/admin/usuarios/$id': typeof AdminUsuariosIdRoute
   '/admin/usuarios/novo': typeof AdminUsuariosNovoRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/email/ses': typeof ApiEmailSesRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/app/base/enviar': typeof AppBaseEnviarRoute
   '/app/demandas/$id': typeof AppDemandasIdRoute
@@ -290,6 +297,7 @@ export interface FileRoutesByTo {
   '/admin/usuarios/$id': typeof AdminUsuariosIdRoute
   '/admin/usuarios/novo': typeof AdminUsuariosNovoRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/email/ses': typeof ApiEmailSesRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/app/base/enviar': typeof AppBaseEnviarRoute
   '/app/demandas/$id': typeof AppDemandasIdRoute
@@ -330,6 +338,7 @@ export interface FileRoutesById {
   '/admin/usuarios/$id': typeof AdminUsuariosIdRoute
   '/admin/usuarios/novo': typeof AdminUsuariosNovoRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/email/ses': typeof ApiEmailSesRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/app/base/enviar': typeof AppBaseEnviarRoute
   '/app/demandas/$id': typeof AppDemandasIdRoute
@@ -371,6 +380,7 @@ export interface FileRouteTypes {
     | '/admin/usuarios/$id'
     | '/admin/usuarios/novo'
     | '/api/auth/$'
+    | '/api/email/ses'
     | '/api/stripe/webhook'
     | '/app/base/enviar'
     | '/app/demandas/$id'
@@ -403,6 +413,7 @@ export interface FileRouteTypes {
     | '/admin/usuarios/$id'
     | '/admin/usuarios/novo'
     | '/api/auth/$'
+    | '/api/email/ses'
     | '/api/stripe/webhook'
     | '/app/base/enviar'
     | '/app/demandas/$id'
@@ -442,6 +453,7 @@ export interface FileRouteTypes {
     | '/admin/usuarios/$id'
     | '/admin/usuarios/novo'
     | '/api/auth/$'
+    | '/api/email/ses'
     | '/api/stripe/webhook'
     | '/app/base/enviar'
     | '/app/demandas/$id'
@@ -468,6 +480,7 @@ export interface RootRouteChildren {
   PlanosRoute: typeof PlanosRoute
   ApiEventosRoute: typeof ApiEventosRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiEmailSesRoute: typeof ApiEmailSesRoute
   ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
   ApiWhatsappZapiSegredoRoute: typeof ApiWhatsappZapiSegredoRoute
 }
@@ -647,6 +660,13 @@ declare module '@tanstack/react-router' {
       path: '/api/auth/$'
       fullPath: '/api/auth/$'
       preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/email/ses': {
+      id: '/api/email/ses'
+      path: '/api/email/ses'
+      fullPath: '/api/email/ses'
+      preLoaderRoute: typeof ApiEmailSesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/stripe/webhook': {
@@ -862,6 +882,7 @@ const rootRouteChildren: RootRouteChildren = {
   PlanosRoute: PlanosRoute,
   ApiEventosRoute: ApiEventosRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiEmailSesRoute: ApiEmailSesRoute,
   ApiStripeWebhookRoute: ApiStripeWebhookRoute,
   ApiWhatsappZapiSegredoRoute: ApiWhatsappZapiSegredoRoute,
 }

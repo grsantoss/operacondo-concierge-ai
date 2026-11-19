@@ -107,6 +107,15 @@ temperatura (cold/warm/hot) saiu de todas as telas (#14).
   `email_canais` (um por cliente, segredo do webhook cifrado), com o check `conversas_canal`
   garantindo um só. `mensagens.assunto`/`message_id`/`in_reply_to` guardam a thread do e-mail.
   O alerta de urgência sai sempre pelo WhatsApp do cliente; envio por e-mail na #81.
+  Recebimento (#79): SES (sa-east-1 recebe) grava o bruto num bucket e avisa o SNS →
+  `POST /api/email/ses` (`src/server/email-entrada/webhook.ts`: assinatura do SNS em `sns.ts`,
+  tópico `SES_ENTRADA_TOPICO`, cliente pelo destinatário em `email_canais.endereco`) →
+  `email_entradas` (dedupe `email_canal_id + message_id`, veredictos spf/dkim/dmarc/spam/virus; só
+  oc_admin) → fila `email` → `email-entrada/processar.ts` (postal-mime; `limpar.ts` descarta
+  resposta automática, lista, loop e "fora do escritório" e tira citação, assinatura e HTML;
+  conversa `email` em `aguardando_sindico` até a #80; anexos e o `.eml` em
+  `{tenant}/{condominio|sem-condominio}/email/{conversa}/{mensagem}.ext`; o bruto é apagado do
+  bucket). Endereço: `garantirCanalEmail` (`email-entrada/canal.ts`, `{nome}@EMAIL_DOMINIO`).
   O número identifica o cliente; o telefone do remetente identifica o condomínio:
   1 condomínio → segue; vários → pergunta qual; desconhecido → lista os condomínios do síndico,
   pergunta a unidade e cria cadastro pendente. Enquanto o condomínio não estiver definido, o agente

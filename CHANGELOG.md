@@ -6,6 +6,15 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
 
 ## [Não lançado]
 
+### Adicionado
+
+- **Recebimento de e-mail pela Amazon SES**: cada cliente tem um endereço de atendimento
+  (`{nome}@EMAIL_DOMINIO`). O e-mail recebido vira conversa de e-mail para o síndico, só com a
+  mensagem nova (sem histórico citado, assinatura e HTML), e os anexos ficam guardados.
+  Respostas automáticas, listas, "fora do escritório" e e-mails do próprio Concierge são
+  ignorados; o resultado de SPF, DKIM e DMARC fica registrado. Rota `POST /api/email/ses`
+  (aviso do SNS com assinatura conferida), variáveis `EMAIL_DOMINIO` e `SES_ENTRADA_TOPICO` (#PR).
+
 ### Alterado
 
 - **Conversa com canal e endereço**: cada conversa passa a ter o canal (WhatsApp ou e-mail) e o

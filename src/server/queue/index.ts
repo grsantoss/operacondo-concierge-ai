@@ -58,6 +58,13 @@ export interface JobAgente {
 /** Fila "stripe": um job por evento do webhook; o worker busca o objeto atual na API. */
 export const FILA_STRIPE = "stripe";
 
+/** Fila "email": um job por e-mail recebido pela SES (#79). */
+export const FILA_EMAIL = "email";
+
+export interface JobEmail {
+  entradaId: string;
+}
+
 /** Job diário de inadimplência (agendado pelo worker, 6h de Brasília). */
 export const FILA_INADIMPLENCIA = "inadimplencia";
 
@@ -105,6 +112,9 @@ export function fila(): Promise<PgBoss> {
     await b.createQueue(FILA_STRIPE, { policy: "stately" });
     // API do Stripe fora do ar: 5 novas tentativas a partir de 30 s.
     await b.updateQueue(FILA_STRIPE, { retryLimit: 5, retryDelay: 30, retryBackoff: true });
+    // Bucket da SES ou S3 fora do ar: 5 novas tentativas a partir de 30 s.
+    await b.createQueue(FILA_EMAIL);
+    await b.updateQueue(FILA_EMAIL, { retryLimit: 5, retryDelay: 30, retryBackoff: true });
     // Erro de um cliente fica no log (não derruba o job); falha geral tenta de novo em 1 h.
     await b.createQueue(FILA_INADIMPLENCIA);
     await b.updateQueue(FILA_INADIMPLENCIA, { retryLimit: 2, retryDelay: 3600 });
@@ -160,4 +170,9 @@ export async function enfileirarStripe(job: JobStripe) {
 export async function enfileirarAgente(job: JobAgente) {
   const b = await fila();
   await b.send(FILA_AGENTE, job, { singletonKey: job.conversaId });
+}
+
+export async function enfileirarEmail(job: JobEmail) {
+  const b = await fila();
+  await b.send(FILA_EMAIL, job, { singletonKey: job.entradaId });
 }

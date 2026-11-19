@@ -20,6 +20,7 @@ import {
   FILA_MIDIA,
   FILA_STRIPE,
   FILA_INADIMPLENCIA,
+  FILA_EMAIL,
   TENTATIVAS,
   type JobAgente,
   type JobAlerta,
@@ -27,9 +28,11 @@ import {
   type JobIngestao,
   type JobMidia,
   type JobStripe,
+  type JobEmail,
 } from "@/server/queue";
 import { aplicarInadimplencia } from "@/server/billing/inadimplencia";
 import { processarEventoStripe } from "@/server/billing/sync";
+import { processarEmail } from "@/server/email-entrada/processar";
 import { ingerirDocumento } from "@/server/ingest";
 import { enviarAlerta } from "@/server/pipeline/alerta";
 import { processarMidia } from "@/server/pipeline/midia";
@@ -136,6 +139,18 @@ await boss.work<JobStripe>(
     }
   }),
 );
+await boss.work<JobEmail>(
+  FILA_EMAIL,
+  comErros(FILA_EMAIL, async (jobs) => {
+    for (const job of jobs) {
+      const r = await processarEmail(job.data.entradaId);
+      // Sem remetente no log (LGPD).
+      console.info(
+        `[email] entrada ${job.data.entradaId}: ${r.ignorado ? `ignorada (${r.ignorado})` : `conversa ${r.conversaId}`}`,
+      );
+    }
+  }),
+);
 // Uma vez por dia; o schedule do pg-boss é único por fila (vários workers não duplicam).
 await boss.schedule(FILA_INADIMPLENCIA, "0 6 * * *", {}, { tz: "America/Sao_Paulo" });
 await boss.work(
@@ -154,6 +169,7 @@ console.info(
   FILA_INGESTAO,
   FILA_STRIPE,
   FILA_INADIMPLENCIA,
+  FILA_EMAIL,
 );
 
 for (const sinal of ["SIGINT", "SIGTERM"] as const)

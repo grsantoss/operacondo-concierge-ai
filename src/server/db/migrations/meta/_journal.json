@@ -176,6 +176,20 @@
       "when": 1795047366557,
       "tag": "0024_email_canais_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1795048995343,
+      "tag": "0025_email_entradas",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1795048997054,
+      "tag": "0026_email_entradas_rls",
+      "breakpoints": true
     }
   ]
 }

@@ -18,7 +18,8 @@ export async function enviarAlerta(job: JobAlerta): Promise<number> {
         canal: s.whatsappCanais,
       })
       .from(s.conversas)
-      .innerJoin(s.whatsappCanais, eq(s.whatsappCanais.id, s.conversas.canalId))
+      // O alerta sai pelo WhatsApp do cliente (um por cliente), seja qual for o canal da conversa.
+      .innerJoin(s.whatsappCanais, eq(s.whatsappCanais.tenantId, s.conversas.tenantId))
       .leftJoin(s.condominios, eq(s.condominios.id, s.conversas.condominioId))
       .leftJoin(s.moradores, eq(s.moradores.id, s.conversas.moradorId))
       .where(eq(s.conversas.id, job.conversaId));
@@ -50,7 +51,7 @@ export async function enviarAlerta(job: JobAlerta): Promise<number> {
     const quem = [
       cv.condominio ?? "Condomínio ainda não definido",
       cv.morador ?? "número não cadastrado",
-      formatarTelefone(cv.conversa.phoneE164),
+      formatarTelefone(cv.conversa.endereco),
     ].join(" • ");
     const base = (process.env.APP_URL ?? process.env.BETTER_AUTH_URL ?? "").replace(/\/+$/, "");
     const texto = [

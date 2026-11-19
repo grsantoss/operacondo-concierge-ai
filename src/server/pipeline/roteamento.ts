@@ -98,7 +98,7 @@ export async function rotear(job: JobMensagem, entradas: Entrada[]): Promise<Rot
       .where(
         and(
           eq(s.conversas.canalId, job.canalId),
-          eq(s.conversas.phoneE164, job.telefone),
+          eq(s.conversas.endereco, job.telefone),
           ne(s.conversas.estado, "resolvida"),
         ),
       )
@@ -107,7 +107,12 @@ export async function rotear(job: JobMensagem, entradas: Entrada[]): Promise<Rot
     conversa ??= (
       await tx
         .insert(s.conversas)
-        .values({ tenantId: job.tenantId, canalId: job.canalId, phoneE164: job.telefone })
+        .values({
+          tenantId: job.tenantId,
+          canal: "whatsapp",
+          canalId: job.canalId,
+          endereco: job.telefone,
+        })
         .returning()
     )[0]!;
 

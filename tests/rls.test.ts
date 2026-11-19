@@ -146,4 +146,35 @@ describe("restrições", () => {
     );
     expect(msg).toContain("phone_e164_e164");
   });
+
+  test("conversa aponta só para o canal dela, com o endereço no formato do canal", async () => {
+    const [w] = await admin
+      .insert(s.whatsappCanais)
+      .values({ tenantId: A.tenant, phoneE164: "+5511900000078", provider: "zapi" })
+      .returning();
+    const [e] = await admin
+      .insert(s.emailCanais)
+      .values({ tenantId: A.tenant, endereco: "teste-a@atendimento.operacondo.local" })
+      .returning();
+    const conversa = (v: Partial<typeof s.conversas.$inferInsert>) =>
+      erroPg(admin.insert(s.conversas).values({ tenantId: A.tenant, endereco: "", ...v }));
+    // Válidas: WhatsApp com telefone, e-mail com endereço minúsculo.
+    expect(await conversa({ canalId: w!.id, endereco: "+5511911110000" })).toBe("");
+    expect(
+      await conversa({ canal: "email", emailCanalId: e!.id, endereco: "ana@exemplo.com" }),
+    ).toBe("");
+    // Inválidas: e-mail no WhatsApp, maiúsculas, canal trocado ou os dois canais.
+    for (const v of [
+      { canalId: w!.id, endereco: "ana@exemplo.com" },
+      { canal: "email" as const, emailCanalId: e!.id, endereco: "Ana@Exemplo.com" },
+      { canal: "email" as const, canalId: w!.id, endereco: "ana@exemplo.com" },
+      { canalId: w!.id, emailCanalId: e!.id, endereco: "+5511911110000" },
+    ])
+      expect(await conversa(v)).toContain("conversas_canal");
+    // O canal de e-mail de B não é visível para A.
+    expect(
+      await withTenant(B.tenant, (tx) => tx.select().from(s.emailCanais)),
+    ).toHaveLength(0);
+    await admin.delete(s.conversas).where(eq(s.conversas.tenantId, A.tenant));
+  });
 });

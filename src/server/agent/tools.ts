@@ -65,7 +65,8 @@ export function acharUnidade<U extends typeof s.unidades.$inferSelect>(
 export function ferramentas(ctx: Contexto, efeitos: Efeitos) {
   const { tenantId } = ctx.conversa;
   const condominioId = ctx.conversa.condominioId!;
-  const telefone = ctx.conversa.phoneE164;
+  // ponytail: só WhatsApp chega ao agente; o e-mail (identificação pelo remetente) entra na #80.
+  const telefone = ctx.conversa.endereco;
   const aprovado = ctx.morador?.cadastro === "aprovado";
   const visiveis: (typeof s.visibilidade.enumValues)[number][] = aprovado
     ? ["publico", "moradores"]

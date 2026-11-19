@@ -102,6 +102,11 @@ temperatura (cold/warm/hot) saiu de todas as telas (#14).
   `src/server/whatsapp/transcricao.ts` (`TRANSCRICAO_PROVEDOR` openai|deepgram; vazio = sem
   transcrição) → `mensagens.transcricao` → regras de urgência. UPDATE em `mensagens` também
   notifica a tela (migration 0009).
+  Canal da conversa (#78): `conversas.canal` (`whatsapp | email`) + `endereco` (telefone E.164 ou
+  e-mail minúsculo); `canal_id` aponta para `whatsapp_canais` e `email_canal_id` para
+  `email_canais` (um por cliente, segredo do webhook cifrado), com o check `conversas_canal`
+  garantindo um só. `mensagens.assunto`/`message_id`/`in_reply_to` guardam a thread do e-mail.
+  O alerta de urgência sai sempre pelo WhatsApp do cliente; envio por e-mail na #81.
   O número identifica o cliente; o telefone do remetente identifica o condomínio:
   1 condomínio → segue; vários → pergunta qual; desconhecido → lista os condomínios do síndico,
   pergunta a unidade e cria cadastro pendente. Enquanto o condomínio não estiver definido, o agente

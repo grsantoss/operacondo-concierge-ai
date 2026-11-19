@@ -12,7 +12,7 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   endereço de atendimento do cliente, com o nome do condomínio, na mesma conversa do morador
   ("Re: assunto"), em texto e HTML simples. Nova opção em Configurações: "Enviar respostas por
   e-mail sem aprovação" (desligada; só respostas com base nos documentos). Checklist da SES
-  (domínio, SPF, DKIM, DMARC, recebimento) em `docs/email-ses.md` (#PR).
+  (domínio, SPF, DKIM, DMARC, recebimento) em `docs/email-ses.md` (#96).
 
 - **Agente no e-mail**: o morador é reconhecido pelo e-mail cadastrado, mas só quando o e-mail é
   autêntico (DKIM ou DMARC aprovados); remetente sem autenticação é tratado como desconhecido

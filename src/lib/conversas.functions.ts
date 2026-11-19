@@ -88,8 +88,9 @@ export const listarConversas = createServerFn({ method: "GET" }).handler(
         .limit(200);
       return linhas.map(({ conversa: cv, morador, unidade, condominio, ultima, prioridades }) => ({
         id: cv.id,
-        nome: morador?.nome ?? formatarTelefone(cv.phoneE164),
-        telefone: formatarTelefone(cv.phoneE164),
+        nome: morador?.nome ?? formatarTelefone(cv.endereco),
+        canal: cv.canal,
+        telefone: formatarTelefone(cv.endereco),
         conhecido: !!morador,
         cadastro: morador?.cadastro ?? null,
         unidade: morador?.unidadeId ? unidadeTexto(unidade) : null,

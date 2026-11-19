@@ -36,7 +36,7 @@ test("conversa e mensagem nova avisam só o próprio cliente, sem conteúdo", as
   const sairB = await assinar(B, (e) => doB.push(e));
   const [cv] = await admin
     .insert(s.conversas)
-    .values({ tenantId: A, canalId: canal, phoneE164: "+5511911112222" })
+    .values({ tenantId: A, canalId: canal, endereco: "+5511911112222" })
     .returning();
   await admin.insert(s.mensagens).values({
     tenantId: A,

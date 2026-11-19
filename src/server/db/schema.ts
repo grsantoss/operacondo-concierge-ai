@@ -57,6 +57,7 @@ export const suspensao = pgEnum("suspensao", ["nenhuma", "parcial", "integral"])
 export const papelMembro = pgEnum("papel_membro", ["sindico", "conselho", "admin"]);
 export const whatsappProvider = pgEnum("whatsapp_provider", ["zapi", "meta"]);
 export const canalStatus = pgEnum("canal_status", ["conectado", "desconectado"]);
+export const canalTipo = pgEnum("canal_tipo", ["whatsapp", "email"]);
 export const assinaturaStatus = pgEnum("assinatura_status", [
   "trialing",
   "active",
@@ -277,6 +278,31 @@ export const whatsappCanais = pgTable(
     criadoEm: criadoEm(),
   },
   (t) => [unique().on(t.tenantId, t.id), e164("phone_e164")],
+);
+
+/**
+ * Canal de e-mail do cliente (#78): endereço de atendimento, um por cliente, como o número do
+ * WhatsApp. O recebimento (webhook do provedor) entra na #79.
+ */
+export const emailCanais = pgTable(
+  "email_canais",
+  {
+    id: id(),
+    tenantId: tenantId().unique(),
+    /** Endereço de atendimento, minúsculo (ex.: aurora@atendimento.operacondo.com.br). */
+    endereco: text("endereco").notNull().unique(),
+    status: canalStatus("status").notNull().default("desconectado"),
+    /** Segredo do webhook cifrado (AES-256-GCM, `src/server/cripto.ts`). Nunca em texto. */
+    segredoCifrado: text("segredo_cifrado"),
+    /** sha256 do segredo da URL do webhook. */
+    webhookHash: text("webhook_hash").unique(),
+    verificadoEm: ts("verificado_em"),
+    criadoEm: criadoEm(),
+  },
+  (t) => [
+    unique().on(t.tenantId, t.id),
+    check("email_canais_endereco", sql`endereco = lower(endereco) and endereco like '%_@_%'`),
+  ],
 );
 
 /**
@@ -552,8 +578,13 @@ export const conversas = pgTable(
   {
     id: id(),
     tenantId: tenantId(),
-    canalId: uuid("canal_id").notNull(),
-    phoneE164: text("phone_e164").notNull(),
+    canal: canalTipo("canal").notNull().default("whatsapp"),
+    /** Canal do WhatsApp (só em conversa de WhatsApp). */
+    canalId: uuid("canal_id"),
+    /** Canal de e-mail (só em conversa de e-mail). */
+    emailCanalId: uuid("email_canal_id"),
+    /** Remetente: telefone E.164 no WhatsApp, e-mail minúsculo no e-mail. */
+    endereco: text("endereco").notNull(),
     /** Vazio enquanto o roteamento não definir o condomínio. */
     condominioId: uuid("condominio_id"),
     moradorId: uuid("morador_id"),
@@ -574,6 +605,10 @@ export const conversas = pgTable(
       foreignColumns: [whatsappCanais.tenantId, whatsappCanais.id],
     }),
     foreignKey({
+      columns: [t.tenantId, t.emailCanalId],
+      foreignColumns: [emailCanais.tenantId, emailCanais.id],
+    }),
+    foreignKey({
       columns: [t.tenantId, t.condominioId],
       foreignColumns: [condominios.tenantId, condominios.id],
     }),
@@ -582,7 +617,12 @@ export const conversas = pgTable(
       foreignColumns: [moradores.tenantId, moradores.id],
     }),
     index().on(t.tenantId, t.ultimaMsgEm.desc()),
-    e164("phone_e164"),
+    // Cada conversa aponta só para o canal dela, com o endereço no formato do canal.
+    check(
+      "conversas_canal",
+      sql`(canal = 'whatsapp' and canal_id is not null and email_canal_id is null and endereco ~ '^\\+[1-9][0-9]{7,14}$')
+        or (canal = 'email' and email_canal_id is not null and canal_id is null and endereco = lower(endereco) and endereco like '%_@_%')`,
+    ),
   ],
 );
 
@@ -603,6 +643,10 @@ export const mensagens = pgTable(
     providerMsgId: text("provider_msg_id").unique(),
     /** Resposta do síndico a partir do rascunho da IA: aprovado sem edição, editado ou reescrito. */
     avaliacaoRascunho: avaliacaoRascunho("avaliacao_rascunho"),
+    /** E-mail: assunto e cabeçalhos para manter a thread (`Message-ID`, `In-Reply-To`). */
+    assunto: text("assunto"),
+    messageId: text("message_id"),
+    inReplyTo: text("in_reply_to"),
     criadoEm: criadoEm(),
   },
   (t) => [

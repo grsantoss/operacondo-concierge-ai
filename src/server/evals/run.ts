@@ -194,7 +194,7 @@ async function main() {
         const [cv] = await admin
           .select({ id: s.conversas.id })
           .from(s.conversas)
-          .where(and(eq(s.conversas.tenantId, tenantId), eq(s.conversas.phoneE164, telefone)))
+          .where(and(eq(s.conversas.tenantId, tenantId), eq(s.conversas.endereco, telefone)))
           .orderBy(desc(s.conversas.criadoEm))
           .limit(1);
         conversaId = cv?.id ?? null;

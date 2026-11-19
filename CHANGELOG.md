@@ -6,6 +6,13 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
 
 ## [Não lançado]
 
+### Alterado
+
+- **Conversa com canal e endereço**: cada conversa passa a ter o canal (WhatsApp ou e-mail) e o
+  endereço do remetente, preparando o atendimento por e-mail. Nova tabela `email_canais` (endereço
+  de atendimento do cliente) e assunto/`Message-ID` nas mensagens. O WhatsApp segue igual; as
+  conversas existentes viram de WhatsApp (#93).
+
 ## [0.7.0] - 2026-11-18
 
 ### Adicionado

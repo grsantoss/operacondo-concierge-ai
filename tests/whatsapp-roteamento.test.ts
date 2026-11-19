@@ -32,7 +32,7 @@ const conversa = async (tel: string) =>
     await admin
       .select()
       .from(s.conversas)
-      .where(and(eq(s.conversas.canalId, canalId), eq(s.conversas.phoneE164, tel)))
+      .where(and(eq(s.conversas.canalId, canalId), eq(s.conversas.endereco, tel)))
   )[0];
 const mensagens = async (conversaId: string) =>
   admin

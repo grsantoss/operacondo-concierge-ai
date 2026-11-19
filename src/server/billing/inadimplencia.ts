@@ -147,6 +147,7 @@ export const TABELAS_APAGADAS = [
   "conversas",
   "whatsapp_entradas",
   "whatsapp_canais",
+  "email_canais",
   "consentimentos",
   "morador_contatos",
   "moradores",

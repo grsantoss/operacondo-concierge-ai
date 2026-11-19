@@ -13,7 +13,7 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   por e-mail aparece no onboarding (passo "Canais de atendimento") e em Configurações →
   Integrações, com status de recebimento e instruções para encaminhar do Gmail e do Outlook. O
   cliente pode começar só pelo e-mail. A confirmação de encaminhamento do Gmail chega ao síndico
-  em vez de ser descartada (#PR).
+  em vez de ser descartada (#97).
 
 - **Resposta por e-mail**: "Aprovar e enviar" do rascunho funciona no e-mail. A resposta sai do
   endereço de atendimento do cliente, com o nome do condomínio, na mesma conversa do morador

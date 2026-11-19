@@ -12,7 +12,7 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   (entrada, limpeza, roteamento e agente): vazamento, proposta de fornecedor, boleto da
   administradora, reclamação de barulho, reserva do salão, remetente forjado sem DKIM, resposta
   automática e e-mail com histórico citado. Confere também a categoria no motivo de ir ao
-  síndico (#PR).
+  síndico (#98).
 
 - **Conversas de WhatsApp e e-mail na mesma caixa**: `/app/agente` mostra o ícone do canal, filtra
   por canal e exibe o assunto do e-mail; no e-mail, Ctrl+Enter envia. O endereço de atendimento

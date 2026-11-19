@@ -14,7 +14,7 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   rascunho para o síndico aprovar (nada é enviado sozinho). Remetentes que não são moradores
   (fornecedor, administradora…) vão ao síndico com a categoria. Gás, incêndio, elevador e
   vazamento no assunto ou no corpo alertam o síndico. Cadastro pelo e-mail com aceite da LGPD.
-  A cota de respostas da IA passa a somar os dois canais (#PR).
+  A cota de respostas da IA passa a somar os dois canais (#95).
 
 - **Recebimento de e-mail pela Amazon SES**: cada cliente tem um endereço de atendimento
   (`{nome}@EMAIL_DOMINIO`). O e-mail recebido vira conversa de e-mail para o síndico, só com a

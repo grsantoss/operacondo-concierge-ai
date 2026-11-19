@@ -24,6 +24,8 @@ const Opcoes = z.object({
   horarios: z.boolean().default(true),
   orcamentos: z.boolean().default(false),
   escalarAuto: z.boolean().default(true),
+  /** E-mail (#81): resposta com base documental sai sem o síndico aprovar. Desligado por padrão. */
+  emailAutomatico: z.boolean().default(false),
   reclamacoes: z
     .object({
       auto: z.boolean().default(true),

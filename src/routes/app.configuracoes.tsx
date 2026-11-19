@@ -721,6 +721,12 @@ function AgenteForm({
           label="Escalar automaticamente para o síndico"
           desc="Quando um morador demonstra insatisfação ou é urgência."
         />
+        <Toggle
+          checked={op.emailAutomatico}
+          onChange={(v) => setOp({ emailAutomatico: v })}
+          label="Enviar respostas por e-mail sem aprovação"
+          desc="Só quando a resposta tem base nos documentos. Desligado, toda resposta por e-mail vira rascunho para você aprovar."
+        />
       </Card>
 
       <Card

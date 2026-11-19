@@ -61,7 +61,12 @@ export function fontes(r: BetaMessage, ctx: Contexto): string[] {
   return [...vistas].slice(0, 3);
 }
 
-/** O síndico vê o motivo e, quando houver, o rascunho para aprovar, editar ou reescrever (#24). */
+const FIXAS = new Set([AVISO_SINDICO, ATENDIMENTO_INDISPONIVEL]);
+
+/**
+ * O síndico vê o motivo e, quando houver, o rascunho para aprovar, editar ou reescrever (#24).
+ * No e-mail (#80) nada sai para o morador: o texto que iria vira o rascunho.
+ */
 async function escalar(
   tx: Tx,
   ctx: Contexto,
@@ -69,11 +74,17 @@ async function escalar(
   rascunho: string | null = null,
   texto = AVISO_SINDICO,
 ) {
+  const email = ctx.conversa.canal === "email";
   await tx
     .update(s.conversas)
-    .set({ estado: "aguardando_sindico", rascunho, rascunhoMotivo: motivo })
+    .set({
+      estado: "aguardando_sindico",
+      rascunho: rascunho ?? (email && !FIXAS.has(texto) ? texto : null),
+      rascunhoMotivo: motivo,
+    })
     .where(and(eq(s.conversas.id, ctx.conversa.id), eq(s.conversas.estado, "ia")));
-  await enviarNaConversa(tx, ctx.conversa, texto, texto === AVISO_SINDICO || texto === ATENDIMENTO_INDISPONIVEL ? "sistema" : "ia");
+  if (email) return;
+  await enviarNaConversa(tx, ctx.conversa, texto, FIXAS.has(texto) ? "sistema" : "ia");
 }
 
 /**
@@ -259,6 +270,11 @@ async function responderNoRastro(
     if (efeitos.escalar) {
       fim(`síndico: ${efeitos.escalar}`, mensagem);
       return escalar(tx, ctx, efeitos.escalar, null, mensagem);
+    }
+    // E-mail: no início toda resposta passa pelo síndico (rascunho para aprovar e enviar).
+    if (ctx.conversa.canal === "email") {
+      fim("síndico: rascunho de e-mail", mensagem);
+      return escalar(tx, ctx, "Resposta por e-mail aguardando aprovação", null, mensagem);
     }
     fim("enviada", mensagem);
     await enviarNaConversa(tx, ctx.conversa, mensagem, "ia");

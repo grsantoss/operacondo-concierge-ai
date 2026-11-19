@@ -190,6 +190,20 @@
       "when": 1795048997054,
       "tag": "0026_email_entradas_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1795050067257,
+      "tag": "0027_consentimento_email",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1795050069109,
+      "tag": "0028_uso_mensal_email",
+      "breakpoints": true
     }
   ]
 }

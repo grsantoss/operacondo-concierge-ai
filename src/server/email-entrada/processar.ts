@@ -1,15 +1,68 @@
 /**
  * Job da fila "email" (#79): baixa o e-mail bruto do bucket da SES, descarta respostas
  * automáticas e loops, limpa o texto e grava conversa (canal e-mail), mensagem e anexos no S3
- * do cliente. O agente e o roteamento por remetente entram na #80; até lá a conversa vai para o
- * síndico. CPF e telefone são mascarados antes do Claude, como no WhatsApp (`agent/contexto.ts`).
+ * do cliente. Roteamento (#80): o remetente identifica o morador e o condomínio só com DKIM ou
+ * DMARC aprovados (o remetente de e-mail pode ser forjado); urgência pelas regras fixas no assunto
+ * e no corpo; com o condomínio definido e IA configurada, o agente escreve o rascunho.
+ * CPF e telefone são mascarados antes do Claude, como no WhatsApp (`agent/prompt.ts`).
+ * Roda como oc_admin (a entrada é só da plataforma): toda consulta filtra o cliente.
  */
 import { DeleteObjectCommand, GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { and, desc, eq, isNull, ne } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, ne, sql } from "drizzle-orm";
 import PostalMime from "postal-mime";
 import { gravarArquivo, nomeSeguro } from "@/server/arquivos";
 import { dbAdmin, schema as s } from "@/server/db";
 import { motivoIgnorar, textoDoEmail } from "@/server/email-entrada/limpar";
+import { iaConfigurada } from "@/server/llm";
+import { detectarUrgencia } from "@/server/pipeline/regras-urgencia";
+import { subirUrgencia } from "@/server/pipeline/roteamento";
+import type { JobAgente, JobAlerta } from "@/server/queue";
+
+type TxAdmin = Parameters<Parameters<ReturnType<typeof dbAdmin>["transaction"]>[0]>[0];
+
+/**
+ * Condomínio e morador do remetente. Autenticado (DKIM ou DMARC): pelo `moradores.email`, se
+ * apontar para um condomínio só. Senão, desconhecido (só regras públicas); o condomínio fica
+ * definido apenas se o cliente tiver um só.
+ */
+export async function identificarRemetente(
+  tx: TxAdmin,
+  tenantId: string,
+  remetente: string,
+  autenticado: boolean,
+): Promise<{ condominioId: string | null; moradorId: string | null }> {
+  const vinculos = autenticado
+    ? await tx
+        .select({ id: s.moradores.id, condominioId: s.moradores.condominioId })
+        .from(s.moradores)
+        .where(
+          and(
+            eq(s.moradores.tenantId, tenantId),
+            sql`lower(${s.moradores.email}) = ${remetente}`,
+            isNull(s.moradores.desativadoEm),
+            ne(s.moradores.cadastro, "recusado"),
+          ),
+        )
+    : [];
+  const condos = [...new Set(vinculos.map((v) => v.condominioId))];
+  if (condos.length === 1)
+    return { condominioId: condos[0]!, moradorId: vinculos.length === 1 ? vinculos[0]!.id : null };
+  if (condos.length > 1) return { condominioId: null, moradorId: null };
+  const todos = await tx
+    .select({ id: s.condominios.id })
+    .from(s.condominios)
+    .where(eq(s.condominios.tenantId, tenantId))
+    .orderBy(asc(s.condominios.nome))
+    .limit(2);
+  return { condominioId: todos.length === 1 ? todos[0]!.id : null, moradorId: null };
+}
+
+export interface ResultadoEmail {
+  conversaId: string | null;
+  ignorado: string | null;
+  alerta: JobAlerta | null;
+  agente: JobAgente | null;
+}
 
 /** Anexo acima disso não é guardado (a SES aceita até 40 MB por e-mail). */
 const LIMITE_ANEXO = 20 * 1024 * 1024;
@@ -63,7 +116,7 @@ export async function processarEmail(
   entradaId: string,
   bruto: Bruto = brutoSes,
   gravar: typeof gravarArquivo = gravarArquivo,
-): Promise<{ conversaId: string | null; ignorado: string | null }> {
+): Promise<ResultadoEmail> {
   const r = await dbAdmin().transaction(async (tx) => {
     const [e] = await tx
       .select({ entrada: s.emailEntradas, canal: s.emailCanais })
@@ -93,6 +146,7 @@ export async function processarEmail(
     }
 
     const tenantId = entrada.tenantId;
+    const comIa = iaConfigurada();
     let [conversa] = await tx
       .select()
       .from(s.conversas)
@@ -108,18 +162,26 @@ export async function processarEmail(
       .limit(1);
     // ponytail: uma conversa aberta por remetente (como no WhatsApp); juntar pela thread
     // (In-Reply-To/References) se o mesmo morador abrir assuntos paralelos.
-    conversa ??= (
-      await tx
-        .insert(s.conversas)
-        .values({
-          tenantId,
-          canal: "email",
-          emailCanalId: canal.id,
-          endereco: remetente,
-          estado: "aguardando_sindico",
-        })
-        .returning()
-    )[0]!;
+    if (!conversa) {
+      const autenticado =
+        entrada.autenticacao.dkim === "PASS" || entrada.autenticacao.dmarc === "PASS";
+      const quem = await identificarRemetente(tx, tenantId, remetente, autenticado);
+      // Sem condomínio definido (vários e remetente desconhecido) o agente não responde: o
+      // síndico vê a conversa e define.
+      conversa = (
+        await tx
+          .insert(s.conversas)
+          .values({
+            tenantId,
+            canal: "email",
+            emailCanalId: canal.id,
+            endereco: remetente,
+            ...quem,
+            estado: comIa && quem.condominioId ? "ia" : "aguardando_sindico",
+          })
+          .returning()
+      )[0]!;
+    }
     await tx
       .update(s.conversas)
       .set({ ultimaMsgEm: new Date() })
@@ -172,10 +234,28 @@ export async function processarEmail(
       .update(s.emailCanais)
       .set({ status: "conectado", verificadoEm: new Date() })
       .where(eq(s.emailCanais.id, canal.id));
-    return { chave: entrada.s3Chave, conversaId: conversa.id, ignorado: null };
+
+    // Regras fixas de urgência no assunto e no corpo (independem da IA e do condomínio).
+    const regra = detectarUrgencia(`${email.subject ?? ""}\n${textoDoEmail(email)}`);
+    const alerta: JobAlerta | null = regra
+      ? { tenantId, conversaId: conversa.id, regra: regra.id }
+      : null;
+    if (regra) await subirUrgencia(tx, conversa.id, regra.prioridade);
+    const [cv] = await tx
+      .select({ estado: s.conversas.estado })
+      .from(s.conversas)
+      .where(eq(s.conversas.id, conversa.id));
+    const agente: JobAgente | null =
+      comIa && cv?.estado === "ia" ? { tenantId, conversaId: conversa.id } : null;
+    return { chave: entrada.s3Chave, conversaId: conversa.id, ignorado: null, alerta, agente };
   });
-  if (!r) return { conversaId: null, ignorado: null };
+  if (!r) return { conversaId: null, ignorado: null, alerta: null, agente: null };
   // Copiado para o S3 do cliente (ou descartado): o bruto sai do bucket da SES (LGPD).
   await bruto.apagar(r.chave).catch((err) => console.warn("[email] bruto não apagado:", err));
-  return { conversaId: r.conversaId, ignorado: r.ignorado };
+  return {
+    conversaId: r.conversaId,
+    ignorado: r.ignorado,
+    alerta: r.alerta ?? null,
+    agente: r.agente ?? null,
+  };
 }

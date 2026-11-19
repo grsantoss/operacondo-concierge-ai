@@ -144,6 +144,8 @@ await boss.work<JobEmail>(
   comErros(FILA_EMAIL, async (jobs) => {
     for (const job of jobs) {
       const r = await processarEmail(job.data.entradaId);
+      if (r.alerta) await enfileirarAlerta(r.alerta);
+      if (r.agente) await enfileirarAgente(r.agente);
       // Sem remetente no log (LGPD).
       console.info(
         `[email] entrada ${job.data.entradaId}: ${r.ignorado ? `ignorada (${r.ignorado})` : `conversa ${r.conversaId}`}`,

@@ -116,6 +116,14 @@ temperatura (cold/warm/hot) saiu de todas as telas (#14).
   conversa `email` em `aguardando_sindico` até a #80; anexos e o `.eml` em
   `{tenant}/{condominio|sem-condominio}/email/{conversa}/{mensagem}.ext`; o bruto é apagado do
   bucket). Endereço: `garantirCanalEmail` (`email-entrada/canal.ts`, `{nome}@EMAIL_DOMINIO`).
+  Roteamento e agente (#80): na criação da conversa, `identificarRemetente` (processar.ts) acha
+  morador e condomínio pelo `moradores.email` só com DKIM ou DMARC `PASS`; sem isso, desconhecido
+  (condomínio só se o cliente tiver um). Urgência no assunto + corpo. Com IA e condomínio, fila
+  `agente`; no e-mail **nada é enviado**: `escalar` grava o texto como rascunho
+  ("Resposta por e-mail aguardando aprovação"); prompt com tom de e-mail, `Assunto:` no histórico e
+  quem não é morador vai ao síndico com `[categoria]` no motivo (`CATEGORIAS_EMAIL`). Cadastro pelo
+  e-mail grava `moradores.email` e `consentimentos.email` (versão `email-v1`). A cota conta também
+  cada execução do agente em conversa de e-mail (view `uso_mensal`, migration 0028).
   O número identifica o cliente; o telefone do remetente identifica o condomínio:
   1 condomínio → segue; vários → pergunta qual; desconhecido → lista os condomínios do síndico,
   pergunta a unidade e cria cadastro pendente. Enquanto o condomínio não estiver definido, o agente

@@ -597,12 +597,18 @@ export const consentimentos = pgTable(
   {
     id: id(),
     tenantId: tenantId(),
-    phoneE164: text("phone_e164").notNull(),
+    /** Quem aceitou: telefone (WhatsApp) ou e-mail (canal de e-mail), um dos dois. */
+    phoneE164: text("phone_e164"),
+    email: text("email"),
     finalidade: text("finalidade").notNull(),
     textoVersao: text("texto_versao").notNull(),
     aceitoEm: ts("aceito_em").notNull().defaultNow(),
   },
-  (t) => [index().on(t.tenantId, t.phoneE164), e164("phone_e164")],
+  (t) => [
+    index().on(t.tenantId, t.phoneE164),
+    e164("phone_e164"),
+    check("consentimentos_titular", sql`num_nonnulls(phone_e164, email) = 1`),
+  ],
 );
 
 /* ------------------------------------------------------ Atendimento WhatsApp */

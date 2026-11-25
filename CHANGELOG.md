@@ -10,7 +10,7 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
 
 - **Simulação local de mensagens**: `bun run simular [login]` faz chegar 2 mensagens de WhatsApp
   e 3 e-mails pelo caminho real (sem Z-API nem SES) para ver a caixa de conversas com dados no
-  ambiente de desenvolvimento. Recusa rodar com `NODE_ENV=production` (#PR).
+  ambiente de desenvolvimento. Recusa rodar com `NODE_ENV=production` (#99).
 
 - **Avaliação do canal de e-mail**: `bun run evals email` manda 8 e-mails pelo caminho real
   (entrada, limpeza, roteamento e agente): vazamento, proposta de fornecedor, boleto da

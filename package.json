@@ -11,6 +11,7 @@
     "start": "node .output/server/index.mjs",
     "worker": "bun src/server/worker.ts",
     "evals": "bun src/server/evals/run.ts",
+    "simular": "bun scripts/simular-mensagens.ts",
     "lint": "eslint .",
     "format": "prettier --write .",
     "test": "bun test",

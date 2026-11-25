@@ -22,7 +22,9 @@ Responda sempre em português do Brasil, com acentuação correta.
   depois vem a Fase 6.5 (canal de e-mail, #78–#83). Testes reais (instância Z-API, transcrição,
   Claude, pagamento) ficam para depois de todas as issues.
 - Rodar localmente: `cp .env.example .env` → `bun run db:reset` (sobe containers, migrations e
-  seed) → `bun run dev` (e `bun run worker` para a fila; `bun run docling:up` para ler documentos). Login: `sindico@operacondo.local` (cliente Aurora) ou
+  seed) → `bun run dev` (e `bun run worker` para a fila; `bun run docling:up` para ler documentos). Para ver `/app/agente` com dados sem Z-API/SES:
+  `bun run simular [login]` (`scripts/simular-mensagens.ts`: 2 WhatsApp + 3 e-mails pelo caminho real,
+  Z-API falsa local; sem `ANTHROPIC_API_KEY`, grava um rascunho de exemplo). Login: `sindico@operacondo.local` (cliente Aurora) ou
   `admin@operacondo.local` (Admin Master), senha `SEED_SENHA` (padrão `operacondo123`).
 - Stack: TanStack Start + React 19 + Tailwind 4 + shadcn/ui (`new-york`, `slate`), Nitro com
   `preset: "node-server"` (`bun run build && bun start` → `.output/server/index.mjs`).

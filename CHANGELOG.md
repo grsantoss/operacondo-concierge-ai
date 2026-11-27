@@ -52,6 +52,10 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
   endereço do remetente, preparando o atendimento por e-mail. Nova tabela `email_canais` (endereço
   de atendimento do cliente) e assunto/`Message-ID` nas mensagens. O WhatsApp segue igual; as
   conversas existentes viram de WhatsApp (#93).
+- **Confirmação ao morador nas urgências**: quando a mensagem fala de gás, incêndio, pessoa presa
+  no elevador ou vazamento, o morador recebe na hora "Recebemos sua mensagem e já encaminhamos ao
+  responsável…" (sem IA, uma vez a cada 30 minutos), e a demanda abre sozinha com a categoria e a
+  urgência da regra. No e-mail, a confirmação só vai a remetente autenticado (DKIM ou DMARC) (#109).
 
 ## [0.7.0] - 2026-11-18
 

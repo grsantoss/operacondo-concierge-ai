@@ -162,9 +162,10 @@ export async function processarEmail(
       .limit(1);
     // ponytail: uma conversa aberta por remetente (como no WhatsApp); juntar pela thread
     // (In-Reply-To/References) se o mesmo morador abrir assuntos paralelos.
+    // Remetente comprovado (o From: de e-mail é fácil de forjar).
+    const autenticado =
+      entrada.autenticacao.dkim === "PASS" || entrada.autenticacao.dmarc === "PASS";
     if (!conversa) {
-      const autenticado =
-        entrada.autenticacao.dkim === "PASS" || entrada.autenticacao.dmarc === "PASS";
       const quem = await identificarRemetente(tx, tenantId, remetente, autenticado);
       const gmail = remetente === CONFIRMACAO_GMAIL;
       // Sem condomínio definido (vários e remetente desconhecido) o agente não responde: o
@@ -240,7 +241,7 @@ export async function processarEmail(
     // Regras fixas de urgência no assunto e no corpo (independem da IA e do condomínio).
     const regra = detectarUrgencia(`${email.subject ?? ""}\n${textoDoEmail(email)}`);
     const alerta: JobAlerta | null = regra
-      ? { tenantId, conversaId: conversa.id, regra: regra.id }
+      ? { tenantId, conversaId: conversa.id, regra: regra.id, confirmar: autenticado }
       : null;
     if (regra) await subirUrgencia(tx, conversa.id, regra.prioridade);
     const [cv] = await tx

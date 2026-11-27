@@ -34,7 +34,7 @@ import { aplicarInadimplencia } from "@/server/billing/inadimplencia";
 import { processarEventoStripe } from "@/server/billing/sync";
 import { processarEmail } from "@/server/email-entrada/processar";
 import { ingerirDocumento } from "@/server/ingest";
-import { enviarAlerta } from "@/server/pipeline/alerta";
+import { atenderUrgencia, enviarAlerta } from "@/server/pipeline/alerta";
 import { processarMidia } from "@/server/pipeline/midia";
 import { processarConversa } from "@/server/pipeline/processar";
 import { rotear, type Roteado } from "@/server/pipeline/roteamento";
@@ -123,10 +123,13 @@ await boss.work<JobAlerta>(
   FILA_ALERTA,
   comErros(FILA_ALERTA, async (jobs) => {
     for (const job of jobs) {
+      // O síndico primeiro: se a confirmação ao morador falhar, a nova tentativa pode repetir o
+      // alerta, mas nunca deixa de mandá-lo.
       const n = await enviarAlerta(job.data);
       console.info(
         `[alerta] ${job.data.regra} na conversa ${job.data.conversaId}: ${n} síndico(s) avisado(s)`,
       );
+      await atenderUrgencia(job.data);
     }
   }),
 );

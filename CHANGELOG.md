@@ -48,6 +48,9 @@ Todas as mudanças relevantes deste projeto ficam aqui. Formato
 
 ### Alterado
 
+- **Caixa de conversas por urgência**: `/app/agente` mostra primeiro as Críticas, depois as Altas e
+  as Normais (a urgência da conversa ou a da demanda aberta mais urgente), a mais recente primeiro
+  em cada nível, e as resolvidas no fim. Vale para WhatsApp e e-mail (#108).
 - **Conversa com canal e endereço**: cada conversa passa a ter o canal (WhatsApp ou e-mail) e o
   endereço do remetente, preparando o atendimento por e-mail. Nova tabela `email_canais` (endereço
   de atendimento do cliente) e assunto/`Message-ID` nas mensagens. O WhatsApp segue igual; as

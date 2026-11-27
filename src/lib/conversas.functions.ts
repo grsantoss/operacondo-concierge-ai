@@ -12,6 +12,7 @@ import { maiorPrioridade } from "@/lib/urgencia";
 import { linkTemporario } from "@/server/arquivos";
 import { exigirCliente } from "@/server/auth/contexto";
 import { schema as s, withTenant } from "@/server/db";
+import { caixaDeConversas } from "@/server/conversas";
 import { registrarNota } from "@/server/observability";
 import { enviarNaConversa } from "@/server/whatsapp/send";
 import { ErroZapi } from "@/server/whatsapp/zapi";
@@ -69,32 +70,7 @@ export const listarConversas = createServerFn({ method: "GET" }).handler(
   async (): Promise<ConversaResumo[]> => {
     const { tenantId } = await exigirCliente();
     return withTenant(tenantId, async (tx) => {
-      const c = s.conversas;
-      const linhas = await tx
-        .select({
-          conversa: c,
-          morador: s.moradores,
-          unidade: s.unidades,
-          condominio: s.condominios.nome,
-          ultima: sql<{
-            texto: string | null;
-            tipo: MensagemConversa["tipo"];
-            assunto: string | null;
-          } | null>`(
-            select json_build_object('texto', m.texto, 'tipo', m.tipo, 'assunto', m.assunto)
-            from mensagens m
-            where m.conversa_id = ${c.id} order by m.criado_em desc limit 1)`,
-          prioridades: sql<("normal" | "alta" | "critica")[] | null>`(
-            select array_agg(d.prioridade::text) from demandas d
-            where d.conversa_id = ${c.id} and d.coluna <> 'resolvidas')`,
-        })
-        .from(c)
-        .leftJoin(s.moradores, eq(s.moradores.id, c.moradorId))
-        .leftJoin(s.unidades, eq(s.unidades.id, s.moradores.unidadeId))
-        .leftJoin(s.condominios, eq(s.condominios.id, c.condominioId))
-        .orderBy(desc(c.ultimaMsgEm))
-        // ponytail: as 200 mais recentes; paginar quando um cliente passar disso.
-        .limit(200);
+      const linhas = await caixaDeConversas(tx);
       return linhas.map(({ conversa: cv, morador, unidade, condominio, ultima, prioridades }) => {
         const contato = cv.canal === "email" ? cv.endereco : formatarTelefone(cv.endereco);
         return {

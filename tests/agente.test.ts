@@ -3,7 +3,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:tes
 import { desc, eq, sql } from "drizzle-orm";
 import { carregarContexto } from "../src/server/agent/contexto";
 import { mensagens, SEM_BASE } from "../src/server/agent/prompt";
-import { AVISO_SINDICO, responder } from "../src/server/agent/run";
+import { AVISO_SINDICO } from "../src/server/agent/guardrails";
+import { responder } from "../src/server/agent/run";
 import { acharUnidade } from "../src/server/agent/tools";
 import { ATENDIMENTO_INDISPONIVEL, exigirLimite } from "../src/server/billing/limites";
 import { avaliarRascunho } from "../src/lib/conversas.functions";

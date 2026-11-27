@@ -202,7 +202,16 @@ temperatura (cold/warm/hot) saiu de todas as telas (#14).
   ("📄 Regimento Interno, Art. 12", das citações) e a assinatura de `agente_config`. Resposta é
   descartada se o síndico assumiu ou chegou mensagem nova durante a chamada. Áudio: o agente roda
   depois da fila `midia`. Uso em `llm_execucoes` com `conversa_id` (soma das rodadas).
-- **Ferramentas do agente (#23):** `src/server/agent/tools.ts`, Tool Runner do SDK
+  Estrutura (#102): o texto do prompt fica em Markdown, montado por `prompt.ts` `sistema()`:
+  `agent/AGENT.md` (identidade), `agent/rules/*.md` (sempre, numeradas em "Como responder", na
+  ordem de `REGRAS`) e `agent/skills/*.md` (procedimentos por ferramenta, escolhidos em `SKILLS`
+  **só pelo canal**, para não quebrar o cache). Variáveis `{{nome}}` por `preencher()`; linhas `#`
+  e `<!-- -->` não vão ao modelo. Importados com `with { type: "text" }` (o agente só roda no
+  Bun: worker e evals; o build do Vite não o inclui). `agent/guardrails.ts`: `paraOSindico`,
+  `AVISO_SINDICO`, `FIXAS`. Snapshot do prompt em `tests/prompt-agente.test.ts`: mudou o texto,
+  confira o diff antes de `bun test -u`.
+- **Ferramentas do agente (#23):** `src/server/agent/tools/` (uma por arquivo, `index.ts` monta a
+  `Base` do contexto e o rastro do Langfuse), Tool Runner do SDK
   (`client.beta.messages.toolRunner` + `betaZodTool`; o runner usa o beta
   `message-threads`, então só a 1ª chamada leva `tools`), até 6 rodadas. Cliente, condomínio,
   morador e telefone vêm do contexto (closure), nunca da entrada do modelo. `buscar_regras`
@@ -285,7 +294,7 @@ src/server/
 ├── realtime/      # LISTEN/NOTIFY → SSE /api/eventos
 ├── whatsapp/      # webhook.ts (valida, deduplica por provider_msg_id, enfileira, 200), send.ts
 ├── pipeline/      # processar, normalizar (áudio/imagem), roteamento, urgencia
-├── agent/         # run.ts, contexto.ts, prompts/skills/*.md, tools/*, guardrails.ts
+├── agent/         # run.ts, contexto.ts, prompt.ts, AGENT.md, rules/*.md, skills/*.md, tools/*, guardrails.ts
 ├── ingest/        # docling.ts, fallback.ts (Claude), trechos.ts (corte por artigo + embeddings)
 ├── billing/       # stripe.ts (cliente), webhook.ts, sync.ts, checkout.ts, portal.ts, limites.ts
 ├── observability/ # OpenTelemetry → Langfuse, Sentry, gravação em llm_execucoes

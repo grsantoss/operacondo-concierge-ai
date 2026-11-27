@@ -21,7 +21,8 @@ import {
   suspensaoDo,
   usoMensal,
 } from "@/server/billing/limites";
-import { mensagens, SEM_BASE, sistema } from "@/server/agent/prompt";
+import { AVISO_SINDICO, FIXAS, paraOSindico } from "@/server/agent/guardrails";
+import { mensagens, sistema } from "@/server/agent/prompt";
 import { ferramentas, type Efeitos } from "@/server/agent/tools";
 import { schema as s, withTenant, type Tx } from "@/server/db";
 import { HAIKU, uso } from "@/server/llm";
@@ -32,9 +33,6 @@ import { enviarNaConversa } from "@/server/whatsapp/send";
 export const MODELO_AGENTE = process.env.AGENTE_MODELO ?? HAIKU;
 /** Chamadas ao modelo por resposta (cada rodada de ferramentas conta uma). */
 const MAX_RODADAS = 6;
-
-export const AVISO_SINDICO =
-  "Recebi sua mensagem e encaminhei ao síndico, que responde por aqui em breve.";
 
 /** "Regimento Interno, Art. 12" a partir das citações da resposta (no máximo 3). */
 export function fontes(r: BetaMessage, ctx: Contexto): string[] {
@@ -60,8 +58,6 @@ export function fontes(r: BetaMessage, ctx: Contexto): string[] {
   }
   return [...vistas].slice(0, 3);
 }
-
-const FIXAS = new Set([AVISO_SINDICO, ATENDIMENTO_INDISPONIVEL]);
 
 /**
  * O síndico vê o motivo e, quando houver, o rascunho para aprovar, editar ou reescrever (#24).
@@ -216,13 +212,7 @@ async function responderNoRastro(
     .flatMap((b) => (b.type === "text" ? [b.text] : []))
     .join("")
     .trim();
-  const semBase =
-    !texto ||
-    texto.startsWith(SEM_BASE) ||
-    r.stop_reason === "refusal" ||
-    r.stop_reason === "max_tokens" ||
-    // Acabaram as rodadas ainda pedindo ferramenta.
-    r.stop_reason === "tool_use";
+  const aoSindico = paraOSindico(r, texto);
 
   await withTenant(job.tenantId, async (tx) => {
     await tx.insert(s.llmExecucoes).values({
@@ -249,16 +239,9 @@ async function responderNoRastro(
       .limit(1);
     if (cv?.estado !== "ia" || maisNova?.id !== ultima.id) return fim("descartada", texto);
 
-    if (semBase) {
-      const rascunho = texto.startsWith(SEM_BASE) ? texto.slice(SEM_BASE.length).trim() : "";
-      const motivo =
-        r.stop_reason === "refusal"
-          ? "A IA recusou responder"
-          : r.stop_reason === "max_tokens" || r.stop_reason === "tool_use"
-            ? "A IA não concluiu a resposta"
-            : "Sem base documental";
-      fim(`síndico: ${motivo}`, texto);
-      return escalar(tx, ctx, motivo, rascunho || null);
+    if (aoSindico) {
+      fim(`síndico: ${aoSindico.motivo}`, texto);
+      return escalar(tx, ctx, aoSindico.motivo, aoSindico.rascunho);
     }
 
     const f = fontes(r, ctx);

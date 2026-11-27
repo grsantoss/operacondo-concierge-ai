@@ -98,6 +98,10 @@ temperatura (cold/warm/hot) saiu de todas as telas (#14).
   vazamento → alta), detectada no roteamento → `conversas.prioridade` sobe (nunca desce) → fila
   `alerta` (singleton conversa:regra por 30 min) → `pipeline/alerta.ts` envia ao
   `membros.alerta_e164` de síndicos/admins do condomínio (sem condomínio definido: todos).
+  Depois do alerta, `atenderUrgencia` (#101, mesmo job) abre a demanda da regra (título = rótulo,
+  `categoria` da regra; só com condomínio definido; não repete enquanto aberta) e manda ao morador
+  `CONFIRMACAO_URGENCIA` (`autor = sistema`, uma vez a cada 30 min; não sai no congelamento nem
+  para e-mail sem DKIM/DMARC `PASS`, `JobAlerta.confirmar`).
   Mídia: o roteamento devolve as mensagens com mídia → fila `midia` (5 tentativas; a URL da
   Z-API expira) → `pipeline/midia.ts` baixa para o S3 (`{tenant}/{condominio|sem-condominio}/
   whatsapp/{conversa}/{mensagem}.ext`, `mensagens.midia_path`) e transcreve áudio por

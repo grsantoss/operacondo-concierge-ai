@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { eq, inArray } from "drizzle-orm";
 import { cifrar } from "../src/server/cripto";
 import { dbAdmin, schema as s } from "../src/server/db";
-import { enviarAlerta } from "../src/server/pipeline/alerta";
+import { atenderUrgencia, CONFIRMACAO_URGENCIA, enviarAlerta } from "../src/server/pipeline/alerta";
 import { processarConversa } from "../src/server/pipeline/processar";
 import { detectarUrgencia } from "../src/server/pipeline/regras-urgencia";
 import { rotear } from "../src/server/pipeline/roteamento";
@@ -145,6 +145,41 @@ describe("alerta", () => {
     expect(novos[0]!.message).toContain("cheiro de gás");
   });
 
+  test("gás: confirma ao morador e abre a demanda uma vez só (#101)", async () => {
+    const alerta = await receber("+5511944440000", "o cheiro de gás continua forte");
+    const demandas = () =>
+      admin.select().from(s.demandas).where(eq(s.demandas.conversaId, alerta!.conversaId));
+    const confirmacoes = async () =>
+      (
+        await admin.select().from(s.mensagens).where(eq(s.mensagens.conversaId, alerta!.conversaId))
+      ).filter((m) => m.texto === CONFIRMACAO_URGENCIA);
+
+    const antes = enviados.length;
+    await atenderUrgencia(alerta!);
+    await atenderUrgencia(alerta!); // nova tentativa do job
+    expect(enviados.slice(antes)).toEqual([
+      { phone: "5511944440000", message: CONFIRMACAO_URGENCIA },
+    ]);
+    expect(await confirmacoes()).toHaveLength(1);
+    expect((await confirmacoes())[0]).toMatchObject({ direcao: "saida", autor: "sistema" });
+
+    const ds = await demandas();
+    expect(ds).toHaveLength(1);
+    expect(ds[0]).toMatchObject({
+      titulo: "Vazamento de gás",
+      categoria: "seguranca",
+      prioridade: "critica",
+      condominioId: condo,
+      descricao: "o cheiro de gás continua forte",
+    });
+    expect(ds[0]!.slaAte).not.toBeNull();
+    const [cv] = await admin
+      .select()
+      .from(s.conversas)
+      .where(eq(s.conversas.id, alerta!.conversaId));
+    expect(cv!.estado).toBe("aguardando_sindico");
+  });
+
   test("vazamento depois não rebaixa a urgência", async () => {
     const alerta = await receber("+5511944440000", "e agora tem vazamento de água também");
     expect(alerta!.regra).toBe("vazamento");
@@ -161,5 +196,19 @@ describe("alerta", () => {
     // Sem condomínio definido, avisa todos os síndicos com número (não dá para filtrar).
     expect(await enviarAlerta(alerta!)).toBe(2);
     expect(enviados.at(-1)!.message).toContain("Condomínio ainda não definido");
+
+    // Sem condomínio, confirma ao remetente mas não abre demanda (demanda exige condomínio).
+    await atenderUrgencia(alerta!);
+    expect(enviados.at(-1)).toEqual({ phone: "5511988880000", message: CONFIRMACAO_URGENCIA });
+    expect(
+      await admin.select().from(s.demandas).where(eq(s.demandas.conversaId, alerta!.conversaId)),
+    ).toHaveLength(0);
+  });
+
+  test("confirmar: false (e-mail sem DKIM/DMARC) não responde ao remetente", async () => {
+    const alerta = await receber("+5511988881111", "elevador parou, tem gente presa no elevador");
+    const antes = enviados.length;
+    await atenderUrgencia({ ...alerta!, confirmar: false });
+    expect(enviados.length).toBe(antes);
   });
 });

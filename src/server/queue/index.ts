@@ -24,6 +24,8 @@ export interface JobAlerta {
   tenantId: string;
   conversaId: string;
   regra: "gas" | "incendio" | "elevador" | "vazamento";
+  /** Confirmação automática ao remetente (#101). No e-mail, só com DKIM ou DMARC `PASS`. */
+  confirmar?: boolean;
 }
 
 /** Fila "midia": baixa áudio/imagem/documento da Z-API para o S3 e transcreve áudio. */

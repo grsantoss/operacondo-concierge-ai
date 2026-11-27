@@ -325,12 +325,17 @@ describe("roteamento pelo remetente", () => {
 
   test("urgência no assunto: alerta o síndico e não chama o agente", async () => {
     const r = await receber("eva-1", "eva@exemplo.com", "Cheiro de gás no hall", "PASS");
-    expect(r.alerta?.regra).toBe("gas");
+    expect(r.alerta).toMatchObject({ regra: "gas", confirmar: true });
     expect(r.agente).toBeNull();
     expect(await conversa(r.conversaId!)).toMatchObject({
       prioridade: "critica",
       estado: "aguardando_sindico",
     });
+  });
+
+  test("urgência sem DKIM nem DMARC: alerta, mas sem confirmação ao remetente (#101)", async () => {
+    const r = await receber("ivo-1", "ivo@exemplo.com", "Incêndio na garagem", "FAIL");
+    expect(r.alerta).toMatchObject({ regra: "incendio", confirmar: false });
   });
 
   test("confirmação de encaminhamento do Gmail: entra para o síndico, sem IA", async () => {

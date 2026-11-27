@@ -8,6 +8,8 @@ export interface RegraUrgencia {
   id: "gas" | "incendio" | "elevador" | "vazamento";
   rotulo: string;
   prioridade: "critica" | "alta";
+  /** Categoria da demanda aberta pela regra (#101). */
+  categoria: "seguranca" | "manutencao";
   re: RegExp;
 }
 
@@ -16,24 +18,28 @@ export const REGRAS: RegraUrgencia[] = [
     id: "gas",
     rotulo: "Vazamento de gás",
     prioridade: "critica",
+    categoria: "seguranca",
     re: /\b(cheiro (forte )?de gas|vazamento de gas|vazando gas|gas vazando|escapando gas|gas escapando)\b/,
   },
   {
     id: "incendio",
     rotulo: "Incêndio ou fumaça",
     prioridade: "critica",
+    categoria: "seguranca",
     re: /\b(incendio|fogo|fumaca|pegando fogo|em chamas|chamas)\b/,
   },
   {
     id: "elevador",
     rotulo: "Pessoa presa no elevador",
     prioridade: "critica",
+    categoria: "seguranca",
     re: /\b(pres[oa]s?|trancad[oa]s?)\b.{0,40}\belevador\b|\belevador\b.{0,40}\b(pres[oa]s?|trancad[oa]s?)\b/,
   },
   {
     id: "vazamento",
     rotulo: "Vazamento de água",
     prioridade: "alta",
+    categoria: "manutencao",
     re: /\b(vazamento|vazando|alagad[oa]|alagamento|inundacao|inundad[oa]|cano estourado|estourou o cano)\b/,
   },
 ];
